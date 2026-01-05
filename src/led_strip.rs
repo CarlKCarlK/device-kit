@@ -404,31 +404,13 @@ fn apply_correction<const N: usize>(frame: &mut Frame<N>, combo_table: &[u8; 256
 // Macro: led_strips - Creates interrupts, PIO bus, and LED strips
 // ============================================================================
 
-/// Creates PIO-based LED strip configurations with automatic brightness limiting.
+/// Macro for multiple LED strips (rarely used directly).
 ///
-/// This macro generates all the necessary code to create multiple WS2812-style LED strips
-/// using a single PIO peripheral. It handles interrupt bindings, PIO bus sharing, and
-/// per-strip brightness limiting based on current budget.
+/// **See the module docs for full documentation and examples.**
 ///
-/// The macro generates:
-/// - A `pio0_split()` (or `pio1_split()`, `pio2_split()`) function that splits the PIO
-/// - One type per strip with `new_static()` and `new()` constructors
-///
-/// Each generated type dereferences to [`LedStrip`](crate::led_strip::LedStrip)
-/// so you can call `write_frame` directly. The type name is exactly the identifier
-/// you supply to the macro; use CamelCase there to satisfy linting and keep types
-/// recognizable (e.g., `Gpio2LedStrip`).
-///
-/// The split functions use the `LedStripPio` trait (implemented for PIO0, PIO1, PIO2)
-/// to get interrupt bindings, similar to how wifi_auto handles PIO generics.
-///
-/// # Example
-/// ```no_run
-/// #![no_std]
-/// use panic_probe as _;
-/// // Requires target support and macro imports; no_run to avoid hardware access in doctests.
-/// # fn main() {}
-/// ```
+/// This is for advanced use where you need multiple strips sharing one PIO.
+/// Most projects should use [`led_strip!`] instead.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! led_strips {
     // Internal: full expansion with all fields specified
@@ -1259,62 +1241,11 @@ macro_rules! led_strips {
 ///
 /// ```
 
-/// Simplified macro for defining a single LED strip device (always uses SM0).
+/// Macro for defining a single LED strip (use this for most projects).
 ///
-/// This macro generates a singleton LED strip type that always uses state machine 0 (SM0).
-/// Unlike [`led_strips!`], this macro:
-/// - Generates a single strip type (not a group)
-/// - Always uses SM0 automatically
-/// - Returns the strip directly from `new()` (no tuple unpacking)
-/// - Hides the PIO split logic inside `new()`
+/// **See the module docs for full documentation and examples.**
 ///
-/// # Syntax
-///
-/// ```ignore
-/// led_strip! {
-///     TypeName {          // Name for the generated strip type
-///         pin: PIN_0,     // GPIO pin for LED data (required)
-///         len: 8,         // Number of LEDs (required)
-///         max_current: Current::Milliamps(500), // Current budget (required)
-///     }
-/// }
-/// ```
-///
-/// # Optional Fields
-///
-/// - `pio: PIO1` - PIO peripheral (defaults to PIO0)
-/// - `dma: DMA_CH0` - DMA channel (defaults to DMA_CH0)
-/// - `gamma: Gamma::Gamma2_2` - Gamma correction (defaults to Gamma2_2)
-/// - `max_frames: 16` - Animation frame buffer size (defaults to 16)
-///
-/// # Generated API
-///
-/// The macro generates a struct with:
-/// - `new(pio, dma, pin, spawner)` - Constructor that handles PIO splitting internally
-/// - All methods from [`LedStrip`] via `Deref`
-///
-/// # Example
-///
-/// ```ignore
-/// use device_kit::led_strip::{led_strip, Current};
-/// use embassy_executor::Spawner;
-///
-/// led_strip! {
-///     LedStrip {
-///         pio: PIO1,  // Optional, defaults to PIO0
-///         pin: PIN_0,
-///         len: 8,
-///         max_current: Current::Milliamps(50),
-///     }
-/// }
-///
-/// #[embassy_executor::main]
-/// async fn main(spawner: Spawner) {
-///     let p = embassy_rp::init(Default::default());
-///     let strip = LedStrip::new(p.PIN_0, p.PIO1, p.DMA_CH0, spawner).unwrap();
-///     // Use strip directly - no tuple unpacking needed
-/// }
-/// ```
+/// For details on configuration, see the module-level documentation and `examples/led_strip1.rs`.
 #[macro_export]
 macro_rules! led_strip {
     // Entry point - name and fields
@@ -1714,6 +1645,10 @@ macro_rules! led_strip {
     };
 }
 
+/// Macro for advanced PIO splitting (rarely needed).
+///
+/// **See the module docs.** Most users should use the group constructor instead.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! pio_split {
     ($p:ident . PIO0) => {
