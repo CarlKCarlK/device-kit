@@ -156,10 +156,8 @@ conway-check = "check --example conway --release --target thumbv6m-none-eabi --f
 video = "run --example video --release --target thumbv6m-none-eabi --features pico1,arm"
 video-check = "check --example video --release --target thumbv6m-none-eabi --features pico1,arm"
 
-# Documentation alias
-# Note: Using pico2,arm,wifi instead of pico1,arm,wifi because embassy-rp from git main
-# currently has a regression with Cortex-M0+ (tries to access MPU.rasr field that doesn't exist).
-docdoc = "doc --target thumbv8m.main-none-eabihf --no-deps --features pico2,arm,wifi --no-default-features --open"
+# Documentation alias - builds docs and opens in browser via script on WSL
+docdoc = "doc --target thumbv8m.main-none-eabihf --no-deps --features pico2,arm,wifi --no-default-features"
 docdoc-check = "check --target thumbv8m.main-none-eabihf --no-deps --features pico2,arm,wifi --no-default-features"
 
 [target.thumbv6m-none-eabi]

@@ -1,6 +1,9 @@
 open-docs:
 	./scripts/open-docs.sh
 
+docdoc:
+	cargo docdoc && ./scripts/open-docs.sh
+
 gather:
 	./scripts/gather.sh
 
