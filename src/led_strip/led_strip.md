@@ -58,6 +58,24 @@ All [`LedStrip`] methods are available via `Deref`.
 - `gamma` — Color curve (default: `Gamma::Gamma2_2`)
 - `max_frames` — Animation buffer size (default: `16`)
 
+### Usage
+
+```rust
+use device_kit::led_strip::{led_strip, Current, Gamma};
+
+led_strip! {
+    StatusLedStrip {
+        pin: PIN_3,
+        len: 48,
+        pio: PIO0, // optional
+        dma: DMA_CH0, // optional
+        max_current: Current::Milliamps(250), // optional
+        gamma: Gamma::Gamma2_2, // optional
+        max_frames: 16, // optional
+    }
+}
+```
+
 ## Current Limiting
 
 The `max_current` field automatically scales brightness to stay within your power budget.
