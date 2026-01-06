@@ -14,7 +14,7 @@ use core::convert::Infallible;
 use defmt::{info, warn};
 use defmt_rtt as _;
 use device_kit::Result;
-use device_kit::UnixSeconds;
+use device_kit::time_sync::UnixSeconds;
 use device_kit::button::PressedTo;
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
 use device_kit::led4::{BlinkState, Led4, Led4Static, OutputArray, circular_outline_animation};

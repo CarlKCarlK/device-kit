@@ -74,12 +74,9 @@ pub mod wifi;
 #[cfg(all(feature = "wifi", not(feature = "host")))]
 pub mod wifi_auto;
 
-// cmk00 understand this? It appears at top of docs without any content
 // Re-export error types and result (used throughout)
 #[cfg(not(feature = "host"))]
 pub use error::{Error, Result};
-#[cfg(not(feature = "host"))]
-pub use time_sync::UnixSeconds;
 
 #[cfg(feature = "host")]
 pub type Error = core::convert::Infallible;

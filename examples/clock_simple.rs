@@ -10,7 +10,7 @@ use defmt_rtt as _;
 use device_kit::Result;
 use embassy_executor::Spawner;
 use panic_probe as _;
-use device_kit::UnixSeconds;
+use device_kit::time_sync::UnixSeconds;
 use device_kit::clock::{Clock, ClockStatic, ONE_SECOND, h12_m_s};
 
 #[embassy_executor::main]
