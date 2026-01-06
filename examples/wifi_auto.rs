@@ -14,10 +14,10 @@ use core::convert::Infallible;
 use defmt::{info, warn};
 use defmt_rtt as _;
 use device_kit::Result;
-use device_kit::time_sync::UnixSeconds;
 use device_kit::button::PressedTo;
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
 use device_kit::led4::{BlinkState, Led4, Led4Static, OutputArray, circular_outline_animation};
+use device_kit::time_sync::UnixSeconds;
 use device_kit::wifi_auto::fields::{
     TextField, TextFieldStatic, TimezoneField, TimezoneFieldStatic,
 };
@@ -114,9 +114,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                 }
 
                 WifiAutoEvent::Connecting { try_index, .. } => {
-                    led4_ref.animate_text(circular_outline_animation(
-                        (try_index & 1) == 0,
-                    ));
+                    led4_ref.animate_text(circular_outline_animation((try_index & 1) == 0));
                 }
 
                 WifiAutoEvent::Connected => {

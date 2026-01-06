@@ -344,7 +344,7 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
 }
 
 // cmk0000 need to described this better. It is kind of a prototype.
-/// Device abstraction for WS2812-style LED strips created by [`led_strips!`] (multiple strips can share one PIO).
+/// Device abstraction for NeoPixel-style (WS2812) LED strips created by [`led_strips!`] (multiple strips can share one PIO).
 ///
 /// This type is used through macro-generated wrapper types that deref to `LedStrip`.
 ///

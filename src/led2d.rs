@@ -1,4 +1,4 @@
-//! A device abstraction for rectangular WS2812-style LED panel displays with arbitrary size.
+//! A device abstraction for rectangular NeoPixel-style (WS2812) LED panel displays with arbitrary size.
 //!
 //! Supports text rendering, animation, and full graphics capabilities. For simple
 //! single-strip displays, use the `led2d!` macro. For multi-strip scenarios
@@ -631,7 +631,7 @@ where
 
 // cmk000 don't use the phrase 'module-level' in docs.
 // cmk00 this needs a compiled-only doc test.
-/// A device abstraction for rectangular WS2812-styleLED matrix displays.
+/// A device abstraction for rectangular NeoPixel-style (WS2812) LED matrix displays.
 ///
 /// Supports any size display with arbitrary LED-index-to-coordinate mapping. The provided mapping
 /// is reversed during initialization into an internal (row, col) → LED index lookup so frame

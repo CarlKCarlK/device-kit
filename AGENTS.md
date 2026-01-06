@@ -209,7 +209,9 @@ Common colors available: `RED`, `GREEN`, `BLUE`, `YELLOW`, `WHITE`, `BLACK`, `CY
 
 ## Terminology: "Panel" vs "Matrix"
 
-Use **"panel"** when referring to physical rectangular LED display hardware composed of WS2812 strips:
+Use **"NeoPixel-style (WS2812)"** for LED strip/pixel hardware. Always include the parenthetical "(WS2812)" to clarify the protocol, not just "WS2812-style" or bare "WS2812".
+
+Use **"panel"** when referring to physical rectangular LED display hardware composed of NeoPixel-style (WS2812) strips:
 
 ✅ "LED panel" — A physical rectangular arrangement of LED strips (e.g., 12×4 pixels)
 ✅ "Multiple panels" — Several rectangular units combined or stacked
