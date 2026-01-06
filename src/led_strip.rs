@@ -97,6 +97,9 @@
 //! }
 //! ```
 
+/// Predefined RGB color constants from the `smart_leds` crate.
+///
+/// Common colors include `RED`, `GREEN`, `BLUE`, `YELLOW`, `WHITE`, `BLACK`, `CYAN`, `MAGENTA`, `ORANGE`, `PURPLE`.
 #[doc(inline)]
 pub use smart_leds::colors;
 
@@ -162,6 +165,7 @@ const LINEAR_TABLE: [u8; 256] = [
 /// 2. Scale by `max_brightness` for current limiting
 ///
 /// The result is a table where `combo_table[input_value]` gives the final output value.
+#[doc(hidden)] // Implementation detail used by macro-generated strip types
 #[must_use]
 #[allow(dead_code)]
 pub const fn generate_combo_table(gamma: Gamma, max_brightness: u8) -> [u8; 256] {
