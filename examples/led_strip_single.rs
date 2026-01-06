@@ -2,12 +2,13 @@
 #![no_main]
 
 use core::convert::Infallible;
+use core::future;
 
 use defmt::info;
 use device_kit::Result;
 use device_kit::led_strip::{Current, Frame, colors, led_strip};
 use embassy_executor::Spawner;
-use embassy_time::{Duration, Timer};
+use embassy_time::Duration;
 use {defmt_rtt as _, panic_probe as _};
 
 led_strip! {
@@ -56,7 +57,5 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         ])
         .await?;
 
-    loop {
-        Timer::after_secs(3600).await;
-    }
+    Ok(future::pending().await) // run forever
 }

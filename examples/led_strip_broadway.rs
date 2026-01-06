@@ -67,7 +67,5 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 
     gpio5_led_strip.animate(frames).await?;
 
-    future::pending::<()>().await;
-    #[allow(unreachable_code)]
-    Ok(())
+    Ok(future::pending::<()>().await) // Run forever
 }

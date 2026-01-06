@@ -112,6 +112,7 @@
 //!     font: Font3x4Trim,
 //! }
 //!
+//! // cmk0000 should return a result
 //! #[embassy_executor::main]
 //! async fn main(spawner: Spawner) {
 //!     let p = init(Default::default());
