@@ -1,7 +1,112 @@
-#![doc = include_str!("led_strip/led_strip.md")]
+//! A device abstraction for NeoPixel-style (WS2812) LED strips.
+//!
+//! Control individual LED colors with the [`write_frame`](LedStrip::write_frame) method or animate a sequence
+//! of frames with the [`animate`](LedStrip::animate) method.
+//!
+//! ## Related
+//!
+//! cmk0000 change grid and matrix to panel? (done - updated user-facing docs to use "panel" for physical hardware)
+//!
+//! - [`led_strips!`] — Define multiple LED strips that sharing one [PIO](crate#pio-programmable-io) resource.
+//! - [`Led2d`](crate::led2d::Led2d) — A device abstraction for LED strips arranged as a panel. Supports text, graphics, and animation.
+//!
+//! ## led_strip! Example 1
+//!
+//! Define a 48-LED strip and set every second LED to blue:
+//!
+//! cmk000 hide many of these lines in the docs
+//!
+//! ```rust,no_run
+//! #![no_std]
+//! #![no_main]
+//!
+//! use panic_probe as _;
+//! use core::convert::Infallible;
+//! use core::default::Default;
+//! use core::result::Result::Ok;
+//!
+//! use embassy_executor::Spawner;
+//! use device_kit::{Result, led_strip::{Frame, colors, led_strip}};
+//!
+//! led_strip! {
+//!     LedStrip3 {
+//!         pin: PIN_3,
+//!         len: 48,
+//!     }
+//! }
+//!
+//! async fn example(spawner: Spawner) -> Result<Infallible> {
+//!     let p = embassy_rp::init(Default::default());
+//!
+//!     let led_strip3 = LedStrip3::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;
+//!
+//!     let mut frame = Frame::new();
+//!     for pixel_index in (0..frame.len()).step_by(2) {
+//!         frame[pixel_index] = colors::BLUE;
+//!     }
+//!     led_strip3.write_frame(frame).await?;
+//!
+//!     Ok(core::future::pending().await) // run forever
+//! }
+//! ```
+//!
+//! See the [`led_strip!`] macro documentation for all configuration options (PIO, DMA channel,
+//! current limiting, gamma correction, frame animation size).
+//!
+//! ## led_strip! Example 2
+//!
+//! Use all optional fields of [`led_strip!`]. Animate a 96-LED strip through red, green, and blue.
+//!
+//! cmk000 hide many of these lines in the docs
+//! ```rust,no_run
+//! #![no_std]
+//! #![no_main]
+//!
+//! use panic_probe as _;
+//! use core::convert::Infallible;
+//! use core::default::Default;
+//! use core::result::Result::Ok;
+//!
+//! use device_kit::{
+//!     Result,
+//!     led_strip::{Current, Frame, Gamma, colors, led_strip},
+//! };
+//! use embassy_executor::Spawner;
+//! use embassy_time::Duration;
+//!
+//! led_strip! {
+//!     LedStrip4 {
+//!         pin: PIN_4,
+//!         len: 96,
+//!         pio: PIO1,
+//!         dma: DMA_CH3,
+//!         max_current: Current::Milliamps(1000),
+//!         gamma: Gamma::Linear,
+//!         max_frames: 3,
+//!     }
+//! }
+//!
+//! async fn animate_example(spawner: Spawner) -> Result<Infallible> {
+//!     let p = embassy_rp::init(Default::default());
+//!     let led_strip4 = LedStrip4::new(p.PIN_4, p.PIO1, p.DMA_CH3, spawner)?;
+//!
+//!     let frame_duration = Duration::from_millis(300);
+//!
+//!     led_strip4
+//!         .animate([
+//!             (Frame::filled(colors::RED), frame_duration),
+//!             (Frame::filled(colors::GREEN), frame_duration),
+//!             (Frame::filled(colors::BLUE), frame_duration),
+//!         ])
+//!         .await?;
+//!
+//!     Ok(core::future::pending().await) // run forever
+//! }
+//! ```
 
 pub mod gamma;
-pub use gamma::{Gamma, GAMMA_2_2_TABLE, generate_combo_table};
+// cmk0000 these are visible in docs?
+pub use gamma::{GAMMA_2_2_TABLE, Gamma, generate_combo_table};
 
 #[doc(inline)]
 pub use smart_leds::colors;
@@ -21,7 +126,7 @@ use smart_leds::RGB8;
 
 use crate::Result;
 
-/// RGB color representation re-exported from `smart_leds`.
+/// RGB color representation re-exported from the `smart_leds` crate.
 pub type Rgb = RGB8;
 
 /// Frame of `Rgb` values for a 1D LED strip.
@@ -246,6 +351,7 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
     }
 }
 
+// cmk0000 need to described this better. It is kind of a prototype.
 /// Device abstraction for WS2812-style LED strips created by [`led_strips!`] (multiple strips can share one PIO).
 ///
 /// This type is used through macro-generated wrapper types that deref to `LedStrip`.
@@ -408,10 +514,8 @@ fn apply_correction<const N: usize>(frame: &mut Frame<N>, combo_table: &[u8; 256
     }
 }
 
-// ============================================================================
-// Macro: led_strips - Creates interrupts, PIO bus, and LED strips
-// ============================================================================
-
+// cmk0000 bad first line
+// cmk0000 bad rest of lines
 /// Macro for multiple LED strips (rarely used directly).
 ///
 /// Macro to generate multiple LED strip structs sharing one PIO.
@@ -1246,6 +1350,8 @@ macro_rules! __led_strips_impl {
     };
 }
 
+// cmk0000 bad first line
+// cmk0000 bad rest of lines
 /// Macro to generate a struct with a `new()` constructor that takes `(pin, pio, dma, spawner)`.
 /// All [`LedStrip`] methods are available via `Deref`.
 ///
@@ -1757,13 +1863,14 @@ impl LedStripPio for embassy_rp::peripherals::PIO2 {
 pub use led_strip;
 pub use led_strips;
 
-/// Used by [`led_strips!`] to budget current for LED strips.
+/// Used by [`led_strip!`] and [`led_strips!`] to budget current for LED strips.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Current {
     Milliamps(u16),
     Unlimited,
 }
 
+// cmk0000 these are visible in docs?
 pub use Current::Milliamps;
 pub use Current::Unlimited;
 

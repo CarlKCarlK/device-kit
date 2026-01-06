@@ -206,6 +206,23 @@ let green = Rgb::new(0, 255, 0);
 
 Common colors available: `RED`, `GREEN`, `BLUE`, `YELLOW`, `WHITE`, `BLACK`, `CYAN`, `MAGENTA`, `ORANGE`, `PURPLE`, etc.
 
+## Terminology: "Panel" vs "Matrix"
+
+Use **"panel"** when referring to physical rectangular LED display hardware composed of WS2812 strips:
+
+✅ "LED panel" — A physical rectangular arrangement of LED strips (e.g., 12×4 pixels)
+✅ "Multiple panels" — Several rectangular units combined or stacked
+✅ Used in: hardware setup documentation, example titles, user-facing descriptions
+
+Use **"matrix"** for mathematical/algorithmic abstractions:
+
+✅ `BitMatrix` — Internal data structure representing segment patterns (mathematical array of bits)
+✅ `bit_matrix3x4` — Font glyph data (mathematical matrix)
+✅ `led2d` module — Refers to 2D array abstraction (mathematical property)
+✅ Used in: type names, internal algorithms, mathematical contexts
+
+This distinction clarifies that panels are physical hardware while matrices are logical data structures.
+
 ## Device/Static Pair Pattern
 
 Many drivers expose a `new_static` constructor for resources plus a `new` constructor for the runtime handle. We call this the **Device/Static Pair Pattern** and use it consistently across the repo.

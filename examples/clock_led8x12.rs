@@ -1,4 +1,4 @@
-//! Wi-Fi enabled 4-digit LED matrix clock (8x12 pixels rotated) with captive-portal setup.
+//! Wi-Fi enabled 4-digit LED panel clock (8x12 pixels rotated) with captive-portal setup.
 //!
 //! This example uses two stacked 12x4 LED panels rotated 90° clockwise to create an 8-wide
 //! by 12-tall display. Uses Font4x6Trim for dense 2-line digit display ("12\n34").
@@ -17,11 +17,10 @@ use device_kit::{
     Error, Result,
     button::{Button, PressDuration, PressedTo},
     clock::{Clock, ClockStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s},
-    led_strips,
     flash_array::{FlashArray, FlashArrayStatic},
     led_layout::LedLayout,
     led_strip::{Current, colors, gamma::Gamma},
-    led2d,
+    led_strips, led2d,
     time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic},
     wifi_auto::{
         WifiAuto, WifiAutoEvent,

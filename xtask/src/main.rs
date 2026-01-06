@@ -26,6 +26,8 @@ enum Commands {
     CheckAll,
     /// Check all examples (pico1 + pico2, with and without wifi)
     CheckExamples,
+    /// Check documentation: run doc tests and generate docs
+    CheckDocs,
     /// Generate video frames from PNG files (santa video)
     VideoFramesGen,
     /// Generate cat video frames from video file
@@ -114,6 +116,7 @@ fn main() -> ExitCode {
     match cli.command {
         Commands::CheckAll => check_all(),
         Commands::CheckExamples => check_examples(),
+        Commands::CheckDocs => check_docs(),
         Commands::VideoFramesGen => {
             if let Err(e) = video_frames_gen::generate_frames() {
                 eprintln!("Error generating video frames: {}", e);
@@ -366,6 +369,64 @@ fn check_all() -> ExitCode {
     }
 
     println!("\n{}", "==> All checks passed! 🎉".green().bold());
+    ExitCode::SUCCESS
+}
+
+fn check_docs() -> ExitCode {
+    let workspace_root = workspace_root();
+    let arch = Arch::Arm;
+    let board = Board::Pico2;
+    let target = arch.target(board);
+    let features = build_features(board, arch, true);
+
+    println!("{}", "==> Checking documentation...".cyan());
+
+    let failures = Mutex::new(Vec::new());
+
+    rayon::scope(|s| {
+        // 1. Doc tests
+        s.spawn(|_| {
+            println!("{}", "  [1/2] Doc tests...".bright_black());
+            if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
+                "test",
+                "--doc",
+                "--target",
+                target,
+                "--features",
+                features.as_str(),
+                "--no-default-features",
+            ])) {
+                failures.lock().unwrap().push("doc tests");
+            }
+        });
+
+        // 2. Documentation generation
+        s.spawn(|_| {
+            println!("{}", "  [2/2] Documentation generation...".bright_black());
+            if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
+                "doc",
+                "--target",
+                target,
+                "--no-deps",
+                "--features",
+                features.as_str(),
+                "--no-default-features",
+            ])) {
+                failures.lock().unwrap().push("documentation");
+            }
+        });
+    });
+
+    let failures = failures.lock().unwrap();
+    if !failures.is_empty() {
+        eprintln!("\n{}", "Failed checks:".red().bold());
+        for failure in failures.iter() {
+            eprintln!("  - {}", failure.red());
+        }
+        return ExitCode::FAILURE;
+    }
+
+    println!("\n{}", "==> Documentation checks passed! 🎉".green().bold());
     ExitCode::SUCCESS
 }
 

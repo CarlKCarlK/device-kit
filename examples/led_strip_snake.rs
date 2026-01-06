@@ -10,7 +10,7 @@ use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 use panic_probe as _;
 
-// Two WS2812B 4x12 LED matrices (48 pixels each) sharing PIO0
+// Two WS2812B 4x12 LED panels (48 pixels each) sharing PIO0
 led_strips! {
     LedStrips {
         gpio3: { pin: PIN_3, len: 48, max_frames: 48 },
@@ -32,7 +32,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
     let (gpio3_led_strip, gpio4_led_strip) =
         LedStrips::new(p.PIO0, p.PIN_3, p.DMA_CH0, p.PIN_4, p.DMA_CH1, spawner)?;
 
-    info!("Dual WS2812B 4x12 Matrix demo starting");
+    info!("Dual WS2812B 4x12 Panel demo starting");
     info!("Using PIO0, two state machines, GPIO3 & GPIO4");
     info!(
         "Max brightness: {}  ({}mA budget each)",

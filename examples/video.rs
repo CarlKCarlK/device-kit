@@ -1,4 +1,4 @@
-//! LED matrix video player - plays looping 12x8 videos with button-controlled mode switching.
+//! LED panel video player - plays looping 12x8 videos with button-controlled mode switching.
 //!
 //! This example cycles through multiple display modes using a button:
 //! 1. **Test Pattern**: RGBY corners (Red top-left, Green top-right, Blue bottom-left, Yellow bottom-right)
@@ -64,10 +64,10 @@ use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::button::{Button, PressedTo};
-use device_kit::led_strips;
 use device_kit::led_layout::LedLayout;
 use device_kit::led_strip::Current;
 use device_kit::led_strip::gamma::Gamma;
+use device_kit::led_strips;
 use device_kit::led2d;
 use embassy_executor::Spawner;
 use embassy_time::Duration;

@@ -1,5 +1,6 @@
 //! Device abstractions for peripherals for Pico 1 and 2 (with and without WiFi).
 //!
+//! cmk000 too conspicuous?
 //! # Hardware Glossary
 //!
 //! ## PIO (Programmable I/O)
@@ -95,6 +96,7 @@ pub mod wifi;
 #[cfg(all(feature = "wifi", not(feature = "host")))]
 pub mod wifi_auto;
 
+// cmk00 understand this? It appears at top of docs without any content
 // Re-export error types and result (used throughout)
 #[cfg(not(feature = "host"))]
 pub use error::{Error, Result};

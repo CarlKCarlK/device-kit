@@ -1,4 +1,4 @@
-//! Wi-Fi enabled 4-character LED matrix clock (12x4 pixels) with captive-portal setup.
+//! Wi-Fi enabled 4-character LED panel clock (12x4 pixels) with captive-portal setup.
 //!
 //! This example mirrors the WiFi/clock state machine from `clock_servos.rs` but drives a
 //! 12x4 LED panel on GPIO3 instead of servos. The reset button is on GPIO13.
@@ -15,12 +15,12 @@ use defmt::info;
 use defmt_rtt as _;
 use device_kit::button::{Button, PressDuration, PressedTo};
 use device_kit::clock::{Clock, ClockStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s};
-use device_kit::led_strips;
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
 use device_kit::led_layout::LedLayout;
 use device_kit::led_strip::Current;
 use device_kit::led_strip::colors;
 use device_kit::led_strip::gamma::Gamma;
+use device_kit::led_strips;
 use device_kit::led2d;
 use device_kit::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
 use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};

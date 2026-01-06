@@ -1,4 +1,4 @@
-//! A device abstraction for rectangular WS2812-style LED matrix displays with arbitrary size.
+//! A device abstraction for rectangular WS2812-style LED panel displays with arbitrary size.
 //!
 //! Supports text rendering, animation, and full graphics capabilities. For simple
 //! single-strip displays, use the `led2d!` macro. For multi-strip scenarios
