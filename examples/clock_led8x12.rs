@@ -18,9 +18,9 @@ use device_kit::{
     button::{Button, PressDuration, PressedTo},
     clock::{Clock, ClockStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s},
     flash_array::{FlashArray, FlashArrayStatic},
-    led2d::layout::LedLayout,
-    led_strip::{Current, colors, Gamma},
+    led_strip::{Current, Gamma, colors},
     led_strips, led2d,
+    led2d::layout::LedLayout,
     time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic},
     wifi_auto::{
         WifiAuto, WifiAutoEvent,
