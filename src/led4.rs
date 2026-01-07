@@ -2,11 +2,9 @@
 //!
 //! See [`Led4`] for the primary text/blinking example and [`Led4::animate_text`] for the animation example.
 //!
-//! This module provides hardware abstractions for controlling common-cathode
+//! This module provides device abstraction for controlling common-cathode
 //! 4-digit 7-segment LED displays. Supports displaying text and numbers with
 //! optional blinking.
-//!
-//! See [`Led4`] for the main device abstraction and usage examples.
 
 use embassy_executor::Spawner;
 use embassy_futures::select::{Either, select};

@@ -161,7 +161,9 @@ pub async fn http_config_server_task(stack: &'static Stack<'static>) -> ! {
             warn!("Write error: {:?}", e);
         }
 
-        let _ = socket.flush().await;
+        if let Err(e) = socket.flush().await {
+            warn!("Flush error: {:?}", e);
+        }
         socket.close();
         Timer::after_millis(100).await;
     }

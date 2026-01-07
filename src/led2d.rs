@@ -140,6 +140,8 @@ pub use paste;
 
 pub mod layout;
 
+pub mod led2d_generated;
+
 pub use layout::LedLayout;
 
 use core::convert::Infallible;

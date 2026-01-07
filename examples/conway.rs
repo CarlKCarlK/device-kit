@@ -131,7 +131,10 @@ async fn conway_task(
 
     loop {
         let frame = board.to_frame(colors::GREEN);
-        let _ = led8x12.write_frame(frame).await;
+        led8x12
+            .write_frame(frame)
+            .await
+            .expect("write_frame failed");
 
         // Calculate frame duration based on speed mode
         let frame_duration = match speed_mode {
