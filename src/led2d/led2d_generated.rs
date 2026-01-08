@@ -25,7 +25,7 @@
 //!
 //! Define a 12×4 LED panel and display text:
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! # #![no_std]
 //! # #![no_main]
 //! # use panic_probe as _;
@@ -74,14 +74,18 @@
 //! - `async fn write_frame(frame) -> Result<()>` — Display a graphics frame
 //! - `fn new_frame() -> Frame` — Create a blank frame for drawing
 
+#[cfg(not(feature = "host"))]
 use crate::led_strip::{Current, Gamma};
+#[cfg(not(feature = "host"))]
 use crate::led2d;
+#[cfg(not(feature = "host"))]
 use crate::led2d::layout::LedLayout;
 
 // 12×4 panel wired serpentine row-major (sample configuration)
+#[cfg(not(feature = "host"))]
 const LED_LAYOUT: LedLayout<48, 12, 4> = LedLayout::serpentine_row_major();
 
-#[cfg(not(doc))]
+#[cfg(all(not(doc), not(feature = "host")))]
 led2d! {
     Led2dGenerated,
     pio: PIO0,

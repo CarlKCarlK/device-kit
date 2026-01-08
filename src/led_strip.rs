@@ -758,16 +758,20 @@ macro_rules! __led_strips_impl {
                     });
 
                     // Create individual state machine wrappers
+                    #[allow(unused_variables)]
                     let sm0_wrapped = $crate::led_strip::PioStateMachine::new(pio_bus, sm0);
+                    #[allow(unused_variables)]
                     let sm1_wrapped = $crate::led_strip::PioStateMachine::new(pio_bus, sm1);
+                    #[allow(unused_variables)]
                     let sm2_wrapped = $crate::led_strip::PioStateMachine::new(pio_bus, sm2);
+                    #[allow(unused_variables)]
                     let sm3_wrapped = $crate::led_strip::PioStateMachine::new(pio_bus, sm3);
 
                     // Construct each strip with the appropriate SM
                     Ok((
                         $(
                             [<$label:camel LedStrip>]::new(
-                                led_strips!(@__select_sm $sm_index, sm0_wrapped, sm1_wrapped, sm2_wrapped, sm3_wrapped),
+                                $crate::__led_strips_impl!(@__select_sm $sm_index, sm0_wrapped, sm1_wrapped, sm2_wrapped, sm3_wrapped),
                                 [<$label _pin>],
                                 [<$label _dma>],
                                 spawner

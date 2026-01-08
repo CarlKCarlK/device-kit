@@ -11,7 +11,6 @@ use device_kit::button::{Button, PressDuration, PressedTo};
 use device_kit::led_strip::Current;
 use device_kit::led_strip::Gamma;
 use device_kit::led_strip::Rgb;
-use device_kit::led_strips;
 use device_kit::led2d;
 use device_kit::led2d::layout::LedLayout;
 use embassy_executor::Spawner;

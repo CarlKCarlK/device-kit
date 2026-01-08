@@ -9,12 +9,11 @@
 
 use defmt_rtt as _;
 use device_kit::Result;
-use device_kit::led2d::layout::LedLayout;
 use device_kit::led_strip::led_strip;
 use device_kit::led_strip::{Current, colors};
+use device_kit::led2d::layout::LedLayout;
 use device_kit::led2d::led2d_from_strip;
 use embassy_executor::Spawner;
-use embassy_time::Duration;
 use panic_probe as _;
 
 const LED12X4_W: usize = 12;

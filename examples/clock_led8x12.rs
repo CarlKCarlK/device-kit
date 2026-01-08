@@ -19,7 +19,7 @@ use device_kit::{
     clock::{Clock, ClockStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s},
     flash_array::{FlashArray, FlashArrayStatic},
     led_strip::{Current, Gamma, colors},
-    led_strips, led2d,
+    led2d,
     led2d::layout::LedLayout,
     time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic},
     wifi_auto::{

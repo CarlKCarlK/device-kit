@@ -1167,6 +1167,7 @@ macro_rules! led2d {
             }
 
             // Add simplified constructor that handles PIO splitting and both statics
+            #[allow(non_snake_case, dead_code)]
             impl [<$name:camel>] {
                 /// Create a new LED matrix display with automatic PIO setup.
                 ///
@@ -1347,7 +1348,7 @@ macro_rules! led2d_from_strip {
 
             // Generate the task wrapper
             $crate::led2d::led2d_device_task!(
-                [<$name _device_loop>],
+                [<$name:snake _device_loop>],
                 &'static $strip_type,
                 $n_const,
                 $max_frames_const
@@ -1363,8 +1364,10 @@ macro_rules! led2d_from_strip {
             /// Frame type for this LED matrix display.
             ///
             /// This is a convenience type alias for `Frame<W, H>` specific to this device.
+            #[allow(dead_code)]
             $vis type [<$name:camel Frame>] = $crate::led2d::Frame<$cols_const, $rows_const>;
 
+            #[allow(non_snake_case, dead_code)]
             impl [<$name:camel>] {
                 /// Number of columns in the display.
                 pub const W: usize = $cols_const;
@@ -1410,7 +1413,7 @@ macro_rules! led2d_from_strip {
                     static STATIC: [<$name:camel Static>] = [<$name:camel>]::new_static();
 
                     defmt::info!("Led2d::new: spawning device task");
-                    let token = [<$name _device_loop>](
+                    let token = [<$name:snake _device_loop>](
                         &STATIC.led2d_static.command_signal,
                         &STATIC.led2d_static.completion_signal,
                         led_strip,
@@ -1437,7 +1440,7 @@ macro_rules! led2d_from_strip {
                 }
 
                 /// Loop through a sequence of animation frames. Pass arrays by value or Vecs/iters.
-                $vis async fn animate(&self, frames: impl IntoIterator<Item = ($crate::led2d::Frame<$cols_const, $rows_const>, Duration)>) -> $crate::Result<()> {
+                $vis async fn animate(&self, frames: impl IntoIterator<Item = ($crate::led2d::Frame<$cols_const, $rows_const>, ::embassy_time::Duration)>) -> $crate::Result<()> {
                     self.led2d.animate(frames).await
                 }
 

@@ -7,7 +7,6 @@ use core::convert::Infallible;
 use defmt::info;
 use defmt_rtt as _;
 use device_kit::button::{Button, PressedTo};
-use device_kit::led_strips;
 use device_kit::led2d::layout::LedLayout;
 use device_kit::led_strip::Current;
 use device_kit::led_strip::Gamma;
