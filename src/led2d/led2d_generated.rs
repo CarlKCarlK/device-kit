@@ -1,67 +1,104 @@
-//! Example of what the [`led2d!`](crate::led2d!) macro generates.
+//! This module provides the device abstraction for 2D LED panels made of NeoPixel-style (WS2812) strips.
+//! It supports text rendering, graphics operations, and animation on rectangular LED displays.
 //!
-//! This module is documentation-only and demonstrates the exact struct shape, associated constants, and constructor signature
-//! produced by the [`led2d!`](crate::led2d!) macro. See actual examples in `examples/` directory for compilable code.
+//! Up to four 2D panels can share a single [PIO](crate#glossary) resource.
+//! This allows a total of 8 independent 2D panels on the Pico 1 and 12 on the Pico 2.
 //!
-//! # Configuration (Sample Values)
+//! See [`led2d!`] macro documentation for 2D panel configuration.
 //!
-//! This example uses:
-//! - **`pio: PIO0`** — PIO block (sample; switch to PIO1 if needed)
-//! - **`pin: PIN_3`** — GPIO pin (sample; use any available pin)
-//! - **`dma: DMA_CH0`** — DMA channel (sample; pick any available channel)
-//! - **`width: 12, height: 4`** — 12×4 panel (48 LEDs; sample; adjust for your display size)
-//! - **`led_layout: serpentine_row_major`** — Physical LED arrangement (sample)
-//! - **`max_current: Unlimited` (default)** — Power budget
-//! - **`gamma: Gamma2_2` (default)** — Color correction
-//! - **`max_frames: 16` (default)** — Animation buffer
-//! - **`font: Font3x4Trim`** — Text rendering font (sample)
+//! # Configuration
 //!
-//! See [`led2d!`](crate::led2d!) macro documentation for all available options.
+//! - **`width` and `height`** — Physical panel dimensions (e.g., 12×4 = 48 pixels)
+//! - **`led_layout`** — Physical LED wiring order (e.g., serpentine_row_major)
+//! - **`pio` and `dma`** — Which PIO and DMA channel to use
+//! - **`font`** — Text rendering font (e.g., Font3x4Trim)
+//! - **`max_current`** — Power budget (optional; default unlimited)
+//! - **`gamma`** — Color correction curve (optional; default Gamma2_2)
+//! - **`max_frames`** — Animation buffer size (optional; default 16)
 //!
-//! # Example Macro Invocation
+//! ## Related
 //!
-//! The generated struct is created with a macro invocation like this:
+//! - [`led2d!`] — Macro to define a 2D LED panel display.
+//! - [`crate::led_strip::led_strip_generated`] — Example showing the struct shape generated for LED strips.
 //!
-//! ```ignore
+//! ## led2d! Example
+//!
+//! Define a 12×4 LED panel and display text:
+//!
+//! ```rust,no_run
+//! # #![no_std]
+//! # #![no_main]
+//! # use panic_probe as _;
+//! # use core::convert::Infallible;
+//! # use core::default::Default;
+//! # use core::future;
+//! # use core::result::Result::Ok;
+//! # use embassy_executor::Spawner;
+//! use device_kit::{Result, led_strip::colors, led2d::{Frame, layout::LedLayout, led2d}};
+//!
+//! const LED_LAYOUT: LedLayout<48, 12, 4> = LedLayout::serpentine_row_major();
+//!
 //! led2d! {
-//!     Led2DGenerated,               // ← Struct name
-//!     pio: PIO0,                    // ← Sample PIO
-//!     pin: PIN_3,                   // ← Sample pin
-//!     dma: DMA_CH0,                 // ← Sample DMA channel
-//!     width: 12,                    // ← Sample width
-//!     height: 4,                    // ← Sample height
-//!     led_layout: serpentine_row_major,  // ← Sample layout
-//!     max_current: Current::Unlimited,   // ← Default
-//!     gamma: Gamma::Gamma2_2,       // ← Default
-//!     max_frames: 16,               // ← Default
-//!     font: Font3x4Trim,            // ← Sample font
+//!     Led2DGenerated,
+//!     pio: PIO0,
+//!     pin: PIN_3,
+//!     dma: DMA_CH0,
+//!     width: 12,
+//!     height: 4,
+//!     led_layout: LED_LAYOUT,
+//!     font: Font3x4Trim,
+//! }
+//!
+//! async fn example(spawner: Spawner) -> Result<Infallible> {
+//!     let p = embassy_rp::init(Default::default());
+//!
+//!     let led2d = Led2DGenerated::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;
+//!
+//!     led2d.write_text("HI", &[colors::RED]).await?;
+//!
+//!     Ok(future::pending().await) // run forever
 //! }
 //! ```
 //!
-//! # Example Usage (After Generation)
+//! See the [`led2d!`] macro documentation for all configuration options (PIO, DMA channel,
+//! current limiting, gamma correction, frame animation size, fonts).
 //!
-//! After the macro generates your struct, these methods are available:
+//! # Generated Members
 //!
-//! ```ignore
-//! let led2d = Led2DGenerated::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;
-//!
-//! // Write text
-//! use device_kit::led_strip::colors;
-//! led2d.write_text("HI", &[colors::RED]).await?;
-//!
-//! // Use the graphics API with embedded_graphics
-//! let mut frame = Led2DGenerated::new_frame();
-//! // ... draw with embedded_graphics ...
-//! led2d.write_frame(frame).await?;
-//! ```
-//!
-//! # Generated Public API
-//!
-//! - `const WIDTH: u32 = 12` — Panel width (changes based on `width` parameter)
-//! - `const HEIGHT: u32 = 4` — Panel height (changes based on `height` parameter)
-//! - `const LEN: usize = 48` — Total number of LEDs (WIDTH × HEIGHT)
-//! - `const MAX_BRIGHTNESS: u8` — Maximum brightness (limited by power budget)
+//! - `const WIDTH: u32` — Panel width (changes based on `width` parameter)
+//! - `const HEIGHT: u32` — Panel height (changes based on `height` parameter)
+//! - `const LEN: usize` — Total number of LEDs (WIDTH × HEIGHT)
+//! - `const MAX_BRIGHTNESS: u8` — Maximum brightness (limited by power budget, see [`Current`])
 //! - `async fn new(pin, pio, dma, spawner) -> Result<Self>` — Constructor that sets up the 2D display
 //! - `async fn write_text(text, colors) -> Result<()>` — Render text
 //! - `async fn write_frame(frame) -> Result<()>` — Display a graphics frame
 //! - `fn new_frame() -> Frame` — Create a blank frame for drawing
+
+use crate::led_strip::{Current, Gamma};
+use crate::led2d;
+use crate::led2d::layout::LedLayout;
+
+// 12×4 panel wired serpentine row-major (sample configuration)
+const LED_LAYOUT: LedLayout<48, 12, 4> = LedLayout::serpentine_row_major();
+
+#[cfg(not(doc))]
+led2d! {
+    Led2dGenerated,
+    pio: PIO0,
+    pin: PIN_3,
+    dma: DMA_CH0,
+    width: 12,
+    height: 4,
+    led_layout: LED_LAYOUT,
+    max_current: Current::Unlimited,
+    gamma: Gamma::Gamma2_2,
+    max_frames: 16,
+    font: Font3x4Trim,
+}
+
+#[cfg(doc)]
+/// A 2D LED panel display with a 12×4 grid (48 pixels).
+///
+/// This struct is generated by the [`led2d!`] macro.
+/// See the [module-level documentation](self) for usage examples.
+pub struct Led2dGenerated;
