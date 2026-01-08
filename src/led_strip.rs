@@ -340,9 +340,8 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
 // cmk0000 need to described this better. It is kind of a prototype.
 /// Internal deref target for generated LED strip types.
 ///
-/// All LED strip methods are available through macro-generated types like [`LedStripGenerated`].
+/// All LED strip methods are available through macro-generated types.
 /// See [`led_strip!`] macro documentation for usage.
-#[doc(hidden)]
 pub struct LedStrip<const N: usize, const MAX_FRAMES: usize> {
     command_signal: &'static LedStripCommandSignal<N, MAX_FRAMES>,
     completion_signal: &'static LedStripCompletionSignal,
