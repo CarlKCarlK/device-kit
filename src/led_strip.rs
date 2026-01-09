@@ -497,33 +497,73 @@ fn apply_correction<const N: usize>(frame: &mut Frame<N>, combo_table: &[u8; 256
     }
 }
 
-/// Macro to generate multiple NeoPixel-style (WS2812) LED strips sharing one PIO.
+/// Macro to generate multiple NeoPixel-style (WS2812) LED strips sharing one PIO resource.
 ///
-/// For **multiple strips on the same PIO block**, use this macro instead of [`led_strip!`].
-/// A single PIO block can drive up to 4 state machines (SM0–SM3), one per strip.
+/// Use this macro to drive multiple independent LED strips from a single shared [PIO](crate#glossary) resource.
+/// This saves hardware resources compared to using separate [`led_strip!`] invocations, each of which consumes a dedicated PIO resource.
 ///
-/// **Syntax:**
+/// **Example:**
 ///
-/// ```ignore
+/// ```no_run
+/// # #![no_std]
+/// # #![no_main]
+/// # use panic_probe as _;
+/// # use core::convert::Infallible;
+/// # use core::future;
+/// # use defmt_rtt as _;
+/// # use embassy_executor::Spawner;
+/// use device_kit::Result;
+/// use device_kit::led_strip::{Current, Frame, Gamma, colors, led_strips};
+/// use embassy_time::Duration;
+///
 /// led_strips! {
-///     pio: PIO0,                          // Optional; default is PIO0
-///     GroupName {
-///         strip1: {
-///             pin: PIN_0,
-///             len: 8,
-///             // Optional: dma, max_current, gamma, max_frames, led2d
+///     pio: PIO1,                 // Optional; default is PIO0
+///     LedStrips {
+///         gpio3: {               // Label used for names of generated types
+///             pin: PIN_3,
+///             len: 48,
+///             // Optional fields: max_current, gamma, max_frames, dma
 ///         },
-///         strip2: {
-///             pin: PIN_1,
-///             len: 16,
-///             max_current: Current::Milliamps(500),  // Example override
-///         },
+///         gpio4: {               // Label used for names of generated types
+///             pin: PIN_4,
+///             len: 96,
+///             max_current: Current::Milliamps(1000), // optional; default 250 mA
+///             gamma: Gamma::Linear,                  // optional; default Gamma2_2
+///             max_frames: 3,                         // optional; default 16
+///             dma: DMA_CH1,                          // optional; default incremented
+///         }
 ///     }
 /// }
-/// ```
 ///
-/// The macro generates a struct `GroupName` with a `new()` method that takes all required
-/// peripherals and returns a tuple of the configured strips.
+/// # #[embassy_executor::main]
+/// # async fn main(spawner: Spawner) -> ! {
+/// #     let _ = example(spawner).await;
+/// #     core::panic!("done");
+/// # }
+/// async fn example(spawner: Spawner) -> Result<Infallible> {
+///     let p = embassy_rp::init(Default::default());
+///     let (gpio3_led_strip, gpio4_led_strip) =
+///         // inputs: shared PIO, then pin and DMA channel for each strip, then spawner
+///         LedStrips::new(p.PIO1, p.PIN_3, p.DMA_CH0, p.PIN_4, p.DMA_CH1, spawner)?;
+///
+///     info!("Setting every other LED to blue on GPIO3");
+///     let mut frame = Frame::new();
+///     for pixel_index in (0..frame.len()).step_by(2) {
+///         frame[pixel_index] = colors::BLUE;
+///     }
+///     gpio3_led_strip.write_frame(frame).await?;
+///
+///    info!("Animating GPIO4");
+///     let frame_duration = Duration::from_secs(1);
+///     gpio4_led_strip.animate([
+///         (Frame::filled(colors::GREEN), frame_duration),
+///         (Frame::filled(colors::YELLOW), frame_duration),
+///         (Frame::filled(colors::RED), frame_duration),
+///     ]).await?;
+///
+///     Ok(future::pending::<Infallible>().await) // run forever
+/// }
+/// ```
 ///
 /// **Required fields per strip:**
 ///
@@ -570,11 +610,13 @@ fn apply_correction<const N: usize>(frame: &mut Frame<N>, combo_table: &[u8; 256
 ///
 /// Use `led_strips!` when:
 /// - You have **multiple independent LED strips** connected to separate GPIO pins
-/// - They all **share the same PIO block** (to save PIO resources)
+/// - They should **share the same PIO resource** (to save PIO resources)
 /// - Each strip can have independent brightness, animation, and current limits
 ///
-/// If you only have **one strip**, use [`led_strip!`] instead for simpler syntax.
-/// If you have **multiple strips on different PIO blocks**, use separate [`led_strip!`] invocations.
+/// Each `led_strips!` invocation can drive up to 4 independent strips on one [PIO](crate#glossary) resource.
+/// On a Pico 2 with 3 PIOs available, you can use **3 instances of `led_strips!`** to drive **up to 12 independent LED strips**.
+///
+/// If you only have **one strip** (or two), use [`led_strip!`] instead for simpler syntax.
 #[macro_export]
 macro_rules! led_strips {
     ($($tt:tt)*) => { $crate::__led_strips_impl! { $($tt)* } };

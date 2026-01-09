@@ -80,6 +80,10 @@ When capturing variables in closures or creating references, append `_ref`:
 - `led_12x4` → `led_12x4_ref`
 - `wifi_auto` → `wifi_auto_ref`
 
+## Terminology
+
+- **PIO resource** (not "PIO block") — Use "PIO resource" or just "PIO" when referring to the PIO peripheral.
+
 ## Comment Conventions
 
 Use `cmk00`/`cmk0` prefix for TODO items (author's initials + priority):
