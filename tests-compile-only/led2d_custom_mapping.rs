@@ -24,7 +24,7 @@ const LED2X3_ROW_MAJOR: LedLayout<6, 3, 2> =
     LedLayout::new([(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)]);
 
 led2d! {
-    pub led2x3,
+    pub Led2x3,
     pio: PIO0,
     pin: PIN_3,
     dma: DMA_CH0,

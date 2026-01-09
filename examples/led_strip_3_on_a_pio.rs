@@ -28,7 +28,7 @@ const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major
 const LED_LAYOUT_8X12: LedLayout<96, 8, 12> = LED_LAYOUT_12X4.concat_v(LED_LAYOUT_12X4).rotate_cw();
 
 led2d_from_strip! {
-    pub led12x4_gpio3,
+    pub Led12x4Gpio3,
     strip_type: Gpio3LedStrip,
     width: 12,
     height: 4,
@@ -38,7 +38,7 @@ led2d_from_strip! {
 }
 
 led2d_from_strip! {
-    pub led8x12_gpio4,
+    pub Led8x12Gpio4,
     strip_type: Gpio4LedStrip,
     width: 8,
     height: 12,

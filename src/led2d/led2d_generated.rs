@@ -64,7 +64,7 @@ led2d! {
     "use device_kit::{Result, led2d, led2d::layout::LedLayout, led_strip::colors};\n\n",
     "const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();\n\n",
     "led2d! {\n",
-    "    pub led12x4,\n",
+    "    pub Led12x4,\n",
     "    pin: PIN_3,                          // GPIO pin for LED data signal\n",
     "    width: 12,                           // Panel dimensions\n",
     "    height: 4,\n",

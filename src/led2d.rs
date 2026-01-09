@@ -27,7 +27,7 @@
 //! use embassy_time::Duration;
 //!
 //! led2d! {
-//!     pub led12x4,
+//!     pub Led12x4,
 //!     pio: PIO0,
 //!     pin: PIN_3,
 //!     dma: DMA_CH1,
@@ -56,7 +56,7 @@
 //!
 //! ## Macro Parameters
 //!
-//! - Visibility and base name for generated types (e.g., `pub led12x4`)
+//! - Visibility and base name for generated types (e.g., `pub Led12x4`)
 //! - `strip_type` - Name of the strip type created by `led_strips!` (e.g., `Led12x4Strip`)
 //! - `width` - Number of columns in the display
 //! - `height` - Number of rows in the display
@@ -103,7 +103,7 @@
 //!
 //! // Generate a complete LED matrix device abstraction
 //! led2d_from_strip! {
-//!     pub led12x4,
+//!     pub Led12x4,
 //!     strip_type: StripLedStrip,
 //!     width: 12,
 //!     height: 4,
@@ -988,7 +988,7 @@ pub use led2d_device;
 ///
 /// # Parameters
 ///
-/// - Visibility and base name for generated types (e.g., `pub led12x4`)
+/// - Visibility and base name for generated types (e.g., `pub Led12x4`)
 /// - `pio` - PIO peripheral to use (e.g., `PIO0`, `PIO1`) (optional; default: `PIO0`)
 /// - `pin` - GPIO pin for LED data signal (e.g., `PIN_3`)
 /// - `dma` - DMA channel for LED data transfer (e.g., `DMA_CH0`) (optional; default: `DMA_CH0`)
@@ -1023,7 +1023,7 @@ pub use led2d_device;
 ///
 /// // Generate a 12×4 LED matrix display
 /// led2d! {
-///     pub led12x4,
+///     pub Led12x4,
 ///     pio: PIO0,
 ///     pin: PIN_3,
 ///     dma: DMA_CH1,
@@ -1506,7 +1506,7 @@ macro_rules! __led2d_impl {
             // Generate the LED strip infrastructure with a CamelCase strip type
             $crate::led_strips! {
                 pio: $pio,
-                [<$name:camel Strips>] {
+                [<$name Strips>] {
                     [<$name:snake>]: {
                         dma: $dma,
                         pin: $pin,
@@ -1520,7 +1520,7 @@ macro_rules! __led2d_impl {
             // Generate the Led2d device from the strip
             $crate::led2d::led2d_from_strip! {
                 $vis $name,
-                strip_type: [<$name:camel LedStrip>],
+                strip_type: [<$name LedStrip>],
                 width: $width,
                 height: $height,
                 led_layout: serpentine_column_major,
@@ -1529,7 +1529,7 @@ macro_rules! __led2d_impl {
             }
 
             // Add simplified constructor that handles PIO splitting and both statics
-            impl [<$name:camel>] {
+            impl [<$name>] {
                 /// Create a new LED matrix display with automatic PIO setup.
                 ///
                 /// This is a convenience constructor that handles PIO splitting and static
@@ -1552,7 +1552,7 @@ macro_rules! __led2d_impl {
                     let (sm0, _sm1, _sm2, _sm3) = [<$pio:lower _split>](pio);
 
                     // Create strip (uses interior static)
-                    let strip = [<$name:camel LedStrip>]::new(
+                    let strip = [<$name LedStrip>]::new(
                         sm0,
                         pin,
                         dma,
@@ -1560,7 +1560,7 @@ macro_rules! __led2d_impl {
                     )?;
 
                     // Create Led2d from strip (uses interior static)
-                    [<$name:camel>]::from_strip(strip, spawner)
+                    [<$name>]::from_strip(strip, spawner)
                 }
             }
         }
@@ -1585,7 +1585,7 @@ macro_rules! __led2d_impl {
             // Generate the LED strip infrastructure with a CamelCase strip type
             $crate::led_strips! {
                 pio: $pio,
-                [<$name:camel Strips>] {
+                [<$name Strips>] {
                     [<$name:snake>]: {
                         dma: $dma,
                         pin: $pin,
@@ -1599,7 +1599,7 @@ macro_rules! __led2d_impl {
             // Generate the Led2d device from the strip with custom mapping
             $crate::led2d::led2d_from_strip! {
                 $vis $name,
-                strip_type: [<$name:camel LedStrip>],
+                strip_type: [<$name LedStrip>],
                 width: $width,
                 height: $height,
                 led_layout: $led_layout,
@@ -1609,7 +1609,7 @@ macro_rules! __led2d_impl {
 
             // Add simplified constructor that handles PIO splitting and both statics
             #[allow(non_snake_case, dead_code)]
-            impl [<$name:camel>] {
+            impl [<$name>] {
                 /// Create a new LED matrix display with automatic PIO setup.
                 ///
                 /// This is a convenience constructor that handles PIO splitting and static
@@ -1632,7 +1632,7 @@ macro_rules! __led2d_impl {
                     let (sm0, _sm1, _sm2, _sm3) = [<$pio:lower _split>](pio);
 
                     // Create strip (uses interior static)
-                    let led_strip = [<$name:camel LedStrip>]::new(
+                    let led_strip = [<$name LedStrip>]::new(
                         sm0,
                         pin,
                         dma,
@@ -1640,7 +1640,7 @@ macro_rules! __led2d_impl {
                     )?;
 
                     // Create Led2d from strip (uses interior static)
-                    [<$name:camel>]::from_strip(led_strip, spawner)
+                    [<$name>]::from_strip(led_strip, spawner)
                 }
             }
         }
@@ -1655,7 +1655,7 @@ macro_rules! __led2d_impl {
 ///
 /// # Parameters
 ///
-/// - Visibility and base name for generated types (e.g., `pub led12x4`)
+/// - Visibility and base name for generated types (e.g., `pub Led12x4`)
 /// - `strip_type` - Name of the strip type created by `led_strips!`
 /// - `width` - Number of columns in the display
 /// - `height` - Number of rows in the display
@@ -1694,7 +1694,7 @@ macro_rules! __led2d_impl {
 ///
 /// // Wrap the strip as a Led2d surface
 /// led2d_from_strip! {
-///     pub led12x4,
+///     pub Led12x4,
 ///     strip_type: StripLedStrip,
 ///     width: 12,
 ///     height: 4,
@@ -1783,7 +1783,7 @@ macro_rules! led2d_from_strip {
     ) => {
         $crate::led2d::paste::paste! {
             /// Static resources for the LED matrix device.
-            $vis struct [<$name:camel Static>] {
+            $vis struct [<$name Static>] {
                 led2d_static: $crate::led2d::Led2dStatic<$n_const, $max_frames_const>,
             }
 
@@ -1796,7 +1796,7 @@ macro_rules! led2d_from_strip {
             );
 
             /// LED matrix device handle generated by [`led2d_from_strip!`](crate::led2d::led2d_from_strip).
-            $vis struct [<$name:camel>] {
+            $vis struct [<$name>] {
                 led2d: $crate::led2d::Led2d<$n_const, $max_frames_const>,
                 font: embedded_graphics::mono_font::MonoFont<'static>,
                 font_variant: $crate::led2d::Led2dFont,
@@ -1806,10 +1806,10 @@ macro_rules! led2d_from_strip {
             ///
             /// This is a convenience type alias for `Frame<W, H>` specific to this device.
             #[allow(dead_code)]
-            $vis type [<$name:camel Frame>] = $crate::led2d::Frame<$cols_const, $rows_const>;
+            $vis type [<$name Frame>] = $crate::led2d::Frame<$cols_const, $rows_const>;
 
             #[allow(non_snake_case, dead_code)]
-            impl [<$name:camel>] {
+            impl [<$name>] {
                 /// Number of columns in the display.
                 pub const WIDTH: usize = $cols_const;
                 /// Number of rows in the display.
@@ -1821,8 +1821,8 @@ macro_rules! led2d_from_strip {
 
                 /// Create static resources.
                 #[must_use]
-                $vis const fn new_static() -> [<$name:camel Static>] {
-                    [<$name:camel Static>] {
+                $vis const fn new_static() -> [<$name Static>] {
+                    [<$name Static>] {
                         led2d_static: $crate::led2d::Led2dStatic::new_static(),
                     }
                 }
@@ -1847,7 +1847,7 @@ macro_rules! led2d_from_strip {
                     led_strip: &'static $strip_type,
                     spawner: ::embassy_executor::Spawner,
                 ) -> $crate::Result<Self> {
-                    static STATIC: [<$name:camel Static>] = [<$name:camel>]::new_static();
+                    static STATIC: [<$name Static>] = [<$name>]::new_static();
 
                     defmt::info!("Led2d::new: spawning device task");
                     let token = [<$name:snake _device_loop>](

@@ -40,7 +40,7 @@ led_strip! {
 }
 
 led2d_from_strip! {
-    pub gpio3_pio0_led2d,
+    pub Gpio3Pio0Led2d,
     strip_type: Gpio3Pio0LedStrip,
     width: 12,
     height: 4,
@@ -50,7 +50,7 @@ led2d_from_strip! {
 }
 
 led2d_from_strip! {
-    pub gpio3_pio1_led2d,
+    pub Gpio3Pio1Led2d,
     strip_type: Gpio3Pio1LedStrip,
     width: 12,
     height: 4,

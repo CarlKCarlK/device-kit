@@ -45,7 +45,7 @@ const LED_LAYOUT_8X8: LedLayout<64, 8, 8> = LedLayout::serpentine_column_major()
 
 // First device: 4x12 display
 led2d_from_strip! {
-    pub led4x12,
+    pub Led4x12,
     strip_type: Gpio3LedStrip,
     width: 12,
     height: 4,
@@ -56,7 +56,7 @@ led2d_from_strip! {
 
 // Second device: 8x8 display
 led2d_from_strip! {
-    pub led8x8,
+    pub Led8x8,
     strip_type: Gpio4LedStrip,
     width: 8,
     height: 8,

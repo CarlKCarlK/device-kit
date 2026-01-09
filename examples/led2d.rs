@@ -25,7 +25,7 @@ use smart_leds::colors;
 const LED_LAYOUT_4X12: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 
 led2d! {
-    pub led4x12,
+    pub Led4x12,
     pio: PIO1,
     pin: PIN_3,
     dma: DMA_CH0,
