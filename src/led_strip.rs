@@ -502,6 +502,8 @@ fn apply_correction<const N: usize>(frame: &mut Frame<N>, combo_table: &[u8; 256
 /// Use this macro to drive multiple independent LED strips from a single shared [PIO](crate#glossary) resource.
 /// This saves hardware resources compared to using separate [`led_strip!`] invocations, each of which consumes a dedicated PIO resource.
 ///
+/// See [`LedStripGenerated`](crate::led_strip::led_strip_generated::LedStripGenerated) for details on using the generated types.
+///
 /// **Example:**
 ///
 /// ```no_run
