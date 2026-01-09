@@ -6,12 +6,12 @@ use core::{convert::Infallible, future};
 
 use defmt::info;
 use defmt_rtt as _;
-use device_kit::Result;
-use device_kit::led_strip::Current;
-use device_kit::led_strip::Gamma;
-use device_kit::led_strip::colors;
-use device_kit::led_strip::led_strips;
-use device_kit::led2d::layout::LedLayout;
+use device_kit::{
+    Result,
+    led_strip::{Current, Gamma, colors},
+    led2d,
+    led2d::layout::LedLayout,
+};
 use embassy_executor::Spawner;
 use embassy_rp::init;
 use embassy_time::Duration;
@@ -19,26 +19,20 @@ use panic_probe as _;
 
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 const LED_LAYOUT_12X8: LedLayout<96, 12, 8> = LED_LAYOUT_12X4.concat_v(LED_LAYOUT_12X4);
-const LED_LAYOUT_12X8_ROTATED: LedLayout<96, 12, 8> = LED_LAYOUT_12X8.rotate_180();
+const LED_LAYOUT_12X8_ROTATED: LedLayout<96, 8, 12> = LED_LAYOUT_12X8.rotate_cw();
 
-led_strips! {
-    pio: PIO0,
-    LedStripsPio0 {
-        gpio4: {
-            dma: DMA_CH1,
-            pin: PIN_4,
-            len: 96,
-            max_current: Current::Milliamps(1000),
-            gamma: Gamma::Linear,
-            led2d: {
-                width: 12,
-                height: 8,
-                led_layout: LED_LAYOUT_12X8_ROTATED,
-                max_frames: 8,
-                font: Font4x6Trim,
-            }
-        }
-    }
+led2d! {
+    pub Gpio4Led2d,
+    pin: PIN_4,
+    width: 8,
+    height: 12,
+    led_layout: LED_LAYOUT_12X8_ROTATED,
+    font: Font4x6Trim,
+    pio: PIO1,
+    dma: DMA_CH1,
+    max_current: Current::Milliamps(300),
+    gamma: Gamma::Linear,
+    max_frames: 3,
 }
 
 #[embassy_executor::main]
@@ -51,10 +45,9 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     info!("LED 2D Example: Animated text on a rotated 12x8 panel");
     let p = init(Default::default());
 
-    let (gpio4_led_strip,) = LedStripsPio0::new(p.PIO0, p.PIN_4, p.DMA_CH1, spawner)?;
-    let gpio4_led_strip = Gpio4LedStripLed2d::from_strip(gpio4_led_strip, spawner)?;
+    let gpio4_led_strip = Gpio4Led2d::new(p.PIN_4, p.PIO1, p.DMA_CH1, spawner)?;
 
-    let mut frame_a = device_kit::led2d::Frame::<{ Gpio4LedStripLed2d::WIDTH }, { Gpio4LedStripLed2d::HEIGHT }>::new();
+    let mut frame_a = Gpio4Led2dFrame::new();
     let colors_a = [
         colors::RED,
         colors::ORANGE,
@@ -65,7 +58,8 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     ];
     gpio4_led_strip.write_text_to_frame("Go\nGo", &colors_a, &mut frame_a)?;
 
-    let mut frame_b = device_kit::led2d::Frame::<{ Gpio4LedStripLed2d::WIDTH }, { Gpio4LedStripLed2d::HEIGHT }>::new();
+    let mut frame_b =
+        device_kit::led2d::Frame::<{ Gpio4Led2d::WIDTH }, { Gpio4Led2d::HEIGHT }>::new();
     let colors_b = [
         colors::MAGENTA,
         colors::PURPLE,
@@ -76,7 +70,8 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     ];
     gpio4_led_strip.write_text_to_frame("Go\nGo", &colors_b, &mut frame_b)?;
 
-    let mut frame_c = device_kit::led2d::Frame::<{ Gpio4LedStripLed2d::WIDTH }, { Gpio4LedStripLed2d::HEIGHT }>::new();
+    let mut frame_c =
+        device_kit::led2d::Frame::<{ Gpio4Led2d::WIDTH }, { Gpio4Led2d::HEIGHT }>::new();
     let colors_c = [
         colors::WHITE,
         colors::PINK,
