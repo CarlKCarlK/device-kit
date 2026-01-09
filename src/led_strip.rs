@@ -512,13 +512,14 @@ fn apply_correction<const N: usize>(frame: &mut Frame<N>, combo_table: &[u8; 256
 /// # use core::future;
 /// # use defmt_rtt as _;
 /// # use embassy_executor::Spawner;
+/// # use defmt::info;
 /// use device_kit::Result;
 /// use device_kit::led_strip::{Current, Frame, Gamma, colors, led_strips};
 /// use embassy_time::Duration;
 ///
 /// led_strips! {
 ///     pio: PIO1,                 // Optional; default is PIO0
-///     LedStrips {
+///     LedStrips1 {               // Label used for `LedStrips1::new` below.
 ///         gpio3: {               // Label used for names of generated types
 ///             pin: PIN_3,
 ///             len: 48,
@@ -544,7 +545,7 @@ fn apply_correction<const N: usize>(frame: &mut Frame<N>, combo_table: &[u8; 256
 ///     let p = embassy_rp::init(Default::default());
 ///     let (gpio3_led_strip, gpio4_led_strip) =
 ///         // inputs: shared PIO, then pin and DMA channel for each strip, then spawner
-///         LedStrips::new(p.PIO1, p.PIN_3, p.DMA_CH0, p.PIN_4, p.DMA_CH1, spawner)?;
+///         LedStrips1::new(p.PIO1, p.PIN_3, p.DMA_CH0, p.PIN_4, p.DMA_CH1, spawner)?;
 ///
 ///     info!("Setting every other LED to blue on GPIO3");
 ///     let mut frame = Frame::new();
