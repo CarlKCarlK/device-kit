@@ -14,6 +14,8 @@ pub use smart_leds::colors;
 // ============================================================================
 
 /// Gamma correction mode for LED strips.
+///
+/// See [`LedStripGenerated`](crate::led_strip::led_strip_generated::LedStripGenerated) for usage examples.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Gamma {
     /// Linear gamma (no correction). Gamma = 1.0
@@ -116,34 +118,26 @@ pub mod led_strip_generated;
 /// RGB color representation re-exported from the `smart_leds` crate.
 pub type Rgb = RGB8;
 
-/// Frame of `Rgb` values for a 1D LED strip.
+/// Frame of [`Rgb`] values for an LED strip.
 ///
-/// Use [`Frame::new`] for a blank frame or [`Frame::filled`] for a solid color. Frames deref to
-/// `[Rgb; N]`, so you can mutate pixels directly before passing them to the generated strip's `write_frame` method.
-/// See [`led_strip_generated`] for a usage example.
+/// See [`LedStripGenerated`](crate::led_strip::led_strip_generated::LedStripGenerated) for usage examples.
 ///
-/// ```no_run
-/// # #![no_std]
-/// # #![no_main]
-/// # use panic_probe as _;
-/// use device_kit::led_strip::{Frame, colors};
-/// # fn example() {
-/// let mut frame = Frame::<8>::new();
-/// frame[0] = colors::RED;
-/// frame[7] = colors::GREEN;
-/// # }
-/// ```
+/// Frames deref to `[Rgb; N]`, so you can mutate pixels directly before passing them to the generated strip's `write_frame` method.
 #[derive(Clone, Copy, Debug)]
 pub struct Frame<const N: usize>(pub [Rgb; N]);
 
 impl<const N: usize> Frame<N> {
     /// Create a new blank (all black) frame.
+    ///
+    /// See [`LedStripGenerated`](crate::led_strip::led_strip_generated::LedStripGenerated) for usage examples.
     #[must_use]
     pub const fn new() -> Self {
         Self([Rgb::new(0, 0, 0); N])
     }
 
     /// Create a frame filled with a single color.
+    ///
+    /// See [`LedStripGenerated`](crate::led_strip::led_strip_generated::LedStripGenerated) for usage examples.
     #[must_use]
     pub const fn filled(color: Rgb) -> Self {
         Self([color; N])
@@ -1344,61 +1338,9 @@ macro_rules! __led_strips_impl {
     };
 }
 
-// cmk00000 need to clean this up
 /// Macro to generate a device abstraction for a NeoPixel-style (WS2812) LED strip.
 ///
-/// Generates a new struct type with the name you provide. All LED control methods are available via `Deref`.
-/// The macro also generates associated constants: `LEN` (strip length) and `MAX_BRIGHTNESS` (limited by power budget).
-/// See [module documentation](self) for usage examples, and [`led_strip_generated`] for a concrete example.
-///
-/// # Example
-///
-/// Use all optional fields to animate a 96-LED strip through red, green, and blue:
-///
-/// ```rust,no_run
-/// # #![no_std]
-/// # #![no_main]
-/// # use panic_probe as _;
-/// # use core::convert::Infallible;
-/// # use core::default::Default;
-/// # use core::future;
-/// # use core::result::Result::Ok;
-/// # use embassy_executor::Spawner;
-/// use embassy_time::Duration;
-/// use device_kit::{
-///     Result,
-///     led_strip::{Current, Frame, Gamma, colors, led_strip},
-/// };
-///
-/// led_strip! {
-///     LedStrip4 {
-///         pin: PIN_4,
-///         len: 96,
-///         pio: PIO1,
-///         dma: DMA_CH3,
-///         max_current: Current::Milliamps(1000),
-///         gamma: Gamma::Linear,
-///         max_frames: 3,
-///     }
-/// }
-///
-/// async fn animate_example(spawner: Spawner) -> Result<Infallible> {
-///     let p = embassy_rp::init(Default::default());
-///     let led_strip4 = LedStrip4::new(p.PIN_4, p.PIO1, p.DMA_CH3, spawner)?;
-///
-///     let frame_duration = Duration::from_millis(300);
-///
-///     led_strip4
-///         .animate([
-///             (Frame::filled(colors::RED), frame_duration),
-///             (Frame::filled(colors::GREEN), frame_duration),
-///             (Frame::filled(colors::BLUE), frame_duration),
-///         ])
-///         .await?;
-///
-///     Ok(future::pending().await) // run forever
-/// }
-/// ```
+/// See [`LedStripGenerated`](crate::led_strip::led_strip_generated::LedStripGenerated) for usage examples.
 ///
 /// **Required fields:**
 ///
@@ -1409,9 +1351,9 @@ macro_rules! __led_strips_impl {
 ///
 /// - `pio` — PIO block (default: `PIO0`)
 /// - `dma` — DMA channel (default: `DMA_CH0`)
-/// - `max_current` — Current budget (default: `Current::Unlimited`)
-/// - `gamma` — Color curve (default: `Gamma::Gamma2_2`)
-/// - `max_frames` — Animation buffer size (default: `16`)
+/// - `max_current` — Current budget (default: `250` mA via [`Current::Milliamps`])
+/// - `gamma` — Color curve (default: [`Gamma::Gamma2_2`])
+/// - `max_frames` — Maximum animation frames (default: `16`)
 ///
 /// # Current Limiting
 ///
@@ -1419,21 +1361,27 @@ macro_rules! __led_strips_impl {
 ///
 /// Each WS2812 LED is assumed to draw 60 mA at full brightness. For example:
 /// - 16 LEDs × 60 mA = 960 mA at full brightness
-/// - With `max_current: Current::Milliamps(1000)`, all colors fit at 100% brightness
-/// - With `max_current: Current::Milliamps(250)`, the generated `MAX_BRIGHTNESS` limits colors to ~26% brightness
+/// - With `max_current: Current::Milliamps(1000)`, all LEDs fit at 100% brightness
+/// - With `max_current: Current::Milliamps(250)` (the default), the generated `MAX_BRIGHTNESS` limits LEDs to ~26% brightness
 ///
-/// Use `Current::Unlimited` (the default) to disable limiting and use full brightness.
+/// The current limit is baked into a compile-time lookup table, so it has no
+/// runtime cost.
+///
+/// **Powering LEDs from the Pico's pin 40 (VBUS):** Pin 40 is the USB 5 V rail
+/// pass-through, but the Pico itself has practical current limits — the USB connector,
+/// cable, and internal circuitry aren't designed for heavy loads. Small LED strips
+/// (a few hundred mA) can usually power from pin 40 with a decent USB supply; for
+/// larger loads (1 A+), use a separate 5 V supply and share ground with the Pico.
 ///
 /// # Color Correction (Gamma)
 ///
 /// The `gamma` field applies a color response curve to make colors look more natural:
 ///
-/// - `Gamma::Linear` — No correction (raw values)
-/// - `Gamma::Gamma2_2` — Standard sRGB curve (default, most natural-looking)
+/// - [`Gamma::Linear`] — No correction (raw values)
+/// - [`Gamma::Gamma2_2`] — Standard sRGB curve (default, most natural-looking)
 ///
-/// The current limit and gamma curve are baked into a compile-time lookup table, so they have no
+/// The gamma curve is baked into a compile-time lookup table, so it has no
 /// runtime cost.
-///
 #[macro_export]
 macro_rules! led_strip {
     ($($tt:tt)*) => { $crate::__led_strip_impl! { $($tt)* } };
@@ -1980,9 +1928,19 @@ pub use led_strip;
 pub use led_strips;
 
 /// Used by [`led_strip!`] and [`led_strips!`] to budget current for LED strips.
+///
+/// See [`LedStripGenerated`](crate::led_strip::led_strip_generated::LedStripGenerated) for usage examples.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Current {
+    /// Limit brightness to stay within a specific milliamp budget.
+    ///
+    /// The `max_brightness` is automatically calculated to ensure the worst-case current
+    /// (all LEDs at full brightness) does not exceed this limit. For example, a 16-LED strip
+    /// draws 960 mA at full brightness (60 mA per LED); with `Milliamps(250)`, brightness is
+    /// capped at ~26%.
     Milliamps(u16),
+    /// No limit — brightness stays at 100% (subject to practical hardware constraints like
+    /// USB power delivery and the Pico's circuitry).
     Unlimited,
 }
 
@@ -1996,6 +1954,7 @@ impl Current {
     /// Calculate maximum brightness based on current budget and worst-case current draw.
     ///
     /// Returns 255 (full brightness) for Unlimited, or a scaled value for Milliamps.
+    #[doc(hidden)] // Called by macro-generated code; not part of public API
     #[must_use]
     pub const fn max_brightness(self, worst_case_ma: u32) -> u8 {
         assert!(worst_case_ma > 0, "worst_case_ma must be positive");
