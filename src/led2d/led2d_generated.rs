@@ -136,14 +136,6 @@ impl Led2dGenerated {
         }
     }
 
-    /// Create a new blank (all black) frame.
-    ///
-    /// See [`Led2dGenerated`] for usage.
-    #[must_use]
-    pub const fn new_frame() -> Led2dGeneratedFrame {
-        crate::led2d::Frame::new()
-    }
-
     /// Create a new LED panel instance of the struct type
     /// defined by [`led2d!`].
     ///

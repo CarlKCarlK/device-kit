@@ -54,7 +54,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let (gpio4_led_strip,) = LedStripsPio0::new(p.PIO0, p.PIN_4, p.DMA_CH1, spawner)?;
     let gpio4_led_strip = Gpio4LedStripLed2d::from_strip(gpio4_led_strip, spawner)?;
 
-    let mut frame_a = Gpio4LedStripLed2d::new_frame();
+    let mut frame_a = device_kit::led2d::Frame::<{ Gpio4LedStripLed2d::WIDTH }, { Gpio4LedStripLed2d::HEIGHT }>::new();
     let colors_a = [
         colors::RED,
         colors::ORANGE,
@@ -65,7 +65,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     ];
     gpio4_led_strip.write_text_to_frame("Go\nGo", &colors_a, &mut frame_a)?;
 
-    let mut frame_b = Gpio4LedStripLed2d::new_frame();
+    let mut frame_b = device_kit::led2d::Frame::<{ Gpio4LedStripLed2d::WIDTH }, { Gpio4LedStripLed2d::HEIGHT }>::new();
     let colors_b = [
         colors::MAGENTA,
         colors::PURPLE,
@@ -76,7 +76,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     ];
     gpio4_led_strip.write_text_to_frame("Go\nGo", &colors_b, &mut frame_b)?;
 
-    let mut frame_c = Gpio4LedStripLed2d::new_frame();
+    let mut frame_c = device_kit::led2d::Frame::<{ Gpio4LedStripLed2d::WIDTH }, { Gpio4LedStripLed2d::HEIGHT }>::new();
     let colors_c = [
         colors::WHITE,
         colors::PINK,

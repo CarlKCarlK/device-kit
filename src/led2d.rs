@@ -1827,12 +1827,6 @@ macro_rules! led2d_from_strip {
                     }
                 }
 
-                /// Create a new blank (all black) frame.
-                #[must_use]
-                $vis const fn new_frame() -> $crate::led2d::Frame<$cols_const, $rows_const> {
-                    $crate::led2d::Frame::new()
-                }
-
                 /// Create a new LED matrix display instance from an existing strip.
                 ///
                 /// The strip must be created from the same type specified in `strip_type`.
@@ -1893,7 +1887,7 @@ macro_rules! led2d_from_strip {
 
                 /// Render text and display it on the LED matrix.
                 pub async fn write_text(&self, text: &str, colors: &[smart_leds::RGB8]) -> $crate::Result<()> {
-                    let mut frame = Self::new_frame();
+                    let mut frame = $crate::led2d::Frame::<$cols_const, $rows_const>::new();
                     self.write_text_to_frame(text, colors, &mut frame)?;
                     self.write_frame(frame).await
                 }
