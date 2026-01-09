@@ -32,7 +32,7 @@ led2d! {
     dma: DMA_CH1,
     max_current: Current::Milliamps(300),
     gamma: Gamma::Linear,
-    max_frames: 3,
+    max_frames: 2,
 }
 
 #[embassy_executor::main]
@@ -48,45 +48,14 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let gpio4_led_strip = Led2DAnimate::new(p.PIN_4, p.PIO1, p.DMA_CH1, spawner)?;
 
     let mut frame_a = Led2DAnimateFrame::new();
-    let colors_a = [
-        colors::RED,
-        colors::ORANGE,
-        colors::YELLOW,
-        colors::GREEN,
-        colors::CYAN,
-        colors::BLUE,
-    ];
-    gpio4_led_strip.write_text_to_frame("Go\nGo", &colors_a, &mut frame_a)?;
+    gpio4_led_strip.write_text_to_frame("Goo", &[], &mut frame_a)?;
 
     let mut frame_b = Led2DAnimateFrame::new();
-    let colors_b = [
-        colors::MAGENTA,
-        colors::PURPLE,
-        colors::BLUE,
-        colors::CYAN,
-        colors::GREEN,
-        colors::YELLOW,
-    ];
-    gpio4_led_strip.write_text_to_frame("Go\nGo", &colors_b, &mut frame_b)?;
+    gpio4_led_strip.write_text_to_frame("\nGo", &[colors::HOT_PINK, colors::LIME], &mut frame_b)?;
 
-    let mut frame_c = Led2DAnimateFrame::new();
-    let colors_c = [
-        colors::WHITE,
-        colors::PINK,
-        colors::LIME,
-        colors::ORANGE,
-        colors::RED,
-        colors::HOT_PINK,
-    ];
-    gpio4_led_strip.write_text_to_frame("Go\nGo", &colors_c, &mut frame_c)?;
-
-    let frame_duration = Duration::from_millis(250);
+    let frame_duration = Duration::from_millis(500);
     gpio4_led_strip
-        .animate([
-            (frame_a, frame_duration),
-            (frame_b, frame_duration),
-            (frame_c, frame_duration),
-        ])
+        .animate([(frame_a, frame_duration), (frame_b, frame_duration)])
         .await?;
 
     future::pending().await
