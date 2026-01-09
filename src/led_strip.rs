@@ -497,39 +497,84 @@ fn apply_correction<const N: usize>(frame: &mut Frame<N>, combo_table: &[u8; 256
     }
 }
 
-// cmk0000 bad first line
-// cmk0000 bad rest of lines
-/// Macro for multiple LED strips (rarely used directly).
+/// Macro to generate multiple NeoPixel-style (WS2812) LED strips sharing one PIO.
 ///
-/// Macro to generate multiple LED strip structs sharing one PIO.
+/// For **multiple strips on the same PIO block**, use this macro instead of [`led_strip!`].
+/// A single PIO block can drive up to 4 state machines (SM0–SM3), one per strip.
 ///
-/// For **multiple strips sharing one PIO**, use this macro instead of [`led_strip!`]:
+/// **Syntax:**
 ///
 /// ```ignore
 /// led_strips! {
-///     pio: PIO0,
-///     LedStripGroup {
+///     pio: PIO0,                          // Optional; default is PIO0
+///     GroupName {
 ///         strip1: {
 ///             pin: PIN_0,
 ///             len: 8,
+///             // Optional: dma, max_current, gamma, max_frames, led2d
 ///         },
 ///         strip2: {
 ///             pin: PIN_1,
 ///             len: 16,
+///             max_current: Current::Milliamps(500),  // Example override
 ///         },
 ///     }
 /// }
-///
-/// // Use the generated group constructor:
-/// let (strip1, strip2) = LedStripGroup::new(
-///     p.PIO0, p.PIN_0, p.DMA_CH0, p.PIN_1, p.DMA_CH1, spawner
-/// )?;
 /// ```
 ///
-/// **See the module docs for full documentation and examples.**
+/// The macro generates a struct `GroupName` with a `new()` method that takes all required
+/// peripherals and returns a tuple of the configured strips.
 ///
-/// This is for advanced use where you need multiple strips sharing one PIO.
-/// Most projects should use [`led_strip!`] instead.
+/// **Required fields per strip:**
+///
+/// - `pin` — GPIO pin for LED data
+/// - `len` — Number of LEDs
+///
+/// **Optional fields per strip:**
+///
+/// - `dma` — DMA channel (default: auto-assigned by state machine index)
+/// - `max_current` — Current budget (default: `250` mA via [`Current::Milliamps`])
+/// - `gamma` — Color curve (default: [`Gamma::Gamma2_2`])
+/// - `max_frames` — Maximum animation frames (default: `16`)
+/// - `led2d` — 2D layout configuration (optional, for matrix-style displays)
+///
+/// # Current Limiting
+///
+/// The `max_current` field automatically scales brightness to stay within your power budget.
+/// Each strip can have independent current limits, or they can share a single budget across
+/// all strips in the group.
+///
+/// Each WS2812 LED is assumed to draw 60 mA at full brightness. For example:
+/// - 8 LEDs × 60 mA = 480 mA at full brightness
+/// - With `max_current: Current::Milliamps(500)` on a strip, all LEDs fit at 100% brightness
+/// - With `max_current: Current::Milliamps(250)` (the default), the generated `MAX_BRIGHTNESS` limits LEDs to ~52% brightness
+///
+/// The current limit is baked into a compile-time lookup table, so it has no runtime cost.
+///
+/// **Powering LEDs from the Pico's pin 40 (VBUS):** Pin 40 is the USB 5 V rail
+/// pass-through, but the Pico itself has practical current limits — the USB connector,
+/// cable, and internal circuitry aren't designed for heavy loads. Small LED strips
+/// (a few hundred mA total) can usually power from pin 40 with a decent USB supply; for
+/// larger loads (1 A+), use a separate 5 V supply and share ground with the Pico.
+///
+/// # Color Correction (Gamma)
+///
+/// The `gamma` field applies a color response curve to make colors look more natural:
+///
+/// - [`Gamma::Linear`] — No correction (raw values)
+/// - [`Gamma::Gamma2_2`] — Standard sRGB curve (default, most natural-looking)
+///
+/// The gamma curve is baked into a compile-time lookup table, so it has no runtime cost.
+///
+/// # When to Use This Macro
+///
+/// Use `led_strips!` when:
+/// - You have **multiple independent LED strips** connected to separate GPIO pins
+/// - They all **share the same PIO block** (to save PIO resources)
+/// - Each strip can have independent brightness, animation, and current limits
+///
+/// If you only have **one strip**, use [`led_strip!`] instead for simpler syntax.
+/// If you have **multiple strips on different PIO blocks**, use separate [`led_strip!`] invocations.
 #[macro_export]
 macro_rules! led_strips {
     ($($tt:tt)*) => { $crate::__led_strips_impl! { $($tt)* } };
@@ -1382,6 +1427,12 @@ macro_rules! __led_strips_impl {
 ///
 /// The gamma curve is baked into a compile-time lookup table, so it has no
 /// runtime cost.
+///
+/// # When to Use This Macro
+///
+/// Use `led_strip!` when you have a **single LED strip** (or, say, two).
+///
+/// If you have **multiple strips**, use [`led_strips!`] instead to save [`PIO`](embassy_rp::pio) resources.
 #[macro_export]
 macro_rules! led_strip {
     ($($tt:tt)*) => { $crate::__led_strip_impl! { $($tt)* } };
