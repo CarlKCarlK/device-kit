@@ -32,7 +32,7 @@ led2d! {
     dma: DMA_CH1,
     max_current: Current::Milliamps(300),
     gamma: Gamma::Linear,
-    max_frames: 2,
+    max_frames: 2, // Can be any number; 2 is the limit for this animation
 }
 
 #[embassy_executor::main]
@@ -45,17 +45,17 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     info!("LED 2D Example: Animated text on a rotated 12x8 panel");
     let p = init(Default::default());
 
-    let gpio4_led_strip = Led2DAnimate::new(p.PIN_4, p.PIO1, p.DMA_CH1, spawner)?;
+    let led2d_animate = Led2DAnimate::new(p.PIN_4, p.PIO1, p.DMA_CH1, spawner)?;
 
-    let mut frame_a = Led2DAnimateFrame::new();
-    gpio4_led_strip.write_text_to_frame("Goo", &[], &mut frame_a)?;
+    let mut frame_0 = Led2DAnimateFrame::new(); // Empty colors array defaults to white
+    led2d_animate.write_text_to_frame("Go", &[], &mut frame_0)?;
 
-    let mut frame_b = Led2DAnimateFrame::new();
-    gpio4_led_strip.write_text_to_frame("\nGo", &[colors::HOT_PINK, colors::LIME], &mut frame_b)?;
+    let mut frame_1 = Led2DAnimateFrame::new();
+    led2d_animate.write_text_to_frame("\nGo", &[colors::HOT_PINK, colors::LIME], &mut frame_1)?;
 
-    let frame_duration = Duration::from_millis(500);
-    gpio4_led_strip
-        .animate([(frame_a, frame_duration), (frame_b, frame_duration)])
+    let frame_duration = Duration::from_millis(400);
+    led2d_animate
+        .animate([(frame_0, frame_duration), (frame_1, frame_duration)])
         .await?;
 
     future::pending().await
