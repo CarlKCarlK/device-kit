@@ -58,8 +58,8 @@
 //!
 //! - Visibility and base name for generated types (e.g., `pub Led12x4`)
 //! - `strip_type` - Name of the strip type created by `led_strips!` (e.g., `Led12x4Strip`)
-//! - `width` - Number of columns in the display
-//! - `height` - Number of rows in the display
+//! - `width` - Number of columns in the panel
+//! - `height` - Number of rows in the panel
 //! - `led_layout` - LED strip physical layout:
 //!   - `serpentine_column_major` - Common serpentine wiring pattern
 //!   - `LedLayout` expression - Custom LED layout value in LED-index order
@@ -700,7 +700,7 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
         StripFrame::from(frame_1d)
     }
 
-    /// Render a fully defined frame to the display.
+    /// Render a fully defined frame to the panel.
     ///
     /// Frame is a 2D array in row-major order where `frame[row][col]` is the pixel at (col, row).
     pub async fn write_frame<const W: usize, const H: usize>(
@@ -992,8 +992,8 @@ pub use led2d_device;
 /// - `pio` - PIO peripheral to use (e.g., `PIO0`, `PIO1`) (optional; default: `PIO0`)
 /// - `pin` - GPIO pin for LED data signal (e.g., `PIN_3`)
 /// - `dma` - DMA channel for LED data transfer (e.g., `DMA_CH0`) (optional; default: `DMA_CH0`)
-/// - `width` - Number of columns in the display
-/// - `height` - Number of rows in the display
+/// - `width` - Number of columns in the panel
+/// - `height` - Number of rows in the panel
 /// - `mapping` - LED strip physical layout:
 ///   - `serpentine_column_major` - Common serpentine wiring pattern (LED index → `(col, row)`)
 ///   - `LedLayout` expression - Custom LED layout value in LED-index order
@@ -1657,8 +1657,8 @@ macro_rules! __led2d_impl {
 ///
 /// - Visibility and base name for generated types (e.g., `pub Led12x4`)
 /// - `strip_type` - Name of the strip type created by `led_strips!`
-/// - `width` - Number of columns in the display
-/// - `height` - Number of rows in the display
+/// - `width` - Number of columns in the panel
+/// - `height` - Number of rows in the panel
 /// - `led_layout` - LED strip physical layout:
 ///   - `serpentine_column_major` - Common serpentine wiring pattern (LED index → `(col, row)`)
 ///   - `LedLayout` expression - Custom LED layout value in LED-index order
@@ -1810,9 +1810,9 @@ macro_rules! led2d_from_strip {
 
             #[allow(non_snake_case, dead_code)]
             impl [<$name>] {
-                /// Number of columns in the display.
+                /// Number of columns in the panel.
                 pub const WIDTH: usize = $cols_const;
-                /// Number of rows in the display.
+                /// Number of rows in the panel.
                 pub const HEIGHT: usize = $rows_const;
                 /// Total number of LEDs (WIDTH * HEIGHT).
                 pub const N: usize = $n_const;
@@ -1871,7 +1871,7 @@ macro_rules! led2d_from_strip {
                     })
                 }
 
-                /// Render a fully defined frame to the display.
+                /// Render a fully defined frame to the panel.
                 $vis async fn write_frame(&self, frame: $crate::led2d::Frame<$cols_const, $rows_const>) -> $crate::Result<()> {
                     self.led2d.write_frame(frame).await
                 }

@@ -64,7 +64,7 @@ led2d! {
     "use device_kit::{Result, led2d, led2d::layout::LedLayout, led_strip::colors};\n\n",
     "const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();\n\n",
     "led2d! {\n",
-    "    pub Led12x4,\n",
+"    pub Led12x4,                         // Struct name and visibility\n",
     "    pin: PIN_3,                          // GPIO pin for LED data signal\n",
     "    width: 12,                           // Panel dimensions\n",
     "    height: 4,\n",
@@ -80,11 +80,10 @@ led2d! {
     "    let p = init(Default::default());\n\n",
     "    let led12x4 = Led12x4::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;\n\n",
     "    let colors = [colors::RED, colors::GREEN, colors::BLUE];\n",
-    "    led12x4.write_text(\"Rust\", &colors).await?;\n\n",
-    "    future::pending().await\n",
+    "    led12x4.write_text(\"Rust\", &colors).await?; // Colors cycle as needed.\n",
+    "    future::pending().await // run forever\n",
     "}\n",
     "```\n\n",
-    "See the [`led2d!`] macro documentation for all configuration options.\n",
 )]
 pub struct Led2dGenerated;
 
@@ -110,11 +109,11 @@ pub struct Led2dGeneratedLedStrip;
 
 #[cfg(doc)]
 impl Led2dGenerated {
-    /// Number of columns in the display.
+    /// Number of columns in the panel.
     pub const WIDTH: usize = 12;
-    /// Number of rows in the display.
+    /// Number of rows in the panel.
     pub const HEIGHT: usize = 4;
-    /// Total number of LEDs (WIDTH * HEIGHT).
+    /// Total number of LEDs in this panel (WIDTH * HEIGHT).
     pub const LEN: usize = 48;
     /// Maximum brightness level, automatically limited by the power budget specified in `max_current`.
     ///
@@ -183,7 +182,7 @@ impl Led2dGenerated {
         Ok(Self)
     }
 
-    /// Render a fully defined frame to the display.
+    /// Render a fully defined frame to the panel.
     ///
     /// See [`Led2dGenerated`] for usage.
     pub async fn write_frame(&self, frame: Led2dGeneratedFrame) -> crate::Result<()> {
