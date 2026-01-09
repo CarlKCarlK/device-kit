@@ -989,16 +989,16 @@ pub use led2d_device;
 /// # Parameters
 ///
 /// - Visibility and base name for generated types (e.g., `pub led12x4`)
-/// - `pio` - PIO peripheral to use (e.g., `PIO0`, `PIO1`)
+/// - `pio` - PIO peripheral to use (e.g., `PIO0`, `PIO1`) (optional; default: `PIO0`)
 /// - `pin` - GPIO pin for LED data signal (e.g., `PIN_3`)
-/// - `dma` - DMA channel for LED data transfer (e.g., `DMA_CH0`)
+/// - `dma` - DMA channel for LED data transfer (e.g., `DMA_CH0`) (optional; default: `DMA_CH0`)
 /// - `width` - Number of columns in the display
 /// - `height` - Number of rows in the display
 /// - `mapping` - LED strip physical layout:
 ///   - `serpentine_column_major` - Common serpentine wiring pattern (LED index → `(col, row)`)
 ///   - `LedLayout` expression - Custom LED layout value in LED-index order
-/// - `max_current` - Maximum current budget (e.g., `Current::Milliamps(500)`)
-/// - `max_frames` - Maximum animation frames allowed
+/// - `max_current` - Maximum current budget (e.g., `Current::Milliamps(500)`) (optional; default: `Current::Milliamps(250)`)
+/// - `max_frames` - Maximum animation frames allowed (optional; default: `16`)
 /// - `font` - Built-in font variant (see [`Led2dFont`])
 ///
 /// # Generated API
@@ -1060,6 +1060,437 @@ macro_rules! led2d {
 macro_rules! __led2d_impl {
     (
         $vis:vis $name:ident,
+        $($fields:tt)*
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: PIO0,
+            pin: _UNSET_,
+            dma: DMA_CH0,
+            width: _UNSET_,
+            height: _UNSET_,
+            led_layout: _UNSET_,
+            max_current: _UNSET_,
+            gamma: _UNSET_,
+            max_frames: 16,
+            font: _UNSET_,
+            fields: [ $($fields)* ]
+        }
+    };
+
+    // Fill defaults: pio
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:tt,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ pio: $new_pio:ident $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $new_pio,
+            pin: $pin,
+            dma: $dma,
+            width: $width,
+            height: $height,
+            led_layout: $led_layout,
+            max_current: $max_current,
+            gamma: $gamma,
+            max_frames: $max_frames,
+            font: $font_variant,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    // Fill defaults: pin
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:tt,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ pin: $new_pin:ident $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $new_pin,
+            dma: $dma,
+            width: $width,
+            height: $height,
+            led_layout: $led_layout,
+            max_current: $max_current,
+            gamma: $gamma,
+            max_frames: $max_frames,
+            font: $font_variant,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    // Fill defaults: dma
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:tt,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ dma: $new_dma:ident $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $pin,
+            dma: $new_dma,
+            width: $width,
+            height: $height,
+            led_layout: $led_layout,
+            max_current: $max_current,
+            gamma: $gamma,
+            max_frames: $max_frames,
+            font: $font_variant,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    // Fill defaults: width
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:tt,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ width: $new_width:expr $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $pin,
+            dma: $dma,
+            width: $new_width,
+            height: $height,
+            led_layout: $led_layout,
+            max_current: $max_current,
+            gamma: $gamma,
+            max_frames: $max_frames,
+            font: $font_variant,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    // Fill defaults: height
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:tt,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ height: $new_height:expr $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $pin,
+            dma: $dma,
+            width: $width,
+            height: $new_height,
+            led_layout: $led_layout,
+            max_current: $max_current,
+            gamma: $gamma,
+            max_frames: $max_frames,
+            font: $font_variant,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    // Fill defaults: led_layout
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:tt,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ led_layout: $new_led_layout:tt $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $pin,
+            dma: $dma,
+            width: $width,
+            height: $height,
+            led_layout: $new_led_layout,
+            max_current: $max_current,
+            gamma: $gamma,
+            max_frames: $max_frames,
+            font: $font_variant,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    // Fill defaults: max_current
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:tt,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ max_current: $new_max_current:expr $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $pin,
+            dma: $dma,
+            width: $width,
+            height: $height,
+            led_layout: $led_layout,
+            max_current: $new_max_current,
+            gamma: $gamma,
+            max_frames: $max_frames,
+            font: $font_variant,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    // Fill defaults: gamma
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:tt,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ gamma: $new_gamma:expr $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $pin,
+            dma: $dma,
+            width: $width,
+            height: $height,
+            led_layout: $led_layout,
+            max_current: $max_current,
+            gamma: $new_gamma,
+            max_frames: $max_frames,
+            font: $font_variant,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    // Fill defaults: max_frames
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:tt,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ max_frames: $new_max_frames:expr $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $pin,
+            dma: $dma,
+            width: $width,
+            height: $height,
+            led_layout: $led_layout,
+            max_current: $max_current,
+            gamma: $gamma,
+            max_frames: $new_max_frames,
+            font: $font_variant,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    // Fill defaults: font
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:tt,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ font: $new_font_variant:ident $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $pin,
+            dma: $dma,
+            width: $width,
+            height: $height,
+            led_layout: $led_layout,
+            max_current: $max_current,
+            gamma: $gamma,
+            max_frames: $max_frames,
+            font: $new_font_variant,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    // Fill default max_current if still unset.
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: _UNSET_,
+        gamma: $gamma:tt,
+        max_frames: $max_frames:tt,
+        font: $font_variant:tt,
+        fields: [ ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $pin,
+            dma: $dma,
+            width: $width,
+            height: $height,
+            led_layout: $led_layout,
+            max_current: $crate::led_strip::Current::Milliamps(250),
+            gamma: $gamma,
+            max_frames: $max_frames,
+            font: $font_variant,
+            fields: [ ]
+        }
+    };
+
+    // Terminal: pass through once all fields consumed.
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pio: $pio:ident,
+        pin: $pin:tt,
+        dma: $dma:ident,
+        width: $width:tt,
+        height: $height:tt,
+        led_layout: $led_layout:tt,
+        max_current: $max_current:expr,
+        gamma: $gamma:expr,
+        max_frames: $max_frames:expr,
+        font: $font_variant:ident,
+        fields: [ ]
+    ) => {
+        $crate::__led2d_impl! {
+            @__expand
+            vis: $vis,
+            name: $name,
+            pio: $pio,
+            pin: $pin,
+            dma: $dma,
+            width: $width,
+            height: $height,
+            led_layout: $led_layout,
+            max_current: $max_current,
+            gamma: $gamma,
+            max_frames: $max_frames,
+            font: $font_variant
+        }
+    };
+
+    // Expand: serpentine column-major led_layout variant.
+    (@__expand
+        vis: $vis:vis,
+        name: $name:ident,
         pio: $pio:ident,
         pin: $pin:ident,
         dma: $dma:ident,
@@ -1069,7 +1500,7 @@ macro_rules! __led2d_impl {
         max_current: $max_current:expr,
         gamma: $gamma:expr,
         max_frames: $max_frames:expr,
-        font: $font_variant:ident $(,)?
+        font: $font_variant:ident
     ) => {
         $crate::led2d::paste::paste! {
             // Generate the LED strip infrastructure with a CamelCase strip type
@@ -1134,9 +1565,11 @@ macro_rules! __led2d_impl {
             }
         }
     };
-    // Custom led_layout variant (LedLayout expression)
-    (
-        $vis:vis $name:ident,
+
+    // Expand: custom led_layout variant (LedLayout expression).
+    (@__expand
+        vis: $vis:vis,
+        name: $name:ident,
         pio: $pio:ident,
         pin: $pin:ident,
         dma: $dma:ident,
@@ -1146,7 +1579,7 @@ macro_rules! __led2d_impl {
         max_current: $max_current:expr,
         gamma: $gamma:expr,
         max_frames: $max_frames:expr,
-        font: $font_variant:ident $(,)?
+        font: $font_variant:ident
     ) => {
         $crate::led2d::paste::paste! {
             // Generate the LED strip infrastructure with a CamelCase strip type
