@@ -1050,6 +1050,14 @@ pub use led2d_device;
 #[macro_export]
 #[cfg(not(feature = "host"))]
 macro_rules! led2d {
+    ($($tt:tt)*) => { $crate::__led2d_impl! { $($tt)* } };
+}
+
+/// Implementation macro. Not part of the public API; use [`led2d!`] instead.
+#[doc(hidden)] // Required pub for macro expansion in downstream crates
+#[macro_export]
+#[cfg(not(feature = "host"))]
+macro_rules! __led2d_impl {
     (
         $vis:vis $name:ident,
         pio: $pio:ident,
