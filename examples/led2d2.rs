@@ -23,12 +23,12 @@ const LED_LAYOUT_12X8: LedLayout<96, 12, 8> = LED_LAYOUT_12X4.concat_v(LED_LAYOU
 const LED_LAYOUT_12X8_ROTATED: LedLayout<96, 8, 12> = LED_LAYOUT_12X8.rotate_cw();
 
 led2d! {
-    pub Led2DAnimate,
+    pub Led12x8Animated,
     pin: PIN_4, // GPIO pin for LED data signal
     width: 8, // Rotated panel width
     height: 12, // Rotated panel height
     led_layout: LED_LAYOUT_12X8_ROTATED, // Two 12×4 panels stacked and rotated
-    font: Font4x6Trim, // Use a 4x6 pixel font without the usual 1 pixel padding
+    font: Font4x6Trim, // Use a 4x6 pixel font without the usual 1 pixel spacing
     pio: PIO1, // PIO resource, default is PIO0
     dma: DMA_CH1, // DMA resource, default is DMA_CH0
     max_current: Current::Milliamps(300), // Power budget, default is 2500 mA.
@@ -46,19 +46,23 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     info!("LED 2D Example: Animated text on a rotated 12x8 panel");
     let p = init(Default::default());
 
-    let led2d_animate = Led2DAnimate::new(p.PIN_4, p.PIO1, p.DMA_CH1, spawner)?;
+    let led_12x8_animated = Led12x8Animated::new(p.PIN_4, p.PIO1, p.DMA_CH1, spawner)?;
 
-    let mut frame_0 = Led2DAnimateFrame::new();
+    let mut frame_0 = Led12x8AnimatedFrame::new();
     // Empty colors array defaults to white
-    led2d_animate.write_text_to_frame("Go", &[], &mut frame_0)?;
+    led_12x8_animated.write_text_to_frame("Go", &[], &mut frame_0)?;
 
-    let mut frame_1 = Led2DAnimateFrame::new();
+    let mut frame_1 = Led12x8AnimatedFrame::new();
     // "/n" starts a new line. Text does not wrap but rather clips.
-    led2d_animate.write_text_to_frame("\nGo", &[colors::HOT_PINK, colors::LIME], &mut frame_1)?;
+    led_12x8_animated.write_text_to_frame(
+        "\nGo",
+        &[colors::HOT_PINK, colors::LIME],
+        &mut frame_1,
+    )?;
 
     // Animate between the two frames indefinitely.
     let frame_duration = Duration::from_millis(400);
-    led2d_animate
+    led_12x8_animated
         .animate([(frame_0, frame_duration), (frame_1, frame_duration)])
         .await?;
 

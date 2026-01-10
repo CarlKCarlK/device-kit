@@ -1,4 +1,4 @@
-//! A device abstraction for rectangular NeoPixel-style (WS2812) LED panel displays with arbitrary size.
+//! cmk0000 A device abstraction for rectangular NeoPixel-style (WS2812) LED panel displays with arbitrary size.
 //!
 //! Supports text rendering, animation, and full graphics capabilities. For simple
 //! single-strip displays, use the `led2d!` macro. For multi-strip scenarios
@@ -137,6 +137,9 @@
 // Re-export for macro use
 #[doc(hidden)]
 pub use paste;
+
+// Re-export geometric types from embedded-graphics for convenience
+pub use embedded_graphics::geometry::{Point, Size};
 
 pub mod layout;
 
@@ -414,7 +417,7 @@ impl Led2dFont {
     }
 }
 
-// cmk0 should also define Default via the trait
+// cmk0000 should also define Default via the trait
 /// A 2D array of RGB pixels representing a single display frame.
 ///
 /// Frames are used to prepare images before sending them to the LED matrix. They support:
@@ -425,6 +428,14 @@ impl Led2dFont {
 /// Frames are stored in row-major order where `frame[row][col]` represents the pixel
 /// at display coordinates (col, row). The physical mapping to the LED strip is handled
 /// automatically by the device abstraction.
+///
+/// # Associated Constants cmk0000 delete this section
+///
+/// - `WIDTH` — Frame width in pixels (columns)
+/// - `HEIGHT` — Frame height in pixels (rows)
+/// - `LEN` — Total pixel count (WIDTH × HEIGHT)
+/// - `SIZE` — [`Size`] struct for embedded-graphics drawing operations
+/// - `TOP_LEFT`, `TOP_RIGHT`, `BOTTOM_LEFT`, `BOTTOM_RIGHT` — Corner [`Point`] coordinates
 ///
 /// # Examples
 ///
@@ -467,6 +478,23 @@ impl Led2dFont {
 pub struct Frame<const W: usize, const H: usize>(pub [[RGB8; W]; H]);
 
 impl<const W: usize, const H: usize> Frame<W, H> {
+    /// Frame width in pixels (columns).
+    pub const WIDTH: usize = W;
+    /// Frame height in pixels (rows).
+    pub const HEIGHT: usize = H;
+    /// Total number of pixels (WIDTH × HEIGHT).
+    pub const LEN: usize = W * H;
+    /// Frame dimensions as a [`Size`] for embedded-graphics.
+    pub const SIZE: Size = Size::new(W as u32, H as u32);
+    /// Top-left corner coordinate.
+    pub const TOP_LEFT: Point = Point::new(0, 0);
+    /// Top-right corner coordinate.
+    pub const TOP_RIGHT: Point = Point::new((W - 1) as i32, 0);
+    /// Bottom-left corner coordinate.
+    pub const BOTTOM_LEFT: Point = Point::new(0, (H - 1) as i32);
+    /// Bottom-right corner coordinate.
+    pub const BOTTOM_RIGHT: Point = Point::new((W - 1) as i32, (H - 1) as i32);
+
     /// Create a new blank (all black) frame.
     #[must_use]
     pub const fn new() -> Self {
@@ -477,36 +505,6 @@ impl<const W: usize, const H: usize> Frame<W, H> {
     #[must_use]
     pub const fn filled(color: RGB8) -> Self {
         Self([[color; W]; H])
-    }
-
-    /// Get the frame dimensions.
-    #[must_use]
-    pub const fn size() -> Size {
-        Size::new(W as u32, H as u32)
-    }
-
-    /// Get the top-left corner point.
-    #[must_use]
-    pub const fn top_left() -> Point {
-        Point::new(0, 0)
-    }
-
-    /// Get the top-right corner point.
-    #[must_use]
-    pub const fn top_right() -> Point {
-        Point::new((W - 1) as i32, 0)
-    }
-
-    /// Get the bottom-left corner point.
-    #[must_use]
-    pub const fn bottom_left() -> Point {
-        Point::new(0, (H - 1) as i32)
-    }
-
-    /// Get the bottom-right corner point.
-    #[must_use]
-    pub const fn bottom_right() -> Point {
-        Point::new((W - 1) as i32, (H - 1) as i32)
     }
 }
 
@@ -976,7 +974,7 @@ macro_rules! led2d_device {
 #[cfg(not(feature = "host"))]
 pub use led2d_device;
 
-/// Generate a complete Led2d display with automatic PIO and strip management.
+/// cmk00000 Generate a complete Led2d display with automatic PIO and strip management.
 ///
 /// This macro creates a self-contained LED matrix display with automatic PIO splitting
 /// and internal resource management. For simpler single-strip displays, this is the
