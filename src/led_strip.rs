@@ -797,7 +797,7 @@ macro_rules! __led_strips_impl {
                     paste::paste! {
                         #[cfg(not(feature = "host"))]
                         $crate::led2d::led2d_from_strip! {
-                            pub [<$label:camel LedStripLed2d>],
+                            pub [<$label:camel Led2d>],
                             strip_type: [<$label:camel LedStrip>],
                             width: $led2d_width,
                             height: $led2d_height,
@@ -812,9 +812,9 @@ macro_rules! __led_strips_impl {
                             pin: impl Into<::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$pin>>,
                             dma: impl Into<::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$dma>>,
                             spawner: ::embassy_executor::Spawner,
-                        ) -> $crate::Result<[<$label:camel LedStripLed2d>]> {
+                        ) -> $crate::Result<[<$label:camel Led2d>]> {
                             let strip = Self::new(state_machine, pin, dma, spawner)?;
-                                [<$label:camel LedStripLed2d>]::from_strip(strip, spawner)
+                                [<$label:camel Led2d>]::from_strip(strip, spawner)
                             }
                         }
                     }
@@ -912,7 +912,7 @@ macro_rules! __led_strips_impl {
         paste::paste! { &'static [<$label:camel LedStrip>] }
     };
     (@__strip_return_type $label:ident, led2d: { $($led2d_fields:tt)* }) => {
-        paste::paste! { [<$label:camel LedStripLed2d>] }
+        paste::paste! { [<$label:camel Led2d>] }
     };
 
     (@__strip_return_value
@@ -937,7 +937,7 @@ macro_rules! __led_strips_impl {
         paste::paste! {{
             let [<$label:snake _led_strip>] =
                 [<$label:camel LedStrip>]::new($state_machine, $pin, $dma, $spawner)?;
-            [<$label:camel LedStripLed2d>]::from_strip([<$label:snake _led_strip>], $spawner)?
+            [<$label:camel Led2d>]::from_strip([<$label:snake _led_strip>], $spawner)?
         }}
     };
 

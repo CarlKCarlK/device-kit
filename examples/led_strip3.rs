@@ -14,6 +14,10 @@ use embassy_executor::Spawner;
 use embassy_time::Duration;
 use panic_probe as _;
 
+const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
+const LED_LAYOUT_12X8: LedLayout<96, 12, 8> = LED_LAYOUT_12X4.concat_v(LED_LAYOUT_12X4);
+const LED_LAYOUT_12X8_ROTATED: LedLayout<96, 8, 12> = LED_LAYOUT_12X8.rotate_cw();
+
 led_strips! {
     pio: PIO0,
     LedStrips {
@@ -48,10 +52,6 @@ led_strips! {
     }
 }
 
-const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
-const LED_LAYOUT_12X8: LedLayout<96, 12, 8> = LED_LAYOUT_12X4.concat_v(LED_LAYOUT_12X4);
-const LED_LAYOUT_12X8_ROTATED: LedLayout<96, 8, 12> = LED_LAYOUT_12X8.rotate_cw();
-
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
     let err = inner_main(spawner).await.unwrap_err();
@@ -61,7 +61,7 @@ async fn main(spawner: Spawner) -> ! {
 async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let p = embassy_rp::init(Default::default());
 
-    let (gpio0_led_strip, gpio3_led_strip_led2d, gpio4_led_strip_led2d) = LedStrips::new(
+    let (gpio0_led_strip, gpio3_led2d, gpio4_led2d) = LedStrips::new(
         p.PIO0, p.PIN_0, p.DMA_CH0, p.PIN_3, p.DMA_CH1, p.PIN_4, p.DMA_CH2, spawner,
     )?;
 
@@ -71,20 +71,20 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     gpio0_led_strip.write_frame(frame_gpio0).await?;
 
     let text_colors = [colors::RED, colors::GREEN, colors::BLUE];
-    gpio3_led_strip_led2d.write_text("Rust", &text_colors).await?;
+    gpio3_led2d.write_text("Rust", &text_colors).await?;
 
-    let mut frame_go_top = Gpio4LedStripLed2dFrame::new();
-    gpio4_led_strip_led2d.write_text_to_frame("Go", &[], &mut frame_go_top)?;
+    let mut frame_go_top = Gpio4Led2dFrame::new();
+    gpio4_led2d.write_text_to_frame("Go", &[], &mut frame_go_top)?;
 
-    let mut frame_go_bottom = Gpio4LedStripLed2dFrame::new();
-    gpio4_led_strip_led2d.write_text_to_frame(
+    let mut frame_go_bottom = Gpio4Led2dFrame::new();
+    gpio4_led2d.write_text_to_frame(
         "\nGo",
         &[colors::HOT_PINK, colors::LIME],
         &mut frame_go_bottom,
     )?;
 
     let frame_duration = Duration::from_millis(400);
-    gpio4_led_strip_led2d
+    gpio4_led2d
         .animate([
             (frame_go_top, frame_duration),
             (frame_go_bottom, frame_duration),

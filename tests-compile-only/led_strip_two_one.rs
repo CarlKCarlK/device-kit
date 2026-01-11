@@ -73,11 +73,11 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
     let p = embassy_rp::init(Default::default());
 
     // Shared PIO1: gpio0 (8 LEDs) and gpio3 (12x4 LEDs)
-    let (gpio0_led_strip, gpio3_led_strip_led2d) =
+    let (gpio0_led_strip, gpio3_led2d) =
         LedStripsPio1::new(p.PIO1, p.PIN_0, p.DMA_CH0, p.PIN_3, p.DMA_CH1, spawner)?;
 
     // Single-strip on PIO0: gpio4 (12x8 LEDs = 96)
-    let (gpio4_led_strip_led2d,) = LedStripsPio0::new(p.PIO0, p.PIN_4, p.DMA_CH2, spawner)?;
+    let (gpio4_led2d,) = LedStripsPio0::new(p.PIO0, p.PIN_4, p.DMA_CH2, spawner)?;
 
     let go_frame_duration = Duration::from_millis(600);
     let snake_tick = Duration::from_millis(80);
@@ -92,8 +92,8 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 
     // Prepare two-frame "gogo" animation for gpio3 Led2d
     let mut go_frames_gpio3 = Vec::<_, 2>::new();
-    let mut frame1 = Gpio3LedStripLed2dFrame::new();
-    gpio3_led_strip_led2d.write_text_to_frame(
+    let mut frame1 = Gpio3Led2dFrame::new();
+    gpio3_led2d.write_text_to_frame(
         "go  ",
         &[
             colors::MAGENTA,
@@ -107,8 +107,8 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         .push((frame1, go_frame_duration))
         .expect("go_frames has capacity for 2 frames");
 
-    let mut frame2 = Gpio3LedStripLed2dFrame::new();
-    gpio3_led_strip_led2d.write_text_to_frame(
+    let mut frame2 = Gpio3Led2dFrame::new();
+    gpio3_led2d.write_text_to_frame(
         "  go",
         &[
             colors::CYAN,
@@ -124,8 +124,8 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 
     // Prepare two-frame "go" animation for gpio4 Led2d
     let mut go_frames_gpio4 = Vec::<_, 2>::new();
-    let mut frame1 = Gpio4LedStripLed2dFrame::new();
-    gpio4_led_strip_led2d.write_text_to_frame(
+    let mut frame1 = Gpio4Led2dFrame::new();
+    gpio4_led2d.write_text_to_frame(
         "GO\n",
         &[
             colors::MAGENTA,
@@ -139,8 +139,8 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         .push((frame1, go_frame_duration))
         .expect("go_frames has capacity for 2 frames");
 
-    let mut frame2 = Gpio4LedStripLed2dFrame::new();
-    gpio4_led_strip_led2d.write_text_to_frame(
+    let mut frame2 = Gpio4Led2dFrame::new();
+    gpio4_led2d.write_text_to_frame(
         "\nGO",
         &[
             colors::CYAN,
@@ -155,10 +155,8 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         .expect("go_frames has capacity for 2 frames");
 
     // Kick off animations
-    gpio3_led_strip_led2d
-        .animate(go_frames_gpio3.clone())
-        .await?;
-    gpio4_led_strip_led2d.animate(go_frames_gpio4).await?;
+    gpio3_led2d.animate(go_frames_gpio3.clone()).await?;
+    gpio4_led2d.animate(go_frames_gpio4).await?;
 
     loop {
         step_snake(&mut frame_gpio0, &mut position_gpio0);
