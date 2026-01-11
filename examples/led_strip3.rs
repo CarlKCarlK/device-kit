@@ -8,7 +8,7 @@ use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::led_strip::led_strips;
-use device_kit::led_strip::{Current, Frame, colors};
+use device_kit::led_strip::{Current, Frame, Gamma, colors};
 use device_kit::led2d::layout::LedLayout;
 use embassy_executor::Spawner;
 use embassy_time::Duration;
@@ -30,6 +30,8 @@ led_strips! {
             pin: PIN_3,
             len: 48,
             max_current: Current::Milliamps(75),
+            gamma: Gamma::Gamma2_2,
+            max_frames: 1,
             dma: DMA_CH11,
         },
         gpio4: {
