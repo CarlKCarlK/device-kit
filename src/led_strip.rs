@@ -121,7 +121,7 @@ pub mod led_strip_generated;
 /// RGB color representation re-exported from the `smart_leds` crate.
 pub type Rgb = RGB8;
 
-/// Frame1d of [`Rgb`] values for an LED strip.
+/// [`Rgb`] pixel data for an LED strip.
 ///
 /// See [`LedStripGenerated`](crate::led_strip::led_strip_generated::LedStripGenerated) for usage examples.
 ///
@@ -130,6 +130,9 @@ pub type Rgb = RGB8;
 pub struct Frame1d<const N: usize>(pub [Rgb; N]);
 
 impl<const N: usize> Frame1d<N> {
+    /// Number of LEDs in this frame.
+    pub const LEN: usize = N;
+
     /// Create a new blank (all black) frame.
     ///
     /// See [`LedStripGenerated`](crate::led_strip::led_strip_generated::LedStripGenerated) for usage examples.
@@ -144,12 +147,6 @@ impl<const N: usize> Frame1d<N> {
     #[must_use]
     pub const fn filled(color: Rgb) -> Self {
         Self([color; N])
-    }
-
-    /// Get the number of LEDs in this frame.
-    #[must_use]
-    pub const fn len() -> usize {
-        N
     }
 }
 
@@ -2246,7 +2243,6 @@ macro_rules! led_strip {
     ($($tt:tt)*) => { $crate::__led_strip_impl! { $($tt)* } };
 }
 
-// cmk0000 must/should these be at the top level? (If so, mention that in the doc line)
 /// Implementation macro. Not part of the public API; use [`led_strip!`] instead.
 #[doc(hidden)]
 #[macro_export]

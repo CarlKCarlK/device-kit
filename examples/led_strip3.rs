@@ -39,7 +39,7 @@ led_strips! {
             pin: PIN_4,
             len: 96,
             max_current: Current::Milliamps(250),
-            max_frames: 2,                          // cmk000000 test this to failure
+            max_frames: 2,
             led2d: {                                // Optional panel configuration for 2D displays.
                 width: 8,                           // Panel width in LEDs.
                 height: 12,                         // Panel height in LEDs.
