@@ -505,7 +505,11 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 /// See [`LedStripGenerated`](crate::led_strip::led_strip_generated::LedStripGenerated) and
 /// [`Led2dGenerated`](crate::led2d::led2d_generated::Led2dGenerated) for details on using the generated types.
 ///
-/// **Example:**
+/// # Example: Connect Three LED Strips/Panels to One PIO Resource
+///
+/// This example creates three LED strips/panels on GPIO0, GPIO3, and GPIO4,
+/// all sharing PIO0. It demonstrates setting lights on the first two strips
+/// and animating text on the 2D panel.
 ///
 /// ```no_run
 /// # #![no_std]
