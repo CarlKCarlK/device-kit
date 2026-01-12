@@ -516,7 +516,7 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 /// # use defmt_rtt as _;
 /// # use embassy_executor::Spawner;
 /// # use defmt::info;
-/// use device_kit::{Result, led2d::layout::LedLayout, led_strip::{Current, Gamma, colors, led_strips}};
+/// use device_kit::{Result, led2d::layout::LedLayout, led_strip::{Current, Frame1d, Gamma, colors, led_strips}};
 /// use embassy_time::Duration;
 ///
 /// // Our 2D panel is two 12x4 panels stacked vertically.
@@ -568,11 +568,11 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///     )?;
 ///
 ///     // Turn on all-white on GPIO0 strip.
-///     let frame_gpio0 = Gpio0Frame::filled(colors::WHITE);
+///     let frame_gpio0 = Frame1d::filled(colors::WHITE);
 ///     gpio0_led_strip.write_frame(frame_gpio0).await?;
 ///
 ///     // Turn on every other LED in blue on GPIO3 strip.
-///     let mut frame_gpio3 = Gpio3Frame::new();
+///     let mut frame_gpio3 = Frame1d::new();
 ///     for pixel_index in (0..frame_gpio3.len()).step_by(2) {
 ///         frame_gpio3[pixel_index] = colors::BLUE;
 ///     }
@@ -796,22 +796,6 @@ macro_rules! __led_strips_impl {
                     }
                 }
 
-                $crate::__led_strips_impl!(
-                    @__maybe_strip_frame_alias
-                    frame_alias: $frame_alias,
-                    label: $label,
-                    len: $len
-                    $(,
-                        led2d: {
-                            width: $led2d_width,
-                            height: $led2d_height,
-                            led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
-                            max_frames: $led2d_max_frames,
-                            font: $led2d_font,
-                        }
-                    )?
-                );
-
                 #[cfg(not(feature = "host"))]
                 impl $crate::led2d::WriteFrame<{ $len }> for [<$label:camel LedStrip>] {
                     async fn write_frame(&self, frame: $crate::led_strip::Frame1d<{ $len }>) -> $crate::Result<()> {
@@ -968,33 +952,6 @@ macro_rules! __led_strips_impl {
         paste::paste! { [<$label:camel Led2d>] }
     };
 
-    (@__strip_frame_alias
-        label: $label:ident,
-        len: $len:expr
-    ) => {
-        paste::paste! {
-            pub type [<$label:camel Frame>] = $crate::led_strip::Frame1d<{ $len }>;
-        }
-    };
-
-    (@__maybe_strip_frame_alias
-        frame_alias: __WITH_FRAME_ALIAS__,
-        label: $label:ident,
-        len: $len:expr
-        $(, led2d: { $($led2d_fields:tt)* } )?
-    ) => {
-        $crate::__led_strips_impl!(
-            @__strip_frame_alias
-            label: $label,
-            len: $len
-        );
-    };
-    (@__maybe_strip_frame_alias
-        frame_alias: __SKIP_FRAME_ALIAS__,
-        label: $label:ident,
-        len: $len:expr
-        $(, led2d: { $($led2d_fields:tt)* } )?
-    ) => {};
 
     (@__strip_return_value
         label: $label:ident,

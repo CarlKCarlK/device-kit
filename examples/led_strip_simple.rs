@@ -53,7 +53,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
 async fn update_bounce(led_strip: &Gpio0LedStrip, position: usize) -> Result<()> {
     assert!(position < Gpio0LedStrip::LEN);
-    let mut frame = Frame1d::<{ Gpio0LedStrip::LEN }>::new();
+    let mut frame = Frame1d::new();
     frame[position] = colors::WHITE;
     led_strip.write_frame(frame).await?;
     Ok(())

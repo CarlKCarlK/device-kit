@@ -90,7 +90,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         p.PIN_14, p.DMA_CH4,
         spawner,
     )?;
-    let mut led_pixels = Gpio0Frame::filled(BLACK);
+    let mut led_pixels = Frame1d::filled(BLACK);
     initialize_led_strip(gpio0_led_strip, &mut led_pixels).await?;
     let mut led_progress_index: usize = 0;
 

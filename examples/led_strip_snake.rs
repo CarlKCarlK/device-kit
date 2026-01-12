@@ -5,7 +5,7 @@ use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::led_strip::led_strips;
-use device_kit::led_strip::{Rgb, colors};
+use device_kit::led_strip::{Frame1d, Rgb, colors};
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 use panic_probe as _;
@@ -46,10 +46,10 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
     const GAP_SPACING: usize = 4;
     const FRAME_COUNT: usize = GAP_SPACING;
 
-    let mut frames = heapless::Vec::<(Gpio3Frame, Duration), FRAME_COUNT>::new();
+    let mut frames = heapless::Vec::<_, FRAME_COUNT>::new();
 
     for frame_offset in 0..FRAME_COUNT {
-        let mut frame = Gpio3Frame::filled(BRIGHT);
+        let mut frame = Frame1d::filled(BRIGHT);
         for pixel_index in 0..Gpio3LedStrip::LEN {
             if (pixel_index + frame_offset) % GAP_SPACING == 0 {
                 frame[pixel_index] = GAP;

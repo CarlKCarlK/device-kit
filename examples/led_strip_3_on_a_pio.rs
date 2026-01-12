@@ -8,7 +8,7 @@ use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::led_strip::led_strips;
-use device_kit::led_strip::{Rgb, colors};
+use device_kit::led_strip::{Frame1d, Rgb, colors};
 use device_kit::led2d::layout::LedLayout;
 use device_kit::led2d::led2d_from_strip;
 use embassy_executor::Spawner;
@@ -69,7 +69,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 
     info!("Running snake on GPIO0, GO animations on GPIO3 (12x4) and GPIO4 (8x12 rotated)");
 
-    let mut frame_g0 = Gpio0Frame::new();
+    let mut frame_g0 = Frame1d::new();
     let mut pos_g0 = 0usize;
 
     // Create animation frames: "go  " and "  go" with unique colors per character
@@ -143,7 +143,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
     }
 }
 
-fn step_snake(frame: &mut Gpio0Frame, position: &mut usize) {
+fn step_snake<const N: usize>(frame: &mut Frame1d<N>, position: &mut usize) {
     let len = frame.len();
     for color in frame.iter_mut() {
         *color = colors::BLACK;
