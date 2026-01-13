@@ -425,7 +425,7 @@ impl Led2dFont {
 /// - Full graphics drawing via [`embedded-graphics`](https://docs.rs/embedded-graphics) (lines, shapes, text, and more)
 /// - Automatic conversion to the strip's physical LED order
 ///
-/// <img src="../docs/led2d_graphics.png" alt="LED panel preview" width="150">
+/// ![LED panel preview][led2d-graphics]
 ///
 /// //cmk00000 if x and y are backwards, should/can we fix that?
 /// Frames are stored in row-major order where `frame[row][col]` represents the pixel
@@ -497,6 +497,10 @@ impl Led2dFont {
 /// ```
 ///
 /// See the [mod@crate::led2d] module docs for more usage examples.
+#[cfg_attr(
+    feature = "doc-images",
+    doc = ::embed_doc_image::embed_image!("led2d-graphics", "docs/assets/led2d_graphics.png")
+)]
 #[derive(Clone, Copy, Debug)]
 pub struct Frame2d<const W: usize, const H: usize>(pub [[RGB8; W]; H]);
 

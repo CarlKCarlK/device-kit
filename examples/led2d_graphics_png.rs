@@ -20,11 +20,30 @@ use std::path::{Path, PathBuf};
 fn main() -> Result<(), Box<dyn Error>> {
     let output_path = output_path_from_args();
     let frame = build_frame();
-    const CELL_SIZE: u32 = 64;
-    const LED_MARGIN: u32 = 8;
-    write_panel_png(&frame, &output_path, CELL_SIZE, LED_MARGIN)?;
+    const PANEL_WIDTH: u32 = 12;
+    const PANEL_HEIGHT: u32 = 8;
+    const TARGET_MAX_DIMENSION: u32 = 200;
+    let cell_size = select_cell_size(PANEL_WIDTH, PANEL_HEIGHT, TARGET_MAX_DIMENSION);
+    let led_margin = (cell_size / 8).max(1);
+    write_panel_png(&frame, &output_path, cell_size, led_margin)?;
     println!("wrote PNG to {}", output_path.display());
     Ok(())
+}
+
+fn select_cell_size(panel_width: u32, panel_height: u32, target_max: u32) -> u32 {
+    let mut cell_size = target_max;
+    while cell_size > 1 {
+        let led_margin = (cell_size / 8).max(1);
+        let led_radius = (cell_size - (led_margin * 2)) / 2;
+        let output_width = panel_width * cell_size + led_radius * 2;
+        let output_height = panel_height * cell_size + led_radius * 2;
+        let max_dimension = output_width.max(output_height);
+        if max_dimension <= target_max {
+            break;
+        }
+        cell_size -= 1;
+    }
+    cell_size
 }
 
 fn output_path_from_args() -> PathBuf {

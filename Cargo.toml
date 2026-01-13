@@ -13,6 +13,9 @@ version = "0.0.1-alpha"
 name = "device_kit"
 path = "src/lib.rs"
 
+[package.metadata.docs.rs]
+features = ["doc-images"]
+
 # Compile-only tests (not run, just type-checked)
 [[bin]]
 name = "led12x4"
@@ -79,6 +82,7 @@ host = [
     "dep:png",
     "dep:tempfile",
 ] # For testing on host platform without hardware dependencies
+doc-images = ["dep:embed-doc-image"]
 wifi = ["dep:cyw43", "dep:cyw43-pio", "dep:cyw43-firmware", "dep:embassy-net"]
 display-trace = []
 
@@ -161,6 +165,7 @@ static_cell = "2.1.0"
 embassy-hal-internal = { git = "https://github.com/embassy-rs/embassy", branch = "main", default-features = false, optional = true }
 paste = "1.0"
 embedded-graphics = { version = "0.8", default-features = false }
+embed-doc-image = { version = "0.1.4", optional = true }
 png = { version = "0.17", optional = true }
 tempfile = { version = "3.13", optional = true }
 
