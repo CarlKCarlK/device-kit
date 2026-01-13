@@ -1,7 +1,10 @@
 # device-kit
 
-An embedded Rust library for Raspberry Pi Pico, Pico W, and Pico 2 that explores
-composable, async device abstractions using the Embassy framework.
+Device-kit explores application-level device abstractions in embedded Rust, enabled by Embassy async.
+
+It focuses on building reusable, long-lived device abstractions that expose small, typed async APIs, while hiding timing, interrupts, channels, and shared state inside the device.
+
+Currently targeting Raspberry Pi Pico 1 and Pico 2, with patterns intended to transfer to other microcontrollers.
 
 ## Status
 
@@ -150,6 +153,11 @@ cargo blinky-2r     # Run blinky on Pico 2 RISC-V (--release)
 ```
 
 See `ARCHITECTURE.md` for detailed information about board and architecture features.
+
+## Limitations
+
+- These patterns will work on any microcontroller, but this specfiic library
+works only on the Pico1 and Pico2.
 
 ## Windows/WSL Debug Probe Helper
 

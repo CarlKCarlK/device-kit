@@ -416,7 +416,7 @@ impl Led2dFont {
     }
 }
 
-// cmk0000 should also define Default via the trait
+// cmk0000000 needs links to led2d! and generated struct
 /// A 2D array of RGB pixels representing a single display frame.
 ///
 /// Frames are used to prepare images before sending them to the LED matrix. They support:
@@ -442,7 +442,7 @@ impl Led2dFont {
 /// - `SIZE` — [`Size`] frame dimensions
 /// - `TOP_LEFT`, `TOP_RIGHT`, `BOTTOM_LEFT`, `BOTTOM_RIGHT` — Corner [`Point`] coordinates
 ///
-/// # Example: Draw directly to pixels and with [`embedded-graphics`](https://docs.rs/embedded-graphics):
+/// # Example: Draw pixels both directly and with [`embedded-graphics`](https://docs.rs/embedded-graphics):
 ///
 /// ![LED panel preview][led2d-graphics]
 ///
