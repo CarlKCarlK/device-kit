@@ -6,20 +6,16 @@ use core::{convert::Infallible, future};
 
 use defmt::info;
 use defmt_rtt as _;
-use device_kit::led2d::Frame2d;
-use device_kit::led2d::layout::LedLayout;
-use device_kit::{Result, led2d};
+use device_kit::{Result, led2d, led2d::Frame2d, led2d::layout::LedLayout};
 use embassy_executor::Spawner;
 use embassy_rp::init;
 use embedded_graphics::{
-    Drawable,
     pixelcolor::Rgb888,
-    prelude::Point,
-    prelude::Primitive,
-    prelude::RgbColor,
+    prelude::*,
     primitives::{Circle, PrimitiveStyle, Rectangle},
 };
 use panic_probe as _;
+use smart_leds::colors;
 
 // Two 12x4 panels stacked vertically for a 12x8 display.
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
@@ -46,29 +42,35 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     let led12x8 = Led12x8::new(p.PIN_4, p.PIO0, p.DMA_CH0, spawner)?;
 
+    // Create a frame to draw on. This is just an in-memory 2D pixel buffer.
     let mut frame = Frame2d::new();
 
+    // Use the embedded-graphics crate to draw a red rectangle border around the edge of the frame.
     Rectangle::new(Led12x8::TOP_LEFT, Led12x8::SIZE)
         .into_styled(PrimitiveStyle::with_stroke(Rgb888::RED, 1))
         .draw(&mut frame)?;
 
+    // Direct pixel access: set the upper-left LED pixel (x = 0, y = 0).
+    // Frame2d stores LED colors directly, so we write an LED color here.
+    frame[0][0] = colors::CYAN;
+
+    // Use the embedded-graphics crate to draw a green circle centered in the frame.
     const DIAMETER: u32 = 6;
-    const TOP_LEFT: Point = centered_top_left(Led12x8::WIDTH, Led12x8::HEIGHT, DIAMETER);
-    Circle::new(TOP_LEFT, DIAMETER)
+    const CIRCLE_TOP_LEFT: Point =
+        centered_top_left(Led12x8::WIDTH, Led12x8::HEIGHT, DIAMETER as usize);
+    Circle::new(CIRCLE_TOP_LEFT, DIAMETER)
         .into_styled(PrimitiveStyle::with_stroke(Rgb888::GREEN, 1))
         .draw(&mut frame)?;
 
+    // Write the frame to the LED panel.
     led12x8.write_frame(frame).await?;
 
     future::pending().await // Run forever
 }
 
-const fn centered_top_left(width: usize, height: usize, size: u32) -> Point {
-    assert!(size <= width as u32); // compile-time check
-    assert!(size <= height as u32); // compile-time check
-
-    Point::new(
-        (width as i32 - size as i32) / 2,
-        (height as i32 - size as i32) / 2,
-    )
+// Calculate the top-left point to center the circle, given its bounding box.
+const fn centered_top_left(width: usize, height: usize, size: usize) -> Point {
+    assert!(size <= width); // compile-time check
+    assert!(size <= height); // compile-time check
+    Point::new(((width - size) / 2) as i32, ((height - size) / 2) as i32)
 }
