@@ -62,6 +62,7 @@ async fn test_led12x4_pio0_write_text(p: embassy_rp::Peripherals, spawner: Spawn
     let gpio3_pio0_led_strip = Gpio3Pio0LedStrip::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;
 
     static LED_12X4_STATIC: Gpio3Pio0Led2dStatic = Gpio3Pio0Led2d::new_static();
+    // cmk000000 delete
     let led12x4 = Gpio3Pio0Led2d::from_strip(gpio3_pio0_led_strip, spawner)?;
 
     led12x4
@@ -79,6 +80,7 @@ async fn test_led12x4_pio1(p: embassy_rp::Peripherals, spawner: Spawner) -> Resu
     let gpio3_pio1_led_strip = Gpio3Pio1LedStrip::new(p.PIN_3, p.PIO1, p.DMA_CH1, spawner)?;
 
     static LED_12X4_STATIC: Gpio3Pio1Led2dStatic = Gpio3Pio1Led2d::new_static();
+    // cmk000000 delete
     let _led12x4 = Gpio3Pio1Led2d::from_strip(gpio3_pio1_led_strip, spawner)?;
 
     Ok(())

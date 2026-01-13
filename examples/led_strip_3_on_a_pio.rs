@@ -64,6 +64,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         p.PIO0, p.PIN_0, p.DMA_CH0, p.PIN_3, p.DMA_CH1, p.PIN_4, p.DMA_CH2, spawner,
     )?;
 
+    // cmk000000 delete
     let led12x4_gpio3 = Led12x4Gpio3::from_strip(gpio3_led_strip, spawner)?;
     let led8x12_gpio4 = Led8x12Gpio4::from_strip(gpio4_led_strip, spawner)?;
 

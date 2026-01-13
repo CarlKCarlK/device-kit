@@ -424,11 +424,12 @@ impl Led2dFont {
 /// - Full graphics drawing via [`embedded-graphics`](https://docs.rs/embedded-graphics) (lines, shapes, text, and more)
 /// - Automatic conversion to the strip's physical LED order
 ///
+/// //cmk00000 if x and y are backwards, should/can we fix that?
 /// Frames are stored in row-major order where `frame[row][col]` represents the pixel
 /// at display coordinates (col, row). The physical mapping to the LED strip is handled
 /// automatically by the device abstraction.
 ///
-/// # Associated Constants cmk0000 delete this section
+/// # Associated Constants cmk00000 delete this section
 ///
 /// - `WIDTH` — Frame2d width in pixels (columns)
 /// - `HEIGHT` — Frame2d height in pixels (rows)
@@ -438,7 +439,7 @@ impl Led2dFont {
 ///
 /// # Examples
 ///
-/// Direct pixel access:
+/// Direct pixel access: cmk000000 improve or kill this
 ///
 /// ```no_run
 /// # #![no_std]
@@ -455,18 +456,38 @@ impl Led2dFont {
 ///
 /// Drawing with [`embedded-graphics`](https://docs.rs/embedded-graphics):
 ///
+/// // cmk00000 we need to tell about fonts, and the coordinate system, and say us EB for fancy font stuff
+///
 /// ```no_run
 /// # #![no_std]
 /// # #![no_main]
 /// # use panic_probe as _;
-/// use device_kit::led2d::{rgb8_to_rgb888, Frame2d};
-/// use smart_leds::RGB8;
-/// use embedded_graphics::{prelude::*, primitives::{Line, PrimitiveStyle}};
+/// use device_kit::led2d::Frame2d;
+/// use embedded_graphics::{
+///     pixelcolor::Rgb888,
+///     prelude::*,
+///     primitives::{Circle, PrimitiveStyle, Rectangle},
+/// };
+/// use smart_leds::colors;
 /// # fn example() {
-/// let mut frame = Frame2d::<12, 8>::new();
-/// let color = rgb8_to_rgb888(RGB8::new(255, 0, 0));
-/// Line::new(Point::new(0, 0), Point::new(11, 7))
-///     .into_styled(PrimitiveStyle::with_stroke(color, 1))
+/// const fn centered_top_left(width: usize, height: usize, size: usize) -> Point {
+///     assert!(size <= width);
+///     assert!(size <= height);
+///     Point::new(((width - size) / 2) as i32, ((height - size) / 2) as i32)
+/// }
+///
+/// let mut frame = Frame2d::<12, 8>::new(); // cmk000000 don't need all these sizes
+/// Rectangle::new(Frame2d::<12, 8>::TOP_LEFT, Frame2d::<12, 8>::SIZE)
+///     .into_styled(PrimitiveStyle::with_stroke(Rgb888::RED, 1))
+///     .draw(&mut frame)
+///     .unwrap();
+///
+/// frame[0][0] = colors::CYAN;
+///
+/// const DIAMETER: u32 = 6;
+/// const CIRCLE_TOP_LEFT: Point = centered_top_left(12, 8, DIAMETER as usize);
+/// Circle::new(CIRCLE_TOP_LEFT, DIAMETER)
+///     .into_styled(PrimitiveStyle::with_stroke(Rgb888::GREEN, 1))
 ///     .draw(&mut frame)
 ///     .unwrap();
 /// # }
@@ -477,6 +498,7 @@ impl Led2dFont {
 pub struct Frame2d<const W: usize, const H: usize>(pub [[RGB8; W]; H]);
 
 impl<const W: usize, const H: usize> Frame2d<W, H> {
+    // cmk00000 are all these constants still needed?
     /// Frame2d width in pixels (columns).
     pub const WIDTH: usize = W;
     /// Frame2d height in pixels (rows).

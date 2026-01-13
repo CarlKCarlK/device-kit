@@ -69,11 +69,13 @@ async fn test_multiple_devices(p: embassy_rp::Peripherals, spawner: Spawner) -> 
     // Construct first device
     let gpio3_led_strip = Gpio3LedStrip::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;
     static LED4X12_STATIC: Led4x12Static = Led4x12::new_static();
+    // cmk000000 delete
     let led4x12 = Led4x12::from_strip(gpio3_led_strip, spawner)?;
 
     // Construct second device
     let gpio4_led_strip = Gpio4LedStrip::new(p.PIN_4, p.PIO1, p.DMA_CH1, spawner)?;
     static LED8X8_STATIC: Led8x8Static = Led8x8::new_static();
+    // cmk000000 delete
     let led8x8 = Led8x8::from_strip(gpio4_led_strip, spawner)?;
 
     // Verify associated constants don't collide
