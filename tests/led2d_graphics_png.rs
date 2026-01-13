@@ -8,30 +8,16 @@ use embedded_graphics::{
     primitives::{Circle, PrimitiveStyle, Rectangle},
 };
 use smart_leds::colors;
+use std::error::Error;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 type Frame = Frame2d<12, 8>;
 
 #[test]
-fn led2d_graphics_png_matches_expected() {
-    let frame = build_frame();
-    let expected_path = Path::new("docs/assets/led2d_graphics.png");
-    assert!(
-        expected_path.exists(),
-        "expected PNG is missing at {}",
-        expected_path.display()
-    );
-
-    let output_path = temp_output_path("led2d_graphics_actual.png");
-    write_frame_png(&frame, &output_path, 200).expect("render PNG");
-
-    let expected_bytes = fs::read(expected_path).expect("read expected PNG");
-    let actual_bytes = fs::read(&output_path).expect("read actual PNG");
-    assert_eq!(expected_bytes, actual_bytes, "PNG bytes must match");
-
-    let _ = fs::remove_file(&output_path);
+fn led2d_graphics_png_matches_expected() -> Result<(), Box<dyn Error>> {
+    assert_png_matches_expected("led2d_graphics.png", 200, build_frame)
 }
 
 fn build_frame() -> Frame {
@@ -69,4 +55,36 @@ fn temp_output_path(filename: &str) -> PathBuf {
     let mut path = std::env::temp_dir();
     path.push(format!("{filename}-{process_id}-{unix_time}"));
     path
+}
+
+fn docs_assets_path(filename: &str) -> PathBuf {
+    let mut path = PathBuf::from("docs");
+    path.push("assets");
+    path.push(filename);
+    path
+}
+
+fn assert_png_matches_expected<F>(
+    filename: &str,
+    max_dimension: u32,
+    build_frame: F,
+) -> Result<(), Box<dyn Error>>
+where
+    F: FnOnce() -> Frame,
+{
+    let frame = build_frame();
+    let expected_path = docs_assets_path(filename);
+    if !expected_path.exists() {
+        return Err(format!("expected PNG is missing at {}", expected_path.display()).into());
+    }
+
+    let output_path = temp_output_path("led2d_graphics_actual.png");
+    write_frame_png(&frame, &output_path, max_dimension)?;
+
+    let expected_bytes = fs::read(&expected_path)?;
+    let actual_bytes = fs::read(&output_path)?;
+    assert_eq!(expected_bytes, actual_bytes, "PNG bytes must match");
+
+    let _ = fs::remove_file(&output_path);
+    Ok(())
 }
