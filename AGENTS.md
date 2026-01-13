@@ -225,6 +225,8 @@ let green = Rgb::new(0, 255, 0);
 
 Common colors available: `RED`, `GREEN`, `BLUE`, `YELLOW`, `WHITE`, `BLACK`, `CYAN`, `MAGENTA`, `ORANGE`, `PURPLE`, etc.
 
+When working directly with the `embedded_graphics` crate, using `embedded_graphics::pixelcolor::Rgb888` constants (e.g., `Rgb888::RED`) is acceptable to avoid conversions.
+
 ## Terminology: "Panel" vs "Matrix"
 
 Use **"NeoPixel-style (WS2812)"** for LED strip/pixel hardware. Always include the parenthetical "(WS2812)" to clarify the protocol, not just "WS2812-style" or bare "WS2812".

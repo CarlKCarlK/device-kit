@@ -17,7 +17,7 @@ use embedded_graphics::{
 use panic_probe as _;
 use smart_leds::colors;
 
-// Two 12x4 panels stacked vertically for a 12x8 display.
+// Two 12×4 panels stacked vertically to create a 12×8 display.
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 const LED_LAYOUT_12X8: LedLayout<96, 12, 8> = LED_LAYOUT_12X4.concat_v(LED_LAYOUT_12X4);
 
@@ -68,7 +68,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     future::pending().await // Run forever
 }
 
-// Calculate the top-left point to center the circle, given its bounding box.
+/// Calculate the top-left corner position to center a shape within a bounding box.
 const fn centered_top_left(width: usize, height: usize, size: usize) -> Point {
     assert!(size <= width); // compile-time check
     assert!(size <= height); // compile-time check
