@@ -522,7 +522,7 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 /// # use defmt_rtt as _;
 /// # use embassy_executor::Spawner;
 /// # use defmt::info;
-/// use device_kit::{Result, led2d::layout::LedLayout, led_strip::{Current, Frame1d, Gamma, colors, led_strips}};
+/// use device_kit::{Result, led2d::Frame2d, led2d::layout::LedLayout, led_strip::{Current, Frame1d, Gamma, colors, led_strips}};
 /// use embassy_time::Duration;
 ///
 /// // Our 2D panel is two 12x4 panels stacked vertically.
@@ -588,10 +588,10 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///     gpio3_led_strip.write_frame(frame_gpio3).await?;
 ///
 ///     // Animate "Go Go" text on GPIO4 2D panel.
-///     let mut frame_go_top = Gpio4Led2dFrame::new();
+///     let mut frame_go_top = Frame2d::<8, 12>::new();
 ///     gpio4_led2d.write_text_to_frame("Go", &[], &mut frame_go_top)?;
 ///
-///     let mut frame_go_bottom = Gpio4Led2dFrame::new();
+///     let mut frame_go_bottom = Frame2d::<8, 12>::new();
 ///     gpio4_led2d.write_text_to_frame(
 ///         "\nGo",
 ///         &[colors::HOT_PINK, colors::LIME],

@@ -9,6 +9,7 @@ use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::led_strip::led_strips;
 use device_kit::led_strip::{Current, Frame1d, Rgb, colors};
+use device_kit::led2d::Frame2d;
 use device_kit::led2d::layout::LedLayout;
 use device_kit::led2d::led2d_from_strip;
 use embassy_executor::Spawner;
@@ -75,7 +76,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
     let mut go_frames = Vec::<_, 2>::new();
 
     // Frame 1: "go  " - each character gets its own color
-    let mut frame1 = Led12x4Gpio3Frame::new();
+    let mut frame1 = Frame2d::<12, 4>::new();
     led12x4_gpio3.write_text_to_frame(
         "go  ",
         &[colors::MAGENTA, colors::CYAN, colors::BLACK, colors::BLACK],
@@ -86,7 +87,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         .expect("go_frames has capacity for 2 frames");
 
     // Frame 2: "  go" - each character gets its own color
-    let mut frame2 = Led12x4Gpio3Frame::new();
+    let mut frame2 = Frame2d::<12, 4>::new();
     led12x4_gpio3.write_text_to_frame(
         "  go",
         &[
@@ -107,7 +108,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
     let mut go_frames_8x12 = Vec::<_, 2>::new();
 
     // Frame 1: "GO\n  " - two lines
-    let mut frame1_8x12 = Led8x12Gpio4Frame::new();
+    let mut frame1_8x12 = Frame2d::<8, 12>::new();
     led8x12_gpio4.write_text_to_frame(
         "GO\n  ",
         &[colors::MAGENTA, colors::CYAN, colors::BLACK, colors::BLACK],
@@ -118,7 +119,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         .expect("go_frames_8x12 has capacity for 2 frames");
 
     // Frame 2: "  \nGO" - two lines
-    let mut frame2_8x12 = Led8x12Gpio4Frame::new();
+    let mut frame2_8x12 = Frame2d::<8, 12>::new();
     led8x12_gpio4.write_text_to_frame(
         "  \nGO",
         &[

@@ -20,6 +20,7 @@ use device_kit::led_strip::Current;
 use device_kit::led_strip::Gamma;
 use device_kit::led_strip::colors;
 use device_kit::led2d;
+use device_kit::led2d::Frame2d;
 use device_kit::led2d::layout::LedLayout;
 use device_kit::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
 use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};
@@ -370,7 +371,7 @@ async fn show_portal_ready(led12x4: &Led12x4) -> Result<()> {
     led12x4
         .animate([
             (on_frame, Duration::from_millis(700)),
-            (Led12x4Frame::new(), Duration::from_millis(300)),
+            (Frame2d::<12, 4>::new(), Duration::from_millis(300)),
         ])
         .await
 }
@@ -421,8 +422,8 @@ fn chars_to_text(chars: [char; 4]) -> String<4> {
     text
 }
 
-fn text_frame(led12x4: &Led12x4, text: &str, colors: &[RGB8]) -> Result<Led12x4Frame> {
-    let mut frame = Led12x4Frame::new();
+fn text_frame(led12x4: &Led12x4, text: &str, colors: &[RGB8]) -> Result<Frame2d<12, 4>> {
+    let mut frame = Frame2d::<12, 4>::new();
     led12x4.write_text_to_frame(text, colors, &mut frame)?;
     Ok(frame)
 }
@@ -431,7 +432,7 @@ fn perimeter_chase_animation(
     clockwise: bool,
     color: RGB8,
     duration: Duration,
-) -> Result<heapless::Vec<(Led12x4Frame, Duration), PERIMETER_LENGTH>> {
+) -> Result<heapless::Vec<(Frame2d<12, 4>, Duration), PERIMETER_LENGTH>> {
     assert!(
         duration.as_micros() > 0,
         "perimeter animation duration must be positive"
@@ -439,7 +440,7 @@ fn perimeter_chase_animation(
     let coordinates = perimeter_coordinates(clockwise);
     let mut frames = heapless::Vec::new();
     for frame_index in 0..PERIMETER_LENGTH {
-        let mut frame = Led12x4Frame::new();
+        let mut frame = Frame2d::<12, 4>::new();
         let (row_index, column_index) = coordinates[frame_index];
         frame[row_index][column_index] = color;
         frames

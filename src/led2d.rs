@@ -1782,12 +1782,6 @@ macro_rules! led2d_from_strip {
                 font_variant: $crate::led2d::Led2dFont,
             }
 
-            /// Frame type for this LED matrix display.
-            ///
-            /// This is a convenience type alias for `Frame2d<W, H>` specific to this device.
-            #[allow(dead_code)]
-            $vis type [<$name Frame>] = $crate::led2d::Frame2d<$cols_const, $rows_const>;
-
             #[allow(non_snake_case, dead_code)]
             impl [<$name>] {
                 /// Number of columns in the panel.
@@ -1796,6 +1790,16 @@ macro_rules! led2d_from_strip {
                 pub const HEIGHT: usize = $rows_const;
                 /// Total number of LEDs (WIDTH * HEIGHT).
                 pub const N: usize = $n_const;
+                /// Frame dimensions as a [`Size`] for embedded-graphics.
+                pub const SIZE: $crate::led2d::Size = $crate::led2d::Frame2d::<$cols_const, $rows_const>::SIZE;
+                /// Top-left corner coordinate for embedded-graphics drawing.
+                pub const TOP_LEFT: $crate::led2d::Point = $crate::led2d::Frame2d::<$cols_const, $rows_const>::TOP_LEFT;
+                /// Top-right corner coordinate for embedded-graphics drawing.
+                pub const TOP_RIGHT: $crate::led2d::Point = $crate::led2d::Frame2d::<$cols_const, $rows_const>::TOP_RIGHT;
+                /// Bottom-left corner coordinate for embedded-graphics drawing.
+                pub const BOTTOM_LEFT: $crate::led2d::Point = $crate::led2d::Frame2d::<$cols_const, $rows_const>::BOTTOM_LEFT;
+                /// Bottom-right corner coordinate for embedded-graphics drawing.
+                pub const BOTTOM_RIGHT: $crate::led2d::Point = $crate::led2d::Frame2d::<$cols_const, $rows_const>::BOTTOM_RIGHT;
                 /// Maximum animation frames supported for this device.
                 pub const MAX_FRAMES: usize = $max_frames_const;
 

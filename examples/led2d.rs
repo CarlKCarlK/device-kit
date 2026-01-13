@@ -10,6 +10,7 @@ use device_kit::button::{Button, PressedTo};
 use device_kit::led_strip::Current;
 use device_kit::led_strip::Gamma;
 use device_kit::led2d;
+use device_kit::led2d::Frame2d;
 use device_kit::led2d::layout::LedLayout;
 use device_kit::{Error, Result};
 use embassy_executor::Spawner;
@@ -89,7 +90,7 @@ async fn demo_rust_text(led4x12: &Led4x12) -> Result<()> {
 
 /// Blink "RUST" by constructing frames explicitly.
 async fn demo_blink_text(led4x12: &Led4x12) -> Result<()> {
-    let mut on_frame = Led4x12Frame::new();
+    let mut on_frame = Frame2d::<12, 4>::new();
     led4x12.write_text_to_frame(
         "rust",
         &[colors::RED, colors::GREEN, colors::BLUE, colors::YELLOW],
@@ -99,7 +100,7 @@ async fn demo_blink_text(led4x12: &Led4x12) -> Result<()> {
         .animate(
             [
                 (on_frame, Duration::from_millis(500)),
-                (Led4x12Frame::new(), Duration::from_millis(500)),
+                (Frame2d::<12, 4>::new(), Duration::from_millis(500)),
             ]
             .into_iter(),
         )
@@ -109,7 +110,7 @@ async fn demo_blink_text(led4x12: &Led4x12) -> Result<()> {
 /// Display colored corners to demonstrate coordinate mapping.
 async fn demo_colored_corners(led4x12: &Led4x12) -> Result<()> {
     // Four corners with different colors
-    let mut frame = Led4x12Frame::new();
+    let mut frame = Frame2d::<12, 4>::new();
     frame[0][0] = colors::RED; // Top-left
     frame[0][Led4x12::WIDTH - 1] = colors::GREEN; // Top-right
     frame[Led4x12::HEIGHT - 1][0] = colors::BLUE; // Bottom-left
@@ -122,7 +123,7 @@ async fn demo_colored_corners(led4x12: &Led4x12) -> Result<()> {
 /// Blink a pattern by constructing frames explicitly.
 async fn demo_blink_pattern(led4x12: &Led4x12) -> Result<()> {
     // Create checkerboard pattern
-    let mut on_frame = Led4x12Frame::new();
+    let mut on_frame = Frame2d::<12, 4>::new();
     for row_index in 0..Led4x12::HEIGHT {
         for column_index in 0..Led4x12::WIDTH {
             if (row_index + column_index) % 2 == 0 {
@@ -135,7 +136,7 @@ async fn demo_blink_pattern(led4x12: &Led4x12) -> Result<()> {
         .animate(
             [
                 (on_frame, Duration::from_millis(500)),
-                (Led4x12Frame::new(), Duration::from_millis(500)),
+                (Frame2d::<12, 4>::new(), Duration::from_millis(500)),
             ]
             .into_iter(),
         )
@@ -151,15 +152,15 @@ async fn demo_rectangle_diagonals_embedded_graphics(led4x12: &Led4x12) -> Result
         primitives::{Line, PrimitiveStyle, Rectangle},
     };
 
-    let mut frame = Led4x12Frame::new();
+    let mut frame = Frame2d::<12, 4>::new();
 
     // Use the embedded_graphics crate to draw an image.
 
-    let frame_top_left = Led4x12Frame::TOP_LEFT;
-    let frame_size = Led4x12Frame::SIZE;
-    let frame_bottom_right = Led4x12Frame::BOTTOM_RIGHT;
-    let frame_bottom_left = Led4x12Frame::BOTTOM_LEFT;
-    let frame_top_right = Led4x12Frame::TOP_RIGHT;
+    let frame_top_left = Led4x12::TOP_LEFT;
+    let frame_size = Led4x12::SIZE;
+    let frame_bottom_right = Led4x12::BOTTOM_RIGHT;
+    let frame_bottom_left = Led4x12::BOTTOM_LEFT;
+    let frame_top_right = Led4x12::TOP_RIGHT;
 
     // Draw red rectangle border
     Rectangle::new(frame_top_left, frame_size)
@@ -198,7 +199,7 @@ async fn demo_bouncing_dot_manual(led4x12: &Led4x12, button: &mut Button<'_>) ->
     let mut color = *color_cycle.next().unwrap(); // Safe: cycle() over a non-empty array never returns None
 
     loop {
-        let mut frame = Led4x12Frame::new();
+        let mut frame = Frame2d::<12, 4>::new();
         frame[y as usize][x as usize] = color;
         led4x12.write_frame(frame).await?;
 
@@ -237,7 +238,7 @@ async fn demo_bouncing_dot_animation(led4x12: &Led4x12) -> Result<()> {
     let mut color = *color_cycle.next().unwrap();
 
     for _ in 0..Led4x12::MAX_FRAMES {
-        let mut frame = Led4x12Frame::new();
+        let mut frame = Frame2d::<12, 4>::new();
         frame[y as usize][x as usize] = color;
         frames
             .push((frame, Duration::from_millis(50)))

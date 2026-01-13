@@ -13,6 +13,7 @@ use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::led_strip::Current;
 use device_kit::led_strip::led_strip;
+use device_kit::led2d::Frame2d;
 use device_kit::led2d::layout::LedLayout;
 use device_kit::led2d::led2d_from_strip;
 use embassy_executor::Spawner;
@@ -77,13 +78,13 @@ async fn test_multiple_devices(p: embassy_rp::Peripherals, spawner: Spawner) -> 
 
     // Verify associated constants don't collide
     // Create frame for 4x12 display
-    let mut frame_4x12 = Led4x12Frame::new();
+    let mut frame_4x12 = Frame2d::<12, 4>::new();
     frame_4x12[0][0] = colors::RED;
     frame_4x12[Led4x12::HEIGHT - 1][Led4x12::WIDTH - 1] = colors::BLUE;
     led4x12.write_frame(frame_4x12).await?;
 
     // Create frame for 8x8 display (different dimensions)
-    let mut frame_8x8 = Led8x8Frame::new();
+    let mut frame_8x8 = Frame2d::<8, 8>::new();
     frame_8x8[0][0] = colors::GREEN;
     frame_8x8[Led8x8::HEIGHT - 1][Led8x8::WIDTH - 1] = colors::YELLOW;
     led8x8.write_frame(frame_8x8).await?;

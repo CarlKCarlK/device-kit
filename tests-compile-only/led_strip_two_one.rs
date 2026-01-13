@@ -6,6 +6,7 @@
 use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
+use device_kit::led2d::Frame2d;
 use device_kit::led2d::layout::LedLayout;
 use device_kit::led_strip::led_strips;
 use device_kit::led_strip::{Current, Frame1d, Rgb, colors};
@@ -92,7 +93,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 
     // Prepare two-frame "gogo" animation for gpio3 Led2d
     let mut go_frames_gpio3 = Vec::<_, 2>::new();
-    let mut frame1 = Gpio3Led2dFrame::new();
+    let mut frame1 = Frame2d::<12, 4>::new();
     gpio3_led2d.write_text_to_frame(
         "go  ",
         &[
@@ -107,7 +108,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         .push((frame1, go_frame_duration))
         .expect("go_frames has capacity for 2 frames");
 
-    let mut frame2 = Gpio3Led2dFrame::new();
+    let mut frame2 = Frame2d::<12, 4>::new();
     gpio3_led2d.write_text_to_frame(
         "  go",
         &[
@@ -124,7 +125,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 
     // Prepare two-frame "go" animation for gpio4 Led2d
     let mut go_frames_gpio4 = Vec::<_, 2>::new();
-    let mut frame1 = Gpio4Led2dFrame::new();
+    let mut frame1 = Frame2d::<8, 12>::new();
     gpio4_led2d.write_text_to_frame(
         "GO\n",
         &[
@@ -139,7 +140,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         .push((frame1, go_frame_duration))
         .expect("go_frames has capacity for 2 frames");
 
-    let mut frame2 = Gpio4Led2dFrame::new();
+    let mut frame2 = Frame2d::<8, 12>::new();
     gpio4_led2d.write_text_to_frame(
         "\nGO",
         &[
