@@ -222,7 +222,6 @@ impl WifiAuto {
     /// Initialize WiFi auto-provisioning with custom configuration fields.
     ///
     /// See [`WifiAuto`] for a complete example.
-    // cmk00 PIO0 is hardcoded here (may no longer apply). Could be made generic over any PIO.
     #[allow(clippy::too_many_arguments)]
     pub fn new<const N: usize, PIO: WifiPio>(
         pin_23: Peri<'static, PIN_23>,

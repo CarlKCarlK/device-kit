@@ -46,11 +46,11 @@ led2d! {
 pub struct Led2dGenerated;
 
 #[cfg(doc)]
-use crate::led2d::{Frame2d, Led2dStatic};
+use crate::Result;
 #[cfg(doc)]
 use crate::led_strip::Rgb;
 #[cfg(doc)]
-use crate::Result;
+use crate::led2d::{Frame2d, Led2dStatic};
 
 #[cfg(doc)]
 /// Static resources for `Led2dGenerated`.
@@ -79,8 +79,7 @@ impl Led2dGenerated {
     /// We assume each LED draws 60 mA at full brightness. The actual limit depends on
     /// the power budget you specified in the [`led2d!`] macro. This constant is the result
     /// of calculating how much brightness is safe given that budget and the number of LEDs.
-    pub const MAX_BRIGHTNESS: u8 =
-        Current::Unlimited.max_brightness(Self::LEN as u32 * 60);
+    pub const MAX_BRIGHTNESS: u8 = Current::Unlimited.max_brightness(Self::LEN as u32 * 60);
     /// Maximum animation frames allowed.
     pub const MAX_FRAMES: usize = 16;
 
@@ -124,7 +123,6 @@ impl Led2dGenerated {
     /// Create a new LED panel instance from a strip.
     ///
     /// See the [`mod@crate::led2d`] module docs for usage.
-    /// cmk000 docs needed (may no longer apply)
     pub(crate) fn from_strip(
         led_strip: &'static Led2dGeneratedLedStrip,
         spawner: embassy_executor::Spawner,
@@ -170,7 +168,10 @@ impl Led2dGenerated {
     /// See the [`mod@crate::led2d`] module docs for usage.
     pub async fn animate<const N: usize>(
         &self,
-        frames: [(Frame2d<{ Self::WIDTH }, { Self::HEIGHT }>, embassy_time::Duration); N],
+        frames: [(
+            Frame2d<{ Self::WIDTH }, { Self::HEIGHT }>,
+            embassy_time::Duration,
+        ); N],
     ) -> Result<()> {
         let _ = frames;
         Ok(())

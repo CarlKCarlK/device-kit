@@ -103,7 +103,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Set up the 12x4 LED display on GPIO3.
     let led12x4 = Led12x4::new(p.PIN_3, p.PIO0, p.DMA_CH1, spawner)?;
 
-    // cmk sometimes I use "led12x4" and sometimes "led_12x4" which is it? (may no longer apply)
     // Connect Wi-Fi, using the LED panel for status.
     let led12x4_ref = &led12x4;
     let (stack, mut button) = wifi_auto

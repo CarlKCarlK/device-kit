@@ -440,7 +440,7 @@ impl Led2dFont {
 /// automatically by the device abstraction.
 ///
 /// cmk000000000 do the generated structs also have these associated constants and documentation?
-/// cmk000000000 does the 1d rame and generated structs need them too?
+/// cmk000000000 does the 1d frame and generated structs need them too?
 /// # Associated Constants
 ///
 /// - `WIDTH` — Frame2d width in pixels (columns)
@@ -608,11 +608,7 @@ impl<const W: usize, const H: usize> DrawTarget for Frame2d<W, H> {
         for Pixel(coord, color) in pixels {
             let x_index = coord.x;
             let y_index = coord.y;
-            if x_index >= 0
-                && x_index < W as i32
-                && y_index >= 0
-                && y_index < H as i32
-            {
+            if x_index >= 0 && x_index < W as i32 && y_index >= 0 && y_index < H as i32 {
                 self.0[y_index as usize][x_index as usize] =
                     RGB8::new(color.r(), color.g(), color.b());
             }
@@ -709,7 +705,6 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
         self.mapping_by_xy[y_index * self.width + x_index] as usize
     }
 
-    // cmk00000000 don't want xy_to_index
     // cmk000000 need to explain the 0,0 is the top-left
     /// Convert 2D frame to 1D array using the LED layout.
     fn convert_frame<const W: usize, const H: usize>(
