@@ -1,7 +1,7 @@
 #![cfg(feature = "host")]
 
 use device_kit::led2d::{Frame2d, Led2dFont, render_text_to_frame};
-use device_kit::to_png::{write_frame_png, write_frames_apng};
+use device_kit::to_png::{write_frame_png_with_gamma, write_frames_apng_with_gamma};
 use embassy_time::Duration;
 use embedded_graphics::{
     pixelcolor::Rgb888,
@@ -32,13 +32,23 @@ fn led2d1_png_matches_expected() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn led2d1_linear_png_matches_expected() -> Result<(), Box<dyn Error>> {
+    assert_png_matches_expected_with_gamma("led2d1_linear.png", 200, 1.0, build_led2d1_frame)
+}
+
+#[test]
 fn led2d2_apng_matches_expected() -> Result<(), Box<dyn Error>> {
     assert_apng_matches_expected("led2d2.png", 200, 400, build_led2d2_frames)
 }
 
 #[test]
-fn santa_apng_matches_expected() -> Result<(), Box<dyn Error>> {
-    assert_santa_apng_matches_expected()
+fn santa_linear_apng_matches_expected() -> Result<(), Box<dyn Error>> {
+    assert_santa_apng_matches_expected("santa_linear.png", None, 1.0)
+}
+
+#[test]
+fn santa_gamma_apng_matches_expected() -> Result<(), Box<dyn Error>> {
+    assert_santa_apng_matches_expected("santa.png", Some(2.2), 2.2)
 }
 
 fn build_frame() -> Frame {
@@ -103,7 +113,11 @@ fn build_led2d2_frame_1() -> Led8x12Frame {
     frame
 }
 
-fn assert_santa_apng_matches_expected() -> Result<(), Box<dyn Error>> {
+fn assert_santa_apng_matches_expected(
+    filename: &str,
+    gamma: Option<f32>,
+    preview_inverse_gamma: f32,
+) -> Result<(), Box<dyn Error>> {
     let frame_delay_ms =
         u32::try_from(SANTA_FRAME_DURATION.as_millis()).expect("santa frame delay must fit in u32"); // cmk use ?
     for (_, duration) in SANTA_FRAMES.iter() {
@@ -112,11 +126,57 @@ fn assert_santa_apng_matches_expected() -> Result<(), Box<dyn Error>> {
             "santa frames must share a constant duration"
         );
     }
-    let santa_frames: Vec<Frame2d<12, 8>> = SANTA_FRAMES
+    let santa_frames: Vec<Frame> = SANTA_FRAMES
         .iter()
         .map(|(pixels, _)| Frame2d(*pixels))
         .collect();
-    assert_apng_matches_expected_for_frames("santa.png", 200, frame_delay_ms, &santa_frames)
+    let santa_frames = if let Some(gamma) = gamma {
+        apply_gamma_to_frames(&santa_frames, gamma)
+    } else {
+        santa_frames
+    };
+    assert_apng_matches_expected_for_frames_with_gamma(
+        filename,
+        200,
+        frame_delay_ms,
+        preview_inverse_gamma,
+        &santa_frames,
+    )
+}
+
+fn apply_gamma_to_frames(frames: &[Frame], gamma: f32) -> Vec<Frame> {
+    assert!(gamma > 0.0, "gamma must be positive");
+    frames
+        .iter()
+        .map(|frame| apply_gamma_to_frame(frame, gamma))
+        .collect()
+}
+
+fn apply_gamma_to_frame(frame: &Frame, gamma: f32) -> Frame {
+    let mut corrected_frame = Frame::new();
+    for row_index in 0..Frame::HEIGHT {
+        for column_index in 0..Frame::WIDTH {
+            let pixel = frame[row_index][column_index];
+            corrected_frame[row_index][column_index] = RGB8::new(
+                apply_gamma_to_channel(pixel.r, gamma),
+                apply_gamma_to_channel(pixel.g, gamma),
+                apply_gamma_to_channel(pixel.b, gamma),
+            );
+        }
+    }
+    corrected_frame
+}
+
+fn apply_gamma_to_channel(channel: u8, gamma: f32) -> u8 {
+    let normalized = (channel as f32) / 255.0;
+    let corrected = normalized.powf(gamma);
+    assert!(
+        (0.0..=1.0).contains(&corrected),
+        "gamma corrected value must be in range"
+    );
+    let scaled = (corrected * 255.0).round();
+    assert!(scaled <= 255.0, "gamma corrected value must fit in u8");
+    scaled as u8
 }
 
 const fn centered_top_left(width: usize, height: usize, size: usize) -> Point {
@@ -151,10 +211,23 @@ fn assert_png_matches_expected<F, const W: usize, const H: usize>(
 where
     F: FnOnce() -> Frame2d<W, H>,
 {
+    assert_png_matches_expected_with_gamma(filename, max_dimension, 2.2, build_frame)
+}
+
+fn assert_png_matches_expected_with_gamma<F, const W: usize, const H: usize>(
+    filename: &str,
+    max_dimension: u32,
+    preview_inverse_gamma: f32,
+    build_frame: F,
+) -> Result<(), Box<dyn Error>>
+where
+    F: FnOnce() -> Frame2d<W, H>,
+{
+    assert!(preview_inverse_gamma > 0.0, "preview_inverse_gamma must be positive");
     let frame = build_frame();
     let expected_path = docs_assets_path(filename);
     if std::env::var_os("DEVICE_KIT_UPDATE_PNGS").is_some() {
-        write_frame_png(&frame, &expected_path, max_dimension)?;
+        write_frame_png_with_gamma(&frame, &expected_path, max_dimension, preview_inverse_gamma)?;
         println!("updated PNG at {}", expected_path.display());
         return Ok(());
     }
@@ -163,7 +236,7 @@ where
     }
 
     let output_path = temp_output_path(filename);
-    write_frame_png(&frame, &output_path, max_dimension)?;
+    write_frame_png_with_gamma(&frame, &output_path, max_dimension, preview_inverse_gamma)?;
 
     let expected_bytes = fs::read(&expected_path)?;
     let actual_bytes = fs::read(&output_path)?;
@@ -192,9 +265,32 @@ fn assert_apng_matches_expected_for_frames<const W: usize, const H: usize>(
     frame_delay_ms: u32,
     frames: &[Frame2d<W, H>],
 ) -> Result<(), Box<dyn Error>> {
+    assert_apng_matches_expected_for_frames_with_gamma(
+        filename,
+        max_dimension,
+        frame_delay_ms,
+        2.2,
+        frames,
+    )
+}
+
+fn assert_apng_matches_expected_for_frames_with_gamma<const W: usize, const H: usize>(
+    filename: &str,
+    max_dimension: u32,
+    frame_delay_ms: u32,
+    preview_inverse_gamma: f32,
+    frames: &[Frame2d<W, H>],
+) -> Result<(), Box<dyn Error>> {
+    assert!(preview_inverse_gamma > 0.0, "preview_inverse_gamma must be positive");
     let expected_path = docs_assets_path(filename);
     if std::env::var_os("DEVICE_KIT_UPDATE_PNGS").is_some() {
-        write_frames_apng(frames, &expected_path, max_dimension, frame_delay_ms)?;
+        write_frames_apng_with_gamma(
+            frames,
+            &expected_path,
+            max_dimension,
+            frame_delay_ms,
+            preview_inverse_gamma,
+        )?;
         println!("updated APNG at {}", expected_path.display());
         return Ok(());
     }
@@ -203,7 +299,13 @@ fn assert_apng_matches_expected_for_frames<const W: usize, const H: usize>(
     }
 
     let output_path = temp_output_path(filename);
-    write_frames_apng(frames, &output_path, max_dimension, frame_delay_ms)?;
+    write_frames_apng_with_gamma(
+        frames,
+        &output_path,
+        max_dimension,
+        frame_delay_ms,
+        preview_inverse_gamma,
+    )?;
 
     let expected_bytes = fs::read(&expected_path)?;
     let actual_bytes = fs::read(&output_path)?;

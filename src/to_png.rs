@@ -15,12 +15,29 @@ pub fn write_frame_png<const W: usize, const H: usize>(
     output_path: impl AsRef<Path>,
     target_max_dimension: u32,
 ) -> Result<(), Box<dyn Error>> {
+    write_frame_png_with_gamma(frame, output_path, target_max_dimension, PREVIEW_INVERSE_GAMMA)
+}
+
+/// Render a `Frame2d` into a PNG file with a custom preview inverse gamma.
+pub fn write_frame_png_with_gamma<const W: usize, const H: usize>(
+    frame: &Frame2d<W, H>,
+    output_path: impl AsRef<Path>,
+    target_max_dimension: u32,
+    preview_inverse_gamma: f32,
+) -> Result<(), Box<dyn Error>> {
+    assert!(preview_inverse_gamma > 0.0, "preview_inverse_gamma must be positive");
     let output_path = output_path.as_ref();
     let panel_width = W as u32;
     let panel_height = H as u32;
     let cell_size = select_cell_size(panel_width, panel_height, target_max_dimension);
     let led_margin = (cell_size / 8).max(1);
-    write_panel_png(frame, output_path, cell_size, led_margin)?;
+    write_panel_png(
+        frame,
+        output_path,
+        cell_size,
+        led_margin,
+        preview_inverse_gamma,
+    )?;
     println!("wrote PNG to {}", output_path.display());
     Ok(())
 }
@@ -32,8 +49,26 @@ pub fn write_frames_apng<const W: usize, const H: usize>(
     target_max_dimension: u32,
     frame_delay_ms: u32,
 ) -> Result<(), Box<dyn Error>> {
+    write_frames_apng_with_gamma(
+        frames,
+        output_path,
+        target_max_dimension,
+        frame_delay_ms,
+        PREVIEW_INVERSE_GAMMA,
+    )
+}
+
+/// Render multiple `Frame2d` values into a looping APNG file with a custom preview inverse gamma.
+pub fn write_frames_apng_with_gamma<const W: usize, const H: usize>(
+    frames: &[Frame2d<W, H>],
+    output_path: impl AsRef<Path>,
+    target_max_dimension: u32,
+    frame_delay_ms: u32,
+    preview_inverse_gamma: f32,
+) -> Result<(), Box<dyn Error>> {
     assert!(!frames.is_empty(), "frames must not be empty");
     assert!(frame_delay_ms > 0, "frame_delay_ms must be positive");
+    assert!(preview_inverse_gamma > 0.0, "preview_inverse_gamma must be positive");
     let output_path = output_path.as_ref();
     let panel_width = W as u32;
     let panel_height = H as u32;
@@ -43,11 +78,13 @@ pub fn write_frames_apng<const W: usize, const H: usize>(
     let delay_num = u16::try_from(frame_delay_ms).expect("frame_delay_ms must fit in u16");
     let delay_den = 1000u16;
 
-    let (width, height, first_pixels) = panel_pixels(&frames[0], cell_size, led_margin);
+    let (width, height, first_pixels) =
+        panel_pixels(&frames[0], cell_size, led_margin, preview_inverse_gamma);
     let mut pixels = Vec::with_capacity(frames.len());
     pixels.push(first_pixels);
     for frame in frames.iter().skip(1) {
-        let (frame_width, frame_height, frame_pixels) = panel_pixels(frame, cell_size, led_margin);
+        let (frame_width, frame_height, frame_pixels) =
+            panel_pixels(frame, cell_size, led_margin, preview_inverse_gamma);
         assert!(frame_width == width, "frame width must match");
         assert!(frame_height == height, "frame height must match");
         pixels.push(frame_pixels);
@@ -97,8 +134,10 @@ fn write_panel_png<const W: usize, const H: usize>(
     output_path: &Path,
     cell_size: u32,
     led_margin: u32,
+    preview_inverse_gamma: f32,
 ) -> Result<(), Box<dyn Error>> {
-    let (width, height, pixels) = panel_pixels(frame, cell_size, led_margin);
+    let (width, height, pixels) =
+        panel_pixels(frame, cell_size, led_margin, preview_inverse_gamma);
     if let Some(parent) = output_path.parent() {
         if !parent.as_os_str().is_empty() {
             std::fs::create_dir_all(parent)?;
@@ -119,12 +158,14 @@ fn panel_pixels<const W: usize, const H: usize>(
     frame: &Frame2d<W, H>,
     cell_size: u32,
     led_margin: u32,
+    preview_inverse_gamma: f32,
 ) -> (u32, u32, Vec<u8>) {
     assert!(cell_size > 0, "cell_size must be positive");
     assert!(
         led_margin < cell_size / 2,
         "led_margin must fit inside cell"
     );
+    assert!(preview_inverse_gamma > 0.0, "preview_inverse_gamma must be positive");
     let led_radius = (cell_size - (led_margin * 2)) / 2;
     assert!(led_radius > 0, "led_radius must be positive");
     let fade_width = led_radius / 3;
@@ -162,9 +203,15 @@ fn panel_pixels<const W: usize, const H: usize>(
                         let x = border + cell_origin_x + local_x;
                         let y = border + cell_origin_y + local_y;
                         let pixel_index = ((y * width + x) * 3 * 2) as usize;
-                        let red = linear_to_u16(inverse_gamma_to_linear(pixel.r) * intensity);
-                        let green = linear_to_u16(inverse_gamma_to_linear(pixel.g) * intensity);
-                        let blue = linear_to_u16(inverse_gamma_to_linear(pixel.b) * intensity);
+                        let red = linear_to_u16(
+                            inverse_gamma_to_linear(pixel.r, preview_inverse_gamma) * intensity,
+                        );
+                        let green = linear_to_u16(
+                            inverse_gamma_to_linear(pixel.g, preview_inverse_gamma) * intensity,
+                        );
+                        let blue = linear_to_u16(
+                            inverse_gamma_to_linear(pixel.b, preview_inverse_gamma) * intensity,
+                        );
                         bytes[pixel_index] = (red >> 8) as u8;
                         bytes[pixel_index + 1] = red as u8;
                         bytes[pixel_index + 2] = (green >> 8) as u8;
@@ -180,9 +227,9 @@ fn panel_pixels<const W: usize, const H: usize>(
     (width, height, bytes)
 }
 
-fn inverse_gamma_to_linear(channel: u8) -> f32 {
+fn inverse_gamma_to_linear(channel: u8, preview_inverse_gamma: f32) -> f32 {
     let normalized = (channel as f32) / 255.0;
-    normalized.powf(PREVIEW_INVERSE_GAMMA)
+    normalized.powf(preview_inverse_gamma)
 }
 
 fn linear_to_u16(value: f32) -> u16 {
