@@ -441,8 +441,8 @@ fn perimeter_chase_animation(
     let mut frames = heapless::Vec::new();
     for frame_index in 0..PERIMETER_LENGTH {
         let mut frame = Frame2d::new();
-        let (row_index, column_index) = coordinates[frame_index];
-        frame[row_index][column_index] = color;
+        let (x_index, y_index) = coordinates[frame_index];
+        frame[(x_index, y_index)] = color;
         frames
             .push((frame, duration))
             .map_err(|_| Error::FormatError)?;
@@ -453,22 +453,22 @@ fn perimeter_chase_animation(
 fn perimeter_coordinates(clockwise: bool) -> [(usize, usize); PERIMETER_LENGTH] {
     let mut coordinates = [(0_usize, 0_usize); PERIMETER_LENGTH];
     let mut write_index = 0;
-    let mut push = |row_index: usize, column_index: usize| {
-        coordinates[write_index] = (row_index, column_index);
+    let mut push = |x_index: usize, y_index: usize| {
+        coordinates[write_index] = (x_index, y_index);
         write_index += 1;
     };
 
-    for column_index in 0..Led12x4::WIDTH {
-        push(0, column_index);
+    for x_index in 0..Led12x4::WIDTH {
+        push(x_index, 0);
     }
-    for row_index in 1..Led12x4::HEIGHT {
-        push(row_index, Led12x4::WIDTH - 1);
+    for y_index in 1..Led12x4::HEIGHT {
+        push(Led12x4::WIDTH - 1, y_index);
     }
-    for column_index in (0..(Led12x4::WIDTH - 1)).rev() {
-        push(Led12x4::HEIGHT - 1, column_index);
+    for x_index in (0..(Led12x4::WIDTH - 1)).rev() {
+        push(x_index, Led12x4::HEIGHT - 1);
     }
-    for row_index in (1..(Led12x4::HEIGHT - 1)).rev() {
-        push(row_index, 0);
+    for y_index in (1..(Led12x4::HEIGHT - 1)).rev() {
+        push(0, y_index);
     }
 
     debug_assert_eq!(write_index, PERIMETER_LENGTH);
@@ -477,8 +477,8 @@ fn perimeter_coordinates(clockwise: bool) -> [(usize, usize); PERIMETER_LENGTH] 
         coordinates
     } else {
         let mut reversed = [(0_usize, 0_usize); PERIMETER_LENGTH];
-        for (reverse_index, &(row_index, column_index)) in coordinates.iter().enumerate() {
-            reversed[PERIMETER_LENGTH - 1 - reverse_index] = (row_index, column_index);
+        for (reverse_index, &(x_index, y_index)) in coordinates.iter().enumerate() {
+            reversed[PERIMETER_LENGTH - 1 - reverse_index] = (x_index, y_index);
         }
         reversed
     }

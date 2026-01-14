@@ -181,11 +181,11 @@ fn panel_pixels<const W: usize, const H: usize>(
     let inner_radius_f = (led_radius - fade_width) as f32;
     let radius_sq = (led_radius as i32) * (led_radius as i32);
 
-    for row_index in 0..H {
-        for column_index in 0..W {
-            let pixel = frame.0[row_index][column_index];
-            let cell_origin_x = (column_index as u32) * cell_size;
-            let cell_origin_y = (row_index as u32) * cell_size;
+    for y_index in 0..H {
+        for x_index in 0..W {
+            let pixel = frame.0[y_index][x_index];
+            let cell_origin_x = (x_index as u32) * cell_size;
+            let cell_origin_y = (y_index as u32) * cell_size;
 
             for local_y in 0..cell_size {
                 let delta_y = local_y as i32 - center;

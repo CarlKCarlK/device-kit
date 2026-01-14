@@ -111,10 +111,10 @@ async fn demo_blink_text(led4x12: &Led4x12) -> Result<()> {
 async fn demo_colored_corners(led4x12: &Led4x12) -> Result<()> {
     // Four corners with different colors
     let mut frame = Frame2d::new();
-    frame[0][0] = colors::RED; // Top-left
-    frame[0][Led4x12::WIDTH - 1] = colors::GREEN; // Top-right
-    frame[Led4x12::HEIGHT - 1][0] = colors::BLUE; // Bottom-left
-    frame[Led4x12::HEIGHT - 1][Led4x12::WIDTH - 1] = colors::YELLOW; // Bottom-right
+    frame[(0, 0)] = colors::RED; // Top-left
+    frame[(Led4x12::WIDTH - 1, 0)] = colors::GREEN; // Top-right
+    frame[(0, Led4x12::HEIGHT - 1)] = colors::BLUE; // Bottom-left
+    frame[(Led4x12::WIDTH - 1, Led4x12::HEIGHT - 1)] = colors::YELLOW; // Bottom-right
 
     led4x12.write_frame(frame).await?;
     Ok(())
@@ -124,10 +124,10 @@ async fn demo_colored_corners(led4x12: &Led4x12) -> Result<()> {
 async fn demo_blink_pattern(led4x12: &Led4x12) -> Result<()> {
     // Create checkerboard pattern
     let mut on_frame = Frame2d::new();
-    for row_index in 0..Led4x12::HEIGHT {
-        for column_index in 0..Led4x12::WIDTH {
-            if (row_index + column_index) % 2 == 0 {
-                on_frame[row_index][column_index] = colors::CYAN;
+    for y_index in 0..Led4x12::HEIGHT {
+        for x_index in 0..Led4x12::WIDTH {
+            if (y_index + x_index) % 2 == 0 {
+                on_frame[(x_index, y_index)] = colors::CYAN;
             }
         }
     }
@@ -200,7 +200,7 @@ async fn demo_bouncing_dot_manual(led4x12: &Led4x12, button: &mut Button<'_>) ->
 
     loop {
         let mut frame = Frame2d::new();
-        frame[y as usize][x as usize] = color;
+        frame[(x as usize, y as usize)] = color;
         led4x12.write_frame(frame).await?;
 
         if step_and_hit(&mut x, &mut vx, x_limit) | step_and_hit(&mut y, &mut vy, y_limit) {
@@ -239,7 +239,7 @@ async fn demo_bouncing_dot_animation(led4x12: &Led4x12) -> Result<()> {
 
     for _ in 0..Led4x12::MAX_FRAMES {
         let mut frame = Frame2d::new();
-        frame[y as usize][x as usize] = color;
+        frame[(x as usize, y as usize)] = color;
         frames
             .push((frame, Duration::from_millis(50)))
             .map_err(|_| Error::FormatError)?;

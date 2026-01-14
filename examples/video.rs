@@ -155,13 +155,13 @@ impl Mode {
 fn create_test_pattern() -> Frame2d<12, 8> {
     let mut frame = Frame2d::new();
 
-    frame[0][0] = colors::RED; // Top-left
-    frame[0][Led12x8::WIDTH - 1] = colors::GREEN; // Top-right
-    frame[Led12x8::HEIGHT - 1][0] = colors::BLUE; // Bottom-left
-    frame[Led12x8::HEIGHT - 1][Led12x8::WIDTH - 1] = colors::YELLOW; // Bottom-right
+    frame[(0, 0)] = colors::RED; // Top-left
+    frame[(Led12x8::WIDTH - 1, 0)] = colors::GREEN; // Top-right
+    frame[(0, Led12x8::HEIGHT - 1)] = colors::BLUE; // Bottom-left
+    frame[(Led12x8::WIDTH - 1, Led12x8::HEIGHT - 1)] = colors::YELLOW; // Bottom-right
 
     // Center cross for additional verification
-    frame[Led12x8::HEIGHT / 2][Led12x8::WIDTH / 2] = colors::WHITE;
+    frame[(Led12x8::WIDTH / 2, Led12x8::HEIGHT / 2)] = colors::WHITE;
 
     frame.into()
 }

@@ -52,7 +52,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     // Direct pixel access: set the upper-left LED pixel (x = 0, y = 0).
     // Frame2d stores LED colors directly, so we write an LED color here.
-    frame[0][0] = colors::CYAN;
+    frame[(0, 0)] = colors::CYAN;
 
     // Use the embedded-graphics crate to draw a green circle centered in the frame.
     const DIAMETER: u32 = 6;

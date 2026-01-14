@@ -146,8 +146,13 @@ pub mod layout;
 
 pub mod led2d_generated;
 
+// cmk0000 needs a comment
 pub use layout::LedLayout;
 
+use core::{
+    convert::Infallible,
+    ops::{Deref, DerefMut, Index, IndexMut},
+};
 #[cfg(not(feature = "host"))]
 use embassy_futures::select::{Either, select};
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
@@ -171,10 +176,6 @@ use embedded_graphics::{
 };
 use heapless::Vec;
 use smart_leds::RGB8;
-use core::{
-    convert::Infallible,
-    ops::{Deref, DerefMut},
-};
 
 #[cfg(not(feature = "host"))]
 use crate::led_strip::{Frame1d as StripFrame, LedStrip};
@@ -429,12 +430,12 @@ impl Led2dFont {
 ///
 /// Frames are used to prepare images before sending them to the LED matrix. They support:
 ///
-/// - Direct pixel access via array indexing
+/// - Direct pixel access via tuple indexing
 /// - Full graphics drawing via [`embedded-graphics`](https://docs.rs/embedded-graphics) (lines, shapes, text, and more)
 /// - Automatic conversion to the strip's physical LED order
 ///
 /// //cmk00000 if x and y are backwards, should/can we fix that?
-/// Frames are stored in row-major order where `frame[row][col]` represents the pixel
+/// Frames are stored in row-major order where `frame[(col, row)]` represents the pixel
 /// at display coordinates (col, row). The physical mapping to the LED strip is handled
 /// automatically by the device abstraction.
 ///
@@ -489,7 +490,7 @@ impl Led2dFont {
 ///
 /// // Direct pixel access: set the upper-left LED pixel (x = 0, y = 0).
 /// // Frame2d stores LED colors directly, so we write an LED color here.
-/// frame[0][0] = colors::CYAN;
+/// frame[(0, 0)] = colors::CYAN;
 ///
 /// // Use the embedded-graphics crate to draw a green circle centered in the frame.
 /// const DIAMETER: u32 = 6;
@@ -554,6 +555,24 @@ impl<const W: usize, const H: usize> DerefMut for Frame2d<W, H> {
     }
 }
 
+impl<const W: usize, const H: usize> Index<(usize, usize)> for Frame2d<W, H> {
+    type Output = RGB8;
+
+    fn index(&self, (x_index, y_index): (usize, usize)) -> &Self::Output {
+        assert!(x_index < W, "x_index must be within width");
+        assert!(y_index < H, "y_index must be within height");
+        &self.0[y_index][x_index]
+    }
+}
+
+impl<const W: usize, const H: usize> IndexMut<(usize, usize)> for Frame2d<W, H> {
+    fn index_mut(&mut self, (x_index, y_index): (usize, usize)) -> &mut Self::Output {
+        assert!(x_index < W, "x_index must be within width");
+        assert!(y_index < H, "y_index must be within height");
+        &mut self.0[y_index][x_index]
+    }
+}
+
 impl<const W: usize, const H: usize> From<[[RGB8; W]; H]> for Frame2d<W, H> {
     fn from(array: [[RGB8; W]; H]) -> Self {
         Self(array)
@@ -587,14 +606,14 @@ impl<const W: usize, const H: usize> DrawTarget for Frame2d<W, H> {
         I: IntoIterator<Item = Pixel<Self::Color>>,
     {
         for Pixel(coord, color) in pixels {
-            let column_index = coord.x;
-            let row_index = coord.y;
-            if column_index >= 0
-                && column_index < W as i32
-                && row_index >= 0
-                && row_index < H as i32
+            let x_index = coord.x;
+            let y_index = coord.y;
+            if x_index >= 0
+                && x_index < W as i32
+                && y_index >= 0
+                && y_index < H as i32
             {
-                self.0[row_index as usize][column_index as usize] =
+                self.0[y_index as usize][x_index as usize] =
                     RGB8::new(color.r(), color.g(), color.b());
             }
         }
@@ -686,20 +705,22 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
 
     /// Convert (column, row) coordinates to LED strip index using the stored LED layout.
     #[must_use]
-    fn xy_to_index(&self, column_index: usize, row_index: usize) -> usize {
-        self.mapping_by_xy[row_index * self.width + column_index] as usize
+    fn xy_to_index(&self, x_index: usize, y_index: usize) -> usize {
+        self.mapping_by_xy[y_index * self.width + x_index] as usize
     }
 
+    // cmk00000000 don't want xy_to_index
+    // cmk000000 need to explain the 0,0 is the top-left
     /// Convert 2D frame to 1D array using the LED layout.
     fn convert_frame<const W: usize, const H: usize>(
         &self,
         frame_2d: Frame2d<W, H>,
     ) -> StripFrame<N> {
         let mut frame_1d = [RGB8::new(0, 0, 0); N];
-        for row_index in 0..H {
-            for column_index in 0..W {
-                let led_index = self.xy_to_index(column_index, row_index);
-                frame_1d[led_index] = frame_2d[row_index][column_index];
+        for y_index in 0..H {
+            for x_index in 0..W {
+                let led_index = self.xy_to_index(x_index, y_index);
+                frame_1d[led_index] = frame_2d[(x_index, y_index)];
             }
         }
         StripFrame::from(frame_1d)
@@ -707,7 +728,7 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
 
     /// Render a fully defined frame to the panel.
     ///
-    /// Frame2d is a 2D array in row-major order where `frame[row][col]` is the pixel at (col, row).
+    /// Frame2d is a 2D array in row-major order where `frame[(col, row)]` is the pixel at (col, row).
     pub async fn write_frame<const W: usize, const H: usize>(
         &self,
         frame: Frame2d<W, H>,
@@ -836,8 +857,7 @@ async fn run_animation_loop<const N: usize, const MAX_FRAMES: usize>(
     command_signal: &'static Led2dCommandSignal<N, MAX_FRAMES>,
     completion_signal: &'static Led2dCompletionSignal,
     led_strip: &LedStrip<N, MAX_FRAMES>,
-) -> Result<Command<N, MAX_FRAMES>>
-{
+) -> Result<Command<N, MAX_FRAMES>> {
     defmt::info!("run_animation_loop: starting with {} frames", frames.len());
     completion_signal.signal(());
     defmt::debug!("run_animation_loop: signaled completion (animation started)");

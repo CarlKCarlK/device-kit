@@ -258,8 +258,8 @@ impl<const H: usize, const W: usize> Board<H, W> {
 
     /// Horizontal wall (full-width line).
     fn add_wall(&mut self, row: usize) {
-        for col_index in 0..W {
-            self.cells[row][col_index] = true;
+        for x_index in 0..W {
+            self.cells[row][x_index] = true;
         }
     }
 
@@ -268,10 +268,10 @@ impl<const H: usize, const W: usize> Board<H, W> {
         let now = embassy_time::Instant::now().as_millis();
         // Simple LCG based on current time
         let mut seed = (now ^ 0x9e37_79b9) as u32;
-        for row_index in 0..H {
-            for col_index in 0..W {
+        for y_index in 0..H {
+            for x_index in 0..W {
                 seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
-                self.cells[row_index][col_index] = (seed & 0x100) != 0;
+                self.cells[y_index][x_index] = (seed & 0x100) != 0;
             }
         }
     }
@@ -280,16 +280,16 @@ impl<const H: usize, const W: usize> Board<H, W> {
     fn step(&mut self) {
         let mut next_cells = [[false; W]; H];
 
-        for row_index in 0..H {
-            for col_index in 0..W {
-                let live_neighbors = self.count_live_neighbors(row_index, col_index);
-                let is_alive = self.cells[row_index][col_index];
+        for y_index in 0..H {
+            for x_index in 0..W {
+                let live_neighbors = self.count_live_neighbors(y_index, x_index);
+                let is_alive = self.cells[y_index][x_index];
 
                 // Conway's Game of Life rules:
                 // 1. Any live cell with 2 or 3 live neighbors survives
                 // 2. Any dead cell with exactly 3 live neighbors becomes alive
                 // 3. All other cells die or stay dead
-                next_cells[row_index][col_index] = match (is_alive, live_neighbors) {
+                next_cells[y_index][x_index] = match (is_alive, live_neighbors) {
                     (true, 2) | (true, 3) => true,
                     (false, 3) => true,
                     _ => false,
@@ -329,10 +329,10 @@ impl<const H: usize, const W: usize> Board<H, W> {
     /// Convert board state to an LED frame with the specified color for alive cells.
     fn to_frame(&self, alive_color: Rgb) -> Frame2d<8, 12> {
         let mut frame = Frame2d::new();
-        for row_index in 0..H {
-            for col_index in 0..W {
-                if self.cells[row_index][col_index] {
-                    frame[row_index][col_index] = alive_color;
+        for y_index in 0..H {
+            for x_index in 0..W {
+                if self.cells[y_index][x_index] {
+                    frame[(x_index, y_index)] = alive_color;
                 }
             }
         }

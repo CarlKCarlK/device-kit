@@ -86,7 +86,7 @@ fn build_frame() -> Frame {
         .draw(&mut frame)
         .expect("rectangle draw must succeed");
 
-    frame[0][0] = colors::CYAN;
+    frame[(0, 0)] = colors::CYAN;
 
     const DIAMETER: u32 = 6;
     const CIRCLE_TOP_LEFT: Point = centered_top_left(12, 8, DIAMETER as usize);
@@ -201,10 +201,10 @@ fn apply_gamma_to_frames(frames: &[Frame], gamma: f32) -> Vec<Frame> {
 
 fn apply_gamma_to_frame(frame: &Frame, gamma: f32) -> Frame {
     let mut corrected_frame = Frame::new();
-    for row_index in 0..Frame::HEIGHT {
-        for column_index in 0..Frame::WIDTH {
-            let pixel = frame[row_index][column_index];
-            corrected_frame[row_index][column_index] = RGB8::new(
+    for y_index in 0..Frame::HEIGHT {
+        for x_index in 0..Frame::WIDTH {
+            let pixel = frame[(x_index, y_index)];
+            corrected_frame[(x_index, y_index)] = RGB8::new(
                 apply_gamma_to_channel(pixel.r, gamma),
                 apply_gamma_to_channel(pixel.g, gamma),
                 apply_gamma_to_channel(pixel.b, gamma),

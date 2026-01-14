@@ -221,10 +221,10 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
         assert!(W == N, "linear_h requires W == N");
 
         let mut mapping = [(0_u16, 0_u16); N];
-        let mut column_index = 0;
-        while column_index < W {
-            mapping[column_index] = (column_index as u16, 0);
-            column_index += 1;
+        let mut x_index = 0;
+        while x_index < W {
+            mapping[x_index] = (x_index as u16, 0);
+            x_index += 1;
         }
         Self::new(mapping)
     }
@@ -259,10 +259,10 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
         assert!(H == N, "linear_v requires H == N");
 
         let mut mapping = [(0_u16, 0_u16); N];
-        let mut row_index = 0;
-        while row_index < H {
-            mapping[row_index] = (0, row_index as u16);
-            row_index += 1;
+        let mut y_index = 0;
+        while y_index < H {
+            mapping[y_index] = (0, y_index as u16);
+            y_index += 1;
         }
         Self::new(mapping)
     }
@@ -293,21 +293,21 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
         assert!(W * H == N, "W*H must equal N");
 
         let mut mapping = [(0_u16, 0_u16); N];
-        let mut row_index = 0;
-        while row_index < H {
-            let mut column_index = 0;
-            while column_index < W {
-                let led_index = if column_index % 2 == 0 {
+        let mut y_index = 0;
+        while y_index < H {
+            let mut x_index = 0;
+            while x_index < W {
+                let led_index = if x_index % 2 == 0 {
                     // Even column: top-to-bottom
-                    column_index * H + row_index
+                    x_index * H + y_index
                 } else {
                     // Odd column: bottom-to-top
-                    column_index * H + (H - 1 - row_index)
+                    x_index * H + (H - 1 - y_index)
                 };
-                mapping[led_index] = (column_index as u16, row_index as u16);
-                column_index += 1;
+                mapping[led_index] = (x_index as u16, y_index as u16);
+                x_index += 1;
             }
-            row_index += 1;
+            y_index += 1;
         }
         Self::new(mapping)
     }
@@ -338,19 +338,19 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
         assert!(W * H == N, "W*H must equal N");
 
         let mut mapping = [(0_u16, 0_u16); N];
-        let mut row_index = 0;
-        while row_index < H {
-            let mut column_index = 0;
-            while column_index < W {
-                let led_index = if row_index % 2 == 0 {
-                    row_index * W + column_index
+        let mut y_index = 0;
+        while y_index < H {
+            let mut x_index = 0;
+            while x_index < W {
+                let led_index = if y_index % 2 == 0 {
+                    y_index * W + x_index
                 } else {
-                    row_index * W + (W - 1 - column_index)
+                    y_index * W + (W - 1 - x_index)
                 };
-                mapping[led_index] = (column_index as u16, row_index as u16);
-                column_index += 1;
+                mapping[led_index] = (x_index as u16, y_index as u16);
+                x_index += 1;
             }
-            row_index += 1;
+            y_index += 1;
         }
         Self::new(mapping)
     }
