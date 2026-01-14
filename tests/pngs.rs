@@ -25,6 +25,7 @@ type Frame = Frame2d<12, 8>;
 type Led12x4Frame = Frame2d<12, 4>;
 type Led8x12Frame = Frame2d<8, 12>;
 type LedStripSimpleFrame = Frame1d<48>;
+type LedStripAnimatedFrame = Frame1d<96>;
 
 #[test]
 fn led2d_graphics_png_matches_expected() -> Result<(), Box<dyn Error>> {
@@ -43,7 +44,17 @@ fn led2d1_linear_png_matches_expected() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn led_strip_simple_png_matches_expected() -> Result<(), Box<dyn Error>> {
-    assert_strip_png_matches_expected("led_strip_simple.png", 400, build_led_strip_simple_frame)
+    assert_strip_png_matches_expected("led_strip_simple.png", 600, build_led_strip_simple_frame)
+}
+
+#[test]
+fn led_strip_animated_apng_matches_expected() -> Result<(), Box<dyn Error>> {
+    assert_strip_apng_matches_expected(
+        "led_strip_animated.png",
+        800,
+        300,
+        build_led_strip_animated_frames,
+    )
 }
 
 #[test]
@@ -125,10 +136,18 @@ fn build_led2d2_frame_1() -> Led8x12Frame {
 
 fn build_led_strip_simple_frame() -> LedStripSimpleFrame {
     let mut led_strip_simple_frame = LedStripSimpleFrame::new();
-    for pixel_index in (0..led_strip_simple_frame.len()).step_by(2) {
-        led_strip_simple_frame[pixel_index] = colors::BLUE;
+    for pixel_index in 0..LedStripSimpleFrame::LEN {
+        led_strip_simple_frame[pixel_index] = [colors::BLUE, colors::GRAY][pixel_index % 2];
     }
     led_strip_simple_frame
+}
+
+fn build_led_strip_animated_frames() -> [LedStripAnimatedFrame; 3] {
+    [
+        Frame1d::filled(colors::RED),
+        Frame1d::filled(colors::GREEN),
+        Frame1d::filled(colors::BLUE),
+    ]
 }
 
 fn assert_santa_apng_matches_expected(
@@ -312,6 +331,70 @@ where
     Ok(())
 }
 
+fn assert_strip_apng_matches_expected<F, const N: usize, const M: usize>(
+    filename: &str,
+    target_width: u32,
+    frame_delay_ms: u32,
+    build_frames: F,
+) -> Result<(), Box<dyn Error>>
+where
+    F: FnOnce() -> [Frame1d<N>; M],
+{
+    assert_strip_apng_matches_expected_with_gamma(
+        filename,
+        target_width,
+        frame_delay_ms,
+        2.2,
+        build_frames,
+    )
+}
+
+fn assert_strip_apng_matches_expected_with_gamma<F, const N: usize, const M: usize>(
+    filename: &str,
+    target_width: u32,
+    frame_delay_ms: u32,
+    preview_inverse_gamma: f32,
+    build_frames: F,
+) -> Result<(), Box<dyn Error>>
+where
+    F: FnOnce() -> [Frame1d<N>; M],
+{
+    assert!(preview_inverse_gamma > 0.0, "preview_inverse_gamma must be positive");
+    assert!(frame_delay_ms > 0, "frame_delay_ms must be positive");
+    let frames = build_frames();
+    let expected_path = docs_assets_path(filename);
+    if std::env::var_os("DEVICE_KIT_UPDATE_PNGS").is_some() {
+        write_strip_apng_with_gamma(
+            &frames,
+            &expected_path,
+            target_width,
+            frame_delay_ms,
+            preview_inverse_gamma,
+        )?;
+        println!("updated APNG at {}", expected_path.display());
+        return Ok(());
+    }
+    if !expected_path.exists() {
+        return Err(format!("expected APNG is missing at {}", expected_path.display()).into());
+    }
+
+    let output_path = temp_output_path(filename);
+    write_strip_apng_with_gamma(
+        &frames,
+        &output_path,
+        target_width,
+        frame_delay_ms,
+        preview_inverse_gamma,
+    )?;
+
+    let expected_bytes = fs::read(&expected_path)?;
+    let actual_bytes = fs::read(&output_path)?;
+    assert_eq!(expected_bytes, actual_bytes, "APNG bytes must match");
+
+    let _ = fs::remove_file(&output_path);
+    Ok(())
+}
+
 fn assert_apng_matches_expected<F, const W: usize, const H: usize, const N: usize>(
     filename: &str,
     max_dimension: u32,
@@ -406,6 +489,54 @@ fn write_strip_png_with_gamma<const N: usize>(
     encoder.set_source_gamma(ScaledFloat::new(1.0));
     let mut writer = encoder.write_header()?;
     writer.write_image_data(&pixels)?;
+    Ok(())
+}
+
+fn write_strip_apng_with_gamma<const N: usize>(
+    frames: &[Frame1d<N>],
+    output_path: &PathBuf,
+    target_width: u32,
+    frame_delay_ms: u32,
+    preview_inverse_gamma: f32,
+) -> Result<(), Box<dyn Error>> {
+    assert!(!frames.is_empty(), "frames must not be empty");
+    assert!(preview_inverse_gamma > 0.0, "preview_inverse_gamma must be positive");
+    let cell_size = select_strip_cell_size(N as u32, target_width);
+    let led_margin = (cell_size / 8).max(1);
+    let frame_count = u32::try_from(frames.len()).expect("frame count must fit in u32");
+    let delay_num = u16::try_from(frame_delay_ms).expect("frame_delay_ms must fit in u16");
+    let delay_den = 1000u16;
+
+    let (width, height, first_pixels) =
+        strip_pixels(&frames[0], cell_size, led_margin, preview_inverse_gamma);
+    let mut pixels = Vec::with_capacity(frames.len());
+    pixels.push(first_pixels);
+    for frame in frames.iter().skip(1) {
+        let (frame_width, frame_height, frame_pixels) =
+            strip_pixels(frame, cell_size, led_margin, preview_inverse_gamma);
+        assert!(frame_width == width, "frame width must match");
+        assert!(frame_height == height, "frame height must match");
+        pixels.push(frame_pixels);
+    }
+
+    if let Some(parent) = output_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            std::fs::create_dir_all(parent)?;
+        }
+    }
+
+    let file = File::create(output_path)?;
+    let mut encoder = Encoder::new(BufWriter::new(file), width, height);
+    encoder.set_color(ColorType::Rgb);
+    encoder.set_depth(BitDepth::Sixteen);
+    encoder.set_source_gamma(ScaledFloat::new(1.0));
+    encoder.set_animated(frame_count, 0)?;
+    let mut writer = encoder.write_header()?;
+    for frame_pixels in pixels {
+        writer.set_frame_delay(delay_num, delay_den)?;
+        writer.write_image_data(&frame_pixels)?;
+    }
+    writer.finish()?;
     Ok(())
 }
 

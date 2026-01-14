@@ -145,15 +145,14 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 }
 
 fn step_snake<const N: usize>(frame: &mut Frame1d<N>, position: &mut usize) {
-    let len = frame.len();
     for color in frame.iter_mut() {
         *color = colors::BLACK;
     }
 
     for (idx, segment_color) in SNAKE_COLORS.iter().enumerate() {
-        let pos = (position.wrapping_add(idx)) % len;
+        let pos = (position.wrapping_add(idx)) % N;
         frame[pos] = *segment_color;
     }
 
-    *position = position.wrapping_add(1) % len;
+    *position = position.wrapping_add(1) % N;
 }

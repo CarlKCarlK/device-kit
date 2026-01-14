@@ -64,16 +64,16 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         p.PIO0, p.PIN_0, p.DMA_CH0, p.PIN_3, p.DMA_CH11, p.PIN_4, p.DMA_CH2, spawner,
     )?;
 
-    info!("Setting GPIO0 to white, GPIO3 to alternating blue, GPIO4 to Go Go animation");
+    info!("Setting GPIO0 to white, GPIO3 to alternating blue/gray, GPIO4 to Go Go animation");
 
     // Turn on all-white on GPIO0 strip.
     let frame_gpio0 = Frame1d::filled(colors::WHITE);
     gpio0_led_strip.write_frame(frame_gpio0).await?;
 
-    // Turn on every other LED in blue on GPIO3 strip.
+    // Alternate blue/gray on GPIO3 strip.
     let mut frame_gpio3 = Frame1d::new();
-    for pixel_index in (0..frame_gpio3.len()).step_by(2) {
-        frame_gpio3[pixel_index] = colors::BLUE;
+    for pixel_index in 0..Gpio3LedStrip::LEN {
+        frame_gpio3[pixel_index] = [colors::BLUE, colors::GRAY][pixel_index % 2];
     }
     gpio3_led_strip.write_frame(frame_gpio3).await?;
 

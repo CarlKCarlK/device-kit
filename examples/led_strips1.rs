@@ -46,8 +46,8 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     info!("Setting every other LED to blue on GPIO3, animating GPIO4");
 
     let mut frame = Frame1d::new();
-    for pixel_index in (0..frame.len()).step_by(2) {
-        frame[pixel_index] = colors::BLUE;
+    for pixel_index in 0..Gpio3LedStrip::LEN {
+        frame[pixel_index] = [colors::BLUE, colors::GRAY][pixel_index % 2];
     }
     gpio3_led_strip.write_frame(frame).await?;
 

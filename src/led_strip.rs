@@ -3,6 +3,10 @@
     doc = ::embed_doc_image::embed_image!(
         "led_strip_simple",
         "docs/assets/led_strip_simple.png"
+    ),
+    doc = ::embed_doc_image::embed_image!(
+        "led_strip_animated",
+        "docs/assets/led_strip_animated.png"
     )
 )]
 //! A device abstraction for NeoPixel-style (WS2812) LED strips.
@@ -15,7 +19,7 @@
 //!
 //! # Example: Write a Single Frame1d
 //!
-//! In this example, we set every other LED to blue. Here, the generated struct is named
+//! In this example, we set every other LED to blue and gray. Here, the generated struct is named
 //! `LedStripSimple`.
 //!
 //! ![LED strip preview][led_strip_simple]
@@ -48,8 +52,8 @@
 //!     let led_strip = LedStripSimple::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;
 //!
 //!     let mut frame = Frame1d::new();
-//!     for pixel_index in (0..frame.len()).step_by(2) {
-//!         frame[pixel_index] = colors::BLUE;
+//!     for pixel_index in 0..LedStripSimple::LEN {
+//!         frame[pixel_index] = [colors::BLUE, colors::GRAY][pixel_index % 2];
 //!     }
 //!     led_strip.write_frame(frame).await?;
 //!     core::future::pending().await // run forever
@@ -60,6 +64,8 @@
 //!
 //! This example animates a 96-LED strip through red, green, and blue frames, cycling
 //! continuously. Here, the generated struct is `LedStripAnimated`.
+//!
+//! ![LED strip preview][led_strip_animated]
 //!
 //! ```no_run
 //! # #![no_std]
@@ -677,16 +683,16 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///         p.PIO0, p.PIN_0, p.DMA_CH0, p.PIN_3, p.DMA_CH11, p.PIN_4, p.DMA_CH2, spawner,
 ///     )?;
 ///
-///     info!("Setting GPIO0 to white, GPIO3 to alternating blue, GPIO4 to Go Go animation");
+///     info!("Setting GPIO0 to white, GPIO3 to alternating blue/gray, GPIO4 to Go Go animation");
 ///
 ///     // Turn on all-white on GPIO0 strip.
 ///     let frame_gpio0 = Frame1d::filled(colors::WHITE);
 ///     gpio0_led_strip.write_frame(frame_gpio0).await?;
 ///
-///     // Turn on every other LED in blue on GPIO3 strip.
+///     // Alternate blue/gray on GPIO3 strip.
 ///     let mut frame_gpio3 = Frame1d::new();
-///     for pixel_index in (0..frame_gpio3.len()).step_by(2) {
-///         frame_gpio3[pixel_index] = colors::BLUE;
+///     for pixel_index in 0..Gpio3LedStrip::LEN {
+///         frame_gpio3[pixel_index] = [colors::BLUE, colors::GRAY][pixel_index % 2];
 ///     }
 ///     gpio3_led_strip.write_frame(frame_gpio3).await?;
 ///

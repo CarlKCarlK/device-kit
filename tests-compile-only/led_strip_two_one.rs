@@ -167,17 +167,16 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 }
 
 fn step_snake<const N: usize>(frame: &mut Frame1d<N>, position: &mut usize) {
-    let len = frame.len();
     for color in frame.iter_mut() {
         *color = colors::BLACK;
     }
 
     for (segment_index, segment_color) in SNAKE_COLORS.iter().enumerate() {
-        let segment_position = (position.wrapping_add(segment_index)) % len;
+        let segment_position = (position.wrapping_add(segment_index)) % N;
         frame[segment_position] = *segment_color;
     }
 
-    *position = position.wrapping_add(1) % len;
+    *position = position.wrapping_add(1) % N;
 }
 
 // panic_probe provides a panic handler for host, but we need one for embedded
