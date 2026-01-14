@@ -1659,68 +1659,7 @@ macro_rules! __led2d_impl {
     };
 }
 
-/// Generate a Led2d device abstraction from an existing LED strip type.
-///
-/// Use this macro when you want to share a PIO across multiple LED strips and treat one as a 2D display.
-/// For simple single-strip displays, use `led2d!` instead.
-/// The strip must be created with [`led_strips!`](crate::led_strip::led_strips).
-///
-/// # Parameters
-///
-/// - Visibility and base name for generated types (e.g., `pub Led12x4`)
-/// - `strip_type` - Name of the strip type created by `led_strips!`
-/// - `width` - Number of columns in the panel
-/// - `height` - Number of rows in the panel
-/// - `led_layout` - LED strip physical layout:
-///   - `serpentine_column_major` - Common serpentine wiring pattern (LED index → `(col, row)`)
-///   - `LedLayout` expression - Custom LED layout value in LED-index order
-/// - `font` - Built-in font variant (see [`Led2dFont`])
-///
-/// # Example
-///
-/// ```no_run
-/// # #![no_std]
-/// # #![no_main]
-/// # use panic_probe as _;
-/// use device_kit::led_strip::led_strips;
-/// use device_kit::led2d::led2d_from_strip;
-/// use device_kit::led_strip::Current;
-/// use device_kit::led_strip::Gamma;
-/// use device_kit::pio_split;
-/// use embassy_executor::Spawner;
-/// use embassy_time::Duration;
-///
-/// // Define multiple strips sharing PIO1
-/// led_strips! {
-///     pio: PIO1,
-///     Led12x4Strips {
-///         strip: {
-///             pin: PIN_3,
-///             len: 48,
-///             max_current: Current::Milliamps(500),
-///             gamma: Gamma::Linear,
-///         }
-///     }
-/// }
-///
-/// // Wrap the strip as a Led2d surface
-/// led2d_from_strip! {
-///     pub Led12x4,
-///     strip_type: StripLedStrip,
-///     width: 12,
-///     height: 4,
-///     led_layout: serpentine_column_major,
-///     font: Font3x4Trim,
-/// }
-///
-/// # #[embassy_executor::main]
-/// # async fn main(spawner: Spawner) {
-/// #     let p = embassy_rp::init(Default::default());
-/// #     let (sm0, _sm1, _sm2, _sm3) = pio_split!(p.PIO1);
-/// #     let strip = StripLedStrip::new(sm0, p.PIN_3, p.DMA_CH0, spawner).unwrap();
-/// #     let led = Led12x4::from_strip(strip, spawner).unwrap();
-/// # }
-/// ```
+// Internal macro used by led_strips! led2d configuration.
 #[doc(hidden)] // Public for macro expansion in downstream crates; not a user-facing API.
 #[macro_export]
 #[cfg(not(feature = "host"))]
@@ -1840,16 +1779,8 @@ macro_rules! led2d_from_strip {
                     }
                 }
 
-                /// Create a new LED matrix display instance from an existing strip.
-                ///
-                /// The strip must be created from the same type specified in `strip_type`.
-                /// For simpler single-strip setups, see the convenience constructor generated
-                /// by [`led2d!`].
-                ///
-                /// # Parameters
-                ///
-                /// - `led_strip`: LED strip instance from the specified strip type
-                /// - `spawner`: Task spawner for background operations
+                // Public so led2d_from_strip! expansions in downstream crates can call it.
+                #[doc(hidden)]
                 $vis fn from_strip(
                     led_strip: &'static $strip_type,
                     spawner: ::embassy_executor::Spawner,

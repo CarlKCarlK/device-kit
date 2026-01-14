@@ -1,6 +1,6 @@
 //! Compile-only verification for Led2d with custom LED layout.
 //!
-//! This verifies that led2d_from_strip! macro works with custom LED layouts.
+//! This verifies that the led2d! macro works with custom LED layouts.
 //! Run via: `cargo check-all` (xtask compiles this for thumbv6m-none-eabi)
 
 #![cfg(not(feature = "host"))]

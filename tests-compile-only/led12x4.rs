@@ -1,4 +1,4 @@
-//! Compile-only verification for Led12x4 construction using the led2d macros.
+//! Compile-only verification for Led12x4 construction using led_strips! led2d configuration.
 //!
 //! Run via: `cargo check-all` (xtask compiles this for thumbv6m-none-eabi)
 
@@ -9,63 +9,55 @@
 
 use defmt_rtt as _;
 use device_kit::Result;
-use device_kit::led_strip::led_strip;
+use device_kit::led_strip::led_strips;
 use device_kit::led_strip::{Current, colors};
 use device_kit::led2d::layout::LedLayout;
-use device_kit::led2d::led2d_from_strip;
 use embassy_executor::Spawner;
 use panic_probe as _;
 
-const LED12X4_W: usize = 12;
-const LED12X4_H: usize = 4;
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 
-led_strip! {
-    Gpio3Pio0LedStrip {
-        pio: PIO0,
-        pin: PIN_3,
-        len: 48,
-        max_current: Current::Milliamps(500),
+led_strips! {
+    pio: PIO0,
+    LedStripsPio0 {
+        gpio3_pio0: {
+            pin: PIN_3,
+            len: 48,
+            max_current: Current::Milliamps(500),
+            led2d: {
+                width: 12,
+                height: 4,
+                led_layout: LED_LAYOUT_12X4,
+                font: Font3x4Trim,
+            }
+        }
     }
 }
 
-led_strip! {
-    Gpio3Pio1LedStrip {
-        pio: PIO1,
-        dma: DMA_CH1,
-        pin: PIN_3,
-        len: 48,
-        max_current: Current::Milliamps(500),
+led_strips! {
+    pio: PIO1,
+    LedStripsPio1 {
+        gpio3_pio1: {
+            dma: DMA_CH1,
+            pin: PIN_3,
+            len: 48,
+            max_current: Current::Milliamps(500),
+            led2d: {
+                width: 12,
+                height: 4,
+                led_layout: LED_LAYOUT_12X4,
+                font: Font3x4Trim,
+            }
+        }
     }
-}
-
-led2d_from_strip! {
-    pub Gpio3Pio0Led2d,
-    strip_type: Gpio3Pio0LedStrip,
-    width: 12,
-    height: 4,
-    led_layout: LED_LAYOUT_12X4,
-    font: Font3x4Trim,
-}
-
-led2d_from_strip! {
-    pub Gpio3Pio1Led2d,
-    strip_type: Gpio3Pio1LedStrip,
-    width: 12,
-    height: 4,
-    led_layout: LED_LAYOUT_12X4,
-    font: Font3x4Trim,
 }
 
 /// Verify Gpio3Pio0LedStrip with write_text
 async fn test_led12x4_pio0_write_text(p: embassy_rp::Peripherals, spawner: Spawner) -> Result<()> {
-    let gpio3_pio0_led_strip = Gpio3Pio0LedStrip::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;
+    let (gpio3_pio0_led2d,) =
+        LedStripsPio0::new(p.PIO0, p.PIN_3, p.DMA_CH0, spawner)?;
 
-    static LED_12X4_STATIC: Gpio3Pio0Led2dStatic = Gpio3Pio0Led2d::new_static();
-    // cmk000000 delete
-    let led12x4 = Gpio3Pio0Led2d::from_strip(gpio3_pio0_led_strip, spawner)?;
-
-    led12x4
+    gpio3_pio0_led2d
         .write_text(
             "1234",
             &[colors::RED, colors::GREEN, colors::BLUE, colors::YELLOW],
@@ -77,11 +69,8 @@ async fn test_led12x4_pio0_write_text(p: embassy_rp::Peripherals, spawner: Spawn
 
 /// Verify Gpio3Pio1LedStrip constructor
 async fn test_led12x4_pio1(p: embassy_rp::Peripherals, spawner: Spawner) -> Result<()> {
-    let gpio3_pio1_led_strip = Gpio3Pio1LedStrip::new(p.PIN_3, p.PIO1, p.DMA_CH1, spawner)?;
-
-    static LED_12X4_STATIC: Gpio3Pio1Led2dStatic = Gpio3Pio1Led2d::new_static();
-    // cmk000000 delete
-    let _led12x4 = Gpio3Pio1Led2d::from_strip(gpio3_pio1_led_strip, spawner)?;
+    let (_gpio3_pio1_led2d,) =
+        LedStripsPio1::new(p.PIO1, p.PIN_3, p.DMA_CH1, spawner)?;
 
     Ok(())
 }

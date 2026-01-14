@@ -128,8 +128,8 @@ impl Led2dGenerated {
     /// Create a new LED panel instance from a strip.
     ///
     /// See the [`mod@crate::led2d`] module docs for usage.
-    /// cmk000 docs needed
-    pub fn from_strip(
+    /// cmk000 docs needed (may no longer apply)
+    pub(crate) fn from_strip(
         led_strip: &'static Led2dGeneratedLedStrip,
         spawner: embassy_executor::Spawner,
     ) -> Result<Self> {

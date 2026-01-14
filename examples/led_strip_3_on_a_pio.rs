@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-// cmk000 we need to document that `led2d_from_strip` can only be used once
+// cmk000 we need to document that `led2d_from_strip` can only be used once (may no longer apply)
 // cmk000 where are are pools? should they be set?
 
 use defmt::info;
@@ -11,7 +11,6 @@ use device_kit::led_strip::led_strips;
 use device_kit::led_strip::{Current, Frame1d, Rgb, colors};
 use device_kit::led2d::Frame2d;
 use device_kit::led2d::layout::LedLayout;
-use device_kit::led2d::led2d_from_strip;
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 use heapless::Vec;
@@ -20,31 +19,34 @@ use panic_probe as _;
 led_strips! {
     LedStrips0 {
         gpio0: { pin: PIN_0, len: 8, max_current: Current::Milliamps(250) },
-        gpio3: { pin: PIN_3, len: 48, max_current: Current::Milliamps(250) },
-        gpio4: { pin: PIN_4, len: 96, max_current: Current::Milliamps(250) }
+        gpio3: {
+            pin: PIN_3,
+            len: 48,
+            max_current: Current::Milliamps(250),
+            led2d: {
+                width: 12,
+                height: 4,
+                led_layout: LED_LAYOUT_12X4,
+                font: Font3x4Trim,
+            }
+        },
+        gpio4: {
+            pin: PIN_4,
+            len: 96,
+            max_current: Current::Milliamps(250),
+            led2d: {
+                width: 8,
+                height: 12,
+                led_layout: LED_LAYOUT_8X12,
+                font: Font4x6Trim,
+            }
+        }
     }
 }
 
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
-const LED_LAYOUT_8X12: LedLayout<96, 8, 12> = LED_LAYOUT_12X4.concat_v(LED_LAYOUT_12X4).rotate_cw();
-
-led2d_from_strip! {
-    pub Led12x4Gpio3,
-    strip_type: Gpio3LedStrip,
-    width: 12,
-    height: 4,
-    led_layout: LED_LAYOUT_12X4,
-    font: Font3x4Trim,
-}
-
-led2d_from_strip! {
-    pub Led8x12Gpio4,
-    strip_type: Gpio4LedStrip,
-    width: 8,
-    height: 12,
-    led_layout: LED_LAYOUT_8X12,
-    font: Font4x6Trim,
-}
+const LED_LAYOUT_8X12: LedLayout<96, 8, 12> =
+    LED_LAYOUT_12X4.concat_v(LED_LAYOUT_12X4).rotate_cw();
 
 const SNAKE_LENGTH: usize = 4;
 const SNAKE_COLORS: [Rgb; SNAKE_LENGTH] =
@@ -60,13 +62,9 @@ async fn main(spawner: Spawner) {
 async fn inner_main(spawner: Spawner) -> Result<()> {
     let p = embassy_rp::init(Default::default());
 
-    let (gpio0_led_strip, gpio3_led_strip, gpio4_led_strip) = LedStrips0::new(
+    let (gpio0_led_strip, gpio3_led2d, gpio4_led2d) = LedStrips0::new(
         p.PIO0, p.PIN_0, p.DMA_CH0, p.PIN_3, p.DMA_CH1, p.PIN_4, p.DMA_CH2, spawner,
     )?;
-
-    // cmk000000 delete
-    let led12x4_gpio3 = Led12x4Gpio3::from_strip(gpio3_led_strip, spawner)?;
-    let led8x12_gpio4 = Led8x12Gpio4::from_strip(gpio4_led_strip, spawner)?;
 
     info!("Running snake on GPIO0, GO animations on GPIO3 (12x4) and GPIO4 (8x12 rotated)");
 
@@ -78,7 +76,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 
     // Frame 1: "go  " - each character gets its own color
     let mut frame1 = Frame2d::new();
-    led12x4_gpio3.write_text_to_frame(
+    gpio3_led2d.write_text_to_frame(
         "go  ",
         &[colors::MAGENTA, colors::CYAN, colors::BLACK, colors::BLACK],
         &mut frame1,
@@ -89,7 +87,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 
     // Frame 2: "  go" - each character gets its own color
     let mut frame2 = Frame2d::new();
-    led12x4_gpio3.write_text_to_frame(
+    gpio3_led2d.write_text_to_frame(
         "  go",
         &[
             colors::BLACK,
@@ -103,14 +101,14 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         .push((frame2, Duration::from_millis(1000)))
         .expect("go_frames has capacity for 2 frames");
 
-    led12x4_gpio3.animate(go_frames).await?;
+    gpio3_led2d.animate(go_frames).await?;
 
     // Create separate animation for the 8x12 rotated display with 2-line text
     let mut go_frames_8x12 = Vec::<_, 2>::new();
 
     // Frame 1: "GO\n  " - two lines
     let mut frame1_8x12 = Frame2d::new();
-    led8x12_gpio4.write_text_to_frame(
+    gpio4_led2d.write_text_to_frame(
         "GO\n  ",
         &[colors::MAGENTA, colors::CYAN, colors::BLACK, colors::BLACK],
         &mut frame1_8x12,
@@ -121,7 +119,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
 
     // Frame 2: "  \nGO" - two lines
     let mut frame2_8x12 = Frame2d::new();
-    led8x12_gpio4.write_text_to_frame(
+    gpio4_led2d.write_text_to_frame(
         "  \nGO",
         &[
             colors::BLACK,
@@ -135,7 +133,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         .push((frame2_8x12, Duration::from_millis(1000)))
         .expect("go_frames_8x12 has capacity for 2 frames");
 
-    led8x12_gpio4.animate(go_frames_8x12).await?;
+    gpio4_led2d.animate(go_frames_8x12).await?;
 
     loop {
         step_snake(&mut frame_g0, &mut pos_g0);
