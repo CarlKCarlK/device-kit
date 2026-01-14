@@ -56,7 +56,7 @@
 //!     let led12x4 = Led12x4::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;
 //!
 //!     // Write text to the display with cycling colors.
-//!     let colors = [colors::RED, colors::GREEN, colors::BLUE];
+//!     let colors = [colors::CYAN, colors::RED, colors::YELLOW];
 //!     led12x4.write_text("Rust", &colors).await?; // Colors cycle as needed.
 //!
 //!     future::pending().await // run forever

@@ -103,7 +103,7 @@ fn build_led2d1_frame() -> Led12x4Frame {
     let font_variant = Led2dFont::Font3x4Trim;
     let font = font_variant.to_font();
     let spacing_reduction = font_variant.spacing_reduction();
-    let colors = [colors::RED, colors::GREEN, colors::BLUE, colors::YELLOW];
+    let colors = [colors::CYAN, colors::RED, colors::YELLOW];
 
     render_text_to_frame(&mut frame, &font, "Rust", &colors, spacing_reduction)
         .expect("text render must succeed");
