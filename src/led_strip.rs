@@ -682,8 +682,8 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///             pin: PIN_3,
 ///             len: 48,
 ///             max_current: Current::Milliamps(75),
-///             gamma: Gamma::Gamma2_2,     // Optional; default GAMMA_DEFAULT.
-///             max_frames: 1,              // Optional; default MAX_FRAMES_DEFAULT (16).
+///             gamma: Gamma::Gamma2_2,     // Optional; default Gamma::Gamma2_2.
+///             max_frames: 1,              // Optional; default 16 frames.
 ///             dma: DMA_CH11,              // Optional; auto-assigned by strip order.
 ///         },
 ///         gpio4: {
@@ -765,8 +765,8 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 /// ## Optional Fields per Strip
 ///
 /// - `dma` — DMA channel (default: auto-assigned by state machine index)
-/// - `gamma` — Color curve (default: [`GAMMA_DEFAULT`] = `Gamma::Gamma2_2`)
-/// - `max_frames` — Maximum animation frames (default: [`MAX_FRAMES_DEFAULT`] = 16)
+/// - `gamma` — Color curve (default: `Gamma::Gamma2_2`)
+/// - `max_frames` — Maximum animation frames (default: 16 frames)
 /// - `led2d` — 2D panel configuration (optional). Generates a [`Led2d`](crate::led2d::Led2d) device with text rendering and animation support. See [`led2d!`](crate::led2d!) macro documentation for similar examples and configuration options.
 ///
 /// ## 2D Panel Configuration (led2d)
@@ -807,7 +807,7 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 /// The `gamma` field applies a color response curve to make colors look more natural:
 ///
 /// - [`Gamma::Linear`] — No correction (raw values)
-/// - [`Gamma::Gamma2_2`] — Standard sRGB curve (default, most natural-looking; see [`GAMMA_DEFAULT`])
+/// - [`Gamma::Gamma2_2`] — Standard sRGB curve (default, most natural-looking)
 ///
 /// The gamma curve is baked into a compile-time lookup table, so it has no runtime cost.
 ///
@@ -2872,7 +2872,7 @@ pub enum Current {
     ///
     /// The `max_brightness` is automatically calculated to ensure the worst-case current
     /// (all LEDs at full brightness) does not exceed this limit. For example, a 16-LED strip
-    /// draws 960 mA at full brightness (60 mA per LED); with `MAX_CURRENT_DEFAULT`, brightness
+    /// draws 960 mA at full brightness (60 mA per LED); with the default current limit, brightness
     /// is capped at ~26%.
     Milliamps(u16),
     /// No limit — brightness stays at 100% (subject to practical hardware constraints like
