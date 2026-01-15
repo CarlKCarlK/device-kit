@@ -2343,6 +2343,17 @@ macro_rules! __led_strips_impl {
 
 /// Macro to generate a device abstraction for a NeoPixel-style (WS2812) LED strip.
 ///
+/// This macro generates a concrete LED strip device type with associated methods and constants
+/// at compile time.
+///
+/// See [`LedStripGenerated`](led_strip_generated::LedStripGenerated) for a complete example of the
+/// struct produced by this macro and the API it exposes.
+///
+/// For treating LED strips as 2D panels, see the [`led2d`](mod@crate::led2d) module.
+///
+/// If you have multiple LED strips or panels sharing a single PIO resource, consider using
+/// [`led_strips!`] instead.
+///
 /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
 ///
 /// **Required fields:**
@@ -2354,9 +2365,9 @@ macro_rules! __led_strips_impl {
 ///
 /// - `pio` — PIO resource (default: `PIO0`)
 /// - `dma` — DMA channel (default: `DMA_CH0`)
-/// - `max_current` — Current budget (default: [`MAX_CURRENT_DEFAULT`] = 250 mA)
-/// - `gamma` — Color curve (default: [`GAMMA_DEFAULT`] = `Gamma::Gamma2_2`)
-/// - `max_frames` — Maximum animation frames (default: [`MAX_FRAMES_DEFAULT`] = 16)
+/// - `max_current` — Current budget (default: 250 mA)
+/// - `gamma` — Color curve (default: `Gamma::Gamma2_2`)
+/// - `max_frames` — Maximum animation frames (default: 16 frames)
 ///
 /// # Current Limiting
 ///
@@ -2365,7 +2376,7 @@ macro_rules! __led_strips_impl {
 /// Each WS2812 LED is assumed to draw 60 mA at full brightness. For example:
 /// - 16 LEDs × 60 mA = 960 mA at full brightness
 /// - With `max_current: Current::Milliamps(1000)`, all LEDs fit at 100% brightness
-/// - With `max_current: MAX_CURRENT_DEFAULT` (250 mA by default), the generated `MAX_BRIGHTNESS` limits LEDs to ~26% brightness
+/// - With the default current limit (250 mA), the generated `MAX_BRIGHTNESS` limits LEDs to ~26% brightness
 ///
 /// The current limit is baked into a compile-time lookup table, so it has no
 /// runtime cost.
@@ -2374,23 +2385,20 @@ macro_rules! __led_strips_impl {
 /// pass-through, but the Pico itself has practical current limits — the USB connector,
 /// cable, and internal circuitry aren't designed for heavy loads. Small LED strips
 /// (a few hundred mA) can usually power from pin 40 with a decent USB supply; for
-/// larger loads (1 A+), use a separate 5 V supply and share ground with the Pico.
+/// larger loads (1 A+), **use a separate 5 V supply and share ground with the Pico.**
 ///
 /// # Color Correction (Gamma)
 ///
 /// The `gamma` field applies a color response curve to make colors look more natural:
 ///
 /// - [`Gamma::Linear`] — No correction (raw values)
-/// - [`Gamma::Gamma2_2`] — Standard sRGB curve (default, most natural-looking; see [`GAMMA_DEFAULT`])
+/// - [`Gamma::Gamma2_2`] — Standard sRGB curve (default, most natural-looking)
 ///
 /// The gamma curve is baked into a compile-time lookup table, so it has no
 /// runtime cost.
 ///
-/// # When to Use This Macro
+/// For 2D LED panels and graphics-style rendering, see the [`led2d`](mod@crate::led2d) module.
 ///
-/// Use `led_strip!` when you have a **single LED strip** (or, say, two).
-///
-/// If you have **multiple strips**, use [`led_strips!`] instead to save [`PIO`](embassy_rp::pio) resources.
 #[macro_export]
 macro_rules! led_strip {
     ($($tt:tt)*) => { $crate::__led_strip_impl! { $($tt)* } };
