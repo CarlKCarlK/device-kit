@@ -108,7 +108,7 @@ impl ClockStatic {
 ///
 /// # Examples
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// use device_kit::clock::{Clock, ClockStatic, ONE_SECOND, h12_m_s};

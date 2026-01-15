@@ -38,7 +38,7 @@ pub type RfidStatic = EmbassyChannel<CriticalSectionRawMutex, RfidEvent, 4>;
 
 /// A device abstraction for an RFID reader using the MFRC522 chip.
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # use panic_probe as _;
 /// # fn main() {}

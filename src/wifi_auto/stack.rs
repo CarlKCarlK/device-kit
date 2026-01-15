@@ -10,7 +10,7 @@
 //!
 //! ## Provisioning via captive portal
 //!
-//! ```no_run
+//! ```rust,no_run
 //! # #![no_std]
 //! # use panic_probe as _;
 //! # #[cfg(feature = "wifi")]
@@ -50,7 +50,7 @@
 //!
 //! ## Client mode with stored credentials
 //!
-//! ```no_run
+//! ```rust,no_run
 //! # #![no_std]
 //! # use panic_probe as _;
 //! # #[cfg(feature = "wifi")]

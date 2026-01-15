@@ -18,7 +18,7 @@
 //!
 //! ![LED panel preview][led2d1]
 //!
-//! ```no_run
+//! ```rust,no_run
 //! # #![no_std]
 //! # #![no_main]
 //! # use panic_probe as _;
@@ -69,7 +69,7 @@
 //!
 //! ![LED panel preview][led2d2]
 //!
-//! ```no_run
+//! ```rust,no_run
 //! # #![no_std]
 //! # #![no_main]
 //! # use panic_probe as _;
@@ -457,7 +457,7 @@ impl Led2dFont {
 ///
 /// // cmk00000 we need to tell about fonts, and the coordinate system, and say us EB for fancy font stuff
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// # use panic_probe as _;

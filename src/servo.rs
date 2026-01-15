@@ -52,7 +52,7 @@ pub use servo_odd;
 /// A device abstraction for SG90 servo motors.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// use device_kit::servo::servo_odd;
@@ -94,7 +94,7 @@ impl<'d> Servo<'d> {
     /// Consider using the [`servo_even!`] or [`servo_odd!`] macros instead for simpler usage.
     ///
     /// # Examples
-    /// ```no_run
+    /// ```rust,no_run
     /// # #![no_std]
     /// # #![no_main]
     /// use device_kit::servo::{Servo, ServoChannel};

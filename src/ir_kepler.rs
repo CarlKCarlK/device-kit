@@ -85,7 +85,7 @@ const KEPLER_MAPPING: [(u16, u8, KeplerButton); 21] = [
 /// This provides a simple interface for the Kepler remote with built-in button mappings.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// # use panic_probe as _;

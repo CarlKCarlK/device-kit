@@ -76,7 +76,7 @@ pub enum PressDuration {
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 ///

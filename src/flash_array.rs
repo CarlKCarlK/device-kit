@@ -178,7 +178,7 @@ impl FlashArrayStatic {
 ///
 /// ## Storing custom device configuration
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// # use panic_probe as _;
@@ -212,7 +212,7 @@ impl FlashArrayStatic {
 ///
 /// ## Whiteboard semantics demonstration
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// # use panic_probe as _;

@@ -34,7 +34,7 @@
 //!
 //! ![LED strip preview][led_strip_simple]
 //!
-//! ```no_run
+//! ```rust,no_run
 //! # #![no_std]
 //! # #![no_main]
 //! # use panic_probe as _;
@@ -84,7 +84,7 @@
 //!
 //! ![LED strip preview][led_strip_animated]
 //!
-//! ```no_run
+//! ```rust,no_run
 //! # #![no_std]
 //! # #![no_main]
 //! # use panic_probe as _;
@@ -649,7 +649,7 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///
 /// ![GPIO4 panel preview][led_strip_gogo]
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// # use panic_probe as _;

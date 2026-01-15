@@ -93,7 +93,7 @@ mod wifi_impl {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```rust,no_run
     /// # #![no_std]
     /// # #![no_main]
     /// # use panic_probe as _;

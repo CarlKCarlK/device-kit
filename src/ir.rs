@@ -53,7 +53,7 @@ impl IrStatic {
 /// A device abstraction for an infrared receiver using the NEC protocol.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// use device_kit::ir::{Ir, IrEvent, IrStatic};

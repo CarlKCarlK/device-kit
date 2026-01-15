@@ -28,7 +28,7 @@ use crate::{Error, Result};
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// use device_kit::button::PressedTo;
@@ -379,7 +379,7 @@ const TIMEZONE_OPTIONS: &[TimezoneOption] = &[
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// use device_kit::button::PressedTo;

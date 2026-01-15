@@ -42,7 +42,7 @@ impl CharLcdStatic {
 
 /// A device abstraction for an HD44780-compatible character LCD.
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # use panic_probe as _;
 /// # fn main() {}

@@ -107,7 +107,7 @@ impl AnimationFrame {
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// use device_kit::{Error, led4::{BlinkState, Led4, Led4Static, OutputArray}};
@@ -212,7 +212,7 @@ impl Led4<'_> {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```rust,no_run
     /// # #![no_std]
     /// # #![no_main]
     /// # use panic_probe as _;
@@ -339,7 +339,7 @@ async fn run_animation_loop(
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// use device_kit::led4::{Led4, circular_outline_animation};

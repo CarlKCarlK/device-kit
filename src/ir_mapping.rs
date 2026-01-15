@@ -32,7 +32,7 @@ impl IrLedLayoutStatic {
 /// A generic device abstraction that maps IR remote button presses to user-defined button types.
 ///
 /// # Examples
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// use device_kit::ir_mapping::{IrLedLayout, IrLedLayoutStatic};

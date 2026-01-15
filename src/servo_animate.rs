@@ -103,7 +103,7 @@ impl ServoAnimateStatic {
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// use device_kit::servo_animate::{concat_steps, linear, ServoAnimate, ServoAnimateStatic, Step, servo_even};
