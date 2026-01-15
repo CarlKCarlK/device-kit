@@ -703,8 +703,6 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///             max_current: Current::Milliamps(250),
 ///             max_frames: 2,
 ///             led2d: {                    // Optional panel configuration for 2D displays.
-///                 width: 8,               // Panel width in LEDs.
-///                 height: 12,             // Panel height in LEDs.
 ///                 led_layout: LED_LAYOUT_12X8_ROTATED, // Two 12×4 panels stacked and rotated.
 ///                 font: Font4x6Trim,      // 4x6 pixel font without the usual 1 pixel spacing.
 ///             }
@@ -789,10 +787,10 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 /// add a `led2d` configuration block to describe its geometry.
 ///
 /// Required fields:
-/// - `width` — Number of columns in the panel
-/// - `height` — Number of rows in the panel
-/// - `led_layout` — Physical layout mapping. See [`LedLayout`](crate::led2d::layout::LedLayout) for details.
+/// - `led_layout` — Physical layout mapping (defines the panel size). See [`LedLayout`](crate::led2d::layout::LedLayout) for details.
 /// - `font` — Built-in font for text rendering. See [`Led2dFont`](crate::led2d::Led2dFont) for available fonts.
+///
+/// The `led_layout` value must be a const so its dimensions can be derived at compile time.
 ///
 /// # Current Limiting
 ///
@@ -876,8 +874,6 @@ macro_rules! __led_strips_impl {
                     max_frames: $max_frames:expr
                     $(,
                         led2d: {
-                            width: $led2d_width:expr,
-                            height: $led2d_height:expr,
                             led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                             $(max_frames: $led2d_max_frames:expr,)?
                             font: $led2d_font:ident $(,)?
@@ -1025,13 +1021,23 @@ macro_rules! __led_strips_impl {
 
                 $(
                     paste::paste! {
+                        const [<$label:upper _LED_LAYOUT_CONFIG>]: $crate::led2d::LedLayout<
+                            { $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?.len() },
+                            { $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?.width() },
+                            { $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?.height() }
+                        > = $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?;
+                        const [<$label:upper _LED_LAYOUT_WIDTH>]: usize =
+                            [<$label:upper _LED_LAYOUT_CONFIG>].width();
+                        const [<$label:upper _LED_LAYOUT_HEIGHT>]: usize =
+                            [<$label:upper _LED_LAYOUT_CONFIG>].height();
+
                         #[cfg(not(feature = "host"))]
                         $crate::led2d::led2d_from_strip! {
                             pub [<$label:camel Led2d>],
                             strip_type: [<$label:camel LedStrip>],
-                            width: $led2d_width,
-                            height: $led2d_height,
-                            led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
+                            width: [<$label:upper _LED_LAYOUT_WIDTH>],
+                            height: [<$label:upper _LED_LAYOUT_HEIGHT>],
+                            led_layout: [<$label:upper _LED_LAYOUT_CONFIG>],
                             font: $led2d_font,
                         }
 
@@ -1070,8 +1076,6 @@ macro_rules! __led_strips_impl {
                             $label
                             $(,
                                 led2d: {
-                                    width: $led2d_width,
-                                    height: $led2d_height,
                                     led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                                     font: $led2d_font,
                                 }
@@ -1116,8 +1120,6 @@ macro_rules! __led_strips_impl {
                                 spawner: spawner
                                 $(,
                                     led2d: {
-                                        width: $led2d_width,
-                                        height: $led2d_height,
                                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                                         font: $led2d_font,
                                     }
@@ -1321,8 +1323,6 @@ macro_rules! __led_strips_impl {
                 max_frames: $max_frames:expr
                 $(,
                     led2d: {
-                        width: $led2d_width:expr,
-                        height: $led2d_height:expr,
                         led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                         $(max_frames: $led2d_max_frames:expr,)?
                         font: $led2d_font:ident $(,)?
@@ -1349,8 +1349,6 @@ macro_rules! __led_strips_impl {
                     max_frames: $max_frames
                     $(,
                         led2d: {
-                            width: $led2d_width,
-                            height: $led2d_height,
                             led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                             font: $led2d_font,
                         }
@@ -1378,8 +1376,6 @@ macro_rules! __led_strips_impl {
                 max_frames: $max_frames:expr
                 ,
                 led2d: {
-                    width: $led2d_width:expr,
-                    height: $led2d_height:expr,
                     led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                     font: $led2d_font:ident $(,)?
                 }
@@ -1404,8 +1400,6 @@ macro_rules! __led_strips_impl {
                     max_frames: $max_frames
                     ,
                     led2d: {
-                        width: $led2d_width,
-                        height: $led2d_height,
                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                         max_frames: $max_frames,
                         font: $led2d_font,
@@ -1433,8 +1427,6 @@ macro_rules! __led_strips_impl {
                 max_frames: $max_frames:expr
                 ,
                 led2d: {
-                    width: $led2d_width:expr,
-                    height: $led2d_height:expr,
                     led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                     font: $led2d_font:ident $(,)?
                 }
@@ -1459,8 +1451,6 @@ macro_rules! __led_strips_impl {
                     max_frames: $max_frames
                     ,
                     led2d: {
-                        width: $led2d_width,
-                        height: $led2d_height,
                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                         max_frames: $max_frames,
                         font: $led2d_font,
@@ -1488,8 +1478,6 @@ macro_rules! __led_strips_impl {
                 max_frames: $max_frames:expr
                 $(,
                     led2d: {
-                        width: $led2d_width:expr,
-                        height: $led2d_height:expr,
                         led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                         $(max_frames: $led2d_max_frames:expr,)?
                         font: $led2d_font:ident $(,)?
@@ -1516,8 +1504,6 @@ macro_rules! __led_strips_impl {
                     max_frames: $max_frames
                     $(,
                         led2d: {
-                            width: $led2d_width,
-                            height: $led2d_height,
                             led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                             font: $led2d_font,
                         }
@@ -1545,8 +1531,6 @@ macro_rules! __led_strips_impl {
                 max_frames: $max_frames:expr
                 ,
                 led2d: {
-                    width: $led2d_width:expr,
-                    height: $led2d_height:expr,
                     led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                     font: $led2d_font:ident $(,)?
                 }
@@ -1571,8 +1555,6 @@ macro_rules! __led_strips_impl {
                     max_frames: $max_frames
                     ,
                     led2d: {
-                        width: $led2d_width,
-                        height: $led2d_height,
                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                         max_frames: $max_frames,
                         font: $led2d_font,
@@ -1600,8 +1582,6 @@ macro_rules! __led_strips_impl {
                 max_frames: $max_frames:expr
                 ,
                 led2d: {
-                    width: $led2d_width:expr,
-                    height: $led2d_height:expr,
                     led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                     font: $led2d_font:ident $(,)?
                 }
@@ -1626,8 +1606,6 @@ macro_rules! __led_strips_impl {
                     max_frames: $max_frames
                     ,
                     led2d: {
-                        width: $led2d_width,
-                        height: $led2d_height,
                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                         max_frames: $max_frames,
                         font: $led2d_font,
@@ -1654,8 +1632,6 @@ macro_rules! __led_strips_impl {
                 max_frames: $max_frames:expr
                 $(,
                     led2d: {
-                        width: $led2d_width:expr,
-                        height: $led2d_height:expr,
                         led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                         $(max_frames: $led2d_max_frames:expr,)?
                         font: $led2d_font:ident $(,)?
@@ -1682,8 +1658,6 @@ macro_rules! __led_strips_impl {
                     max_frames: $max_frames
                     $(,
                         led2d: {
-                            width: $led2d_width,
-                            height: $led2d_height,
                             led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                             font: $led2d_font,
                         }
@@ -1710,8 +1684,6 @@ macro_rules! __led_strips_impl {
                 max_frames: $max_frames:expr
                 $(,
                     led2d: {
-                        width: $led2d_width:expr,
-                        height: $led2d_height:expr,
                         led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                         $(max_frames: $led2d_max_frames:expr,)?
                         font: $led2d_font:ident $(,)?
@@ -1738,8 +1710,6 @@ macro_rules! __led_strips_impl {
                     max_frames: $max_frames
                     $(,
                         led2d: {
-                            width: $led2d_width,
-                            height: $led2d_height,
                             led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                             font: $led2d_font,
                         }
@@ -1766,8 +1736,6 @@ macro_rules! __led_strips_impl {
                 max_frames: $max_frames:expr
                 $(,
                     led2d: {
-                        width: $led2d_width:expr,
-                        height: $led2d_height:expr,
                         led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                         $(max_frames: $led2d_max_frames:expr,)?
                         font: $led2d_font:ident $(,)?
@@ -1794,8 +1762,6 @@ macro_rules! __led_strips_impl {
                     max_frames: $max_frames
                     $(,
                         led2d: {
-                            width: $led2d_width,
-                            height: $led2d_height,
                             led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                             font: $led2d_font,
                         }

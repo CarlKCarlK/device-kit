@@ -25,8 +25,6 @@ led_strips! {
             len: 48,
             max_current: Current::Milliamps(500),
             led2d: {
-                width: 12,
-                height: 4,
                 led_layout: LED_LAYOUT_12X4,
                 font: Font3x4Trim,
             }
@@ -43,8 +41,6 @@ led_strips! {
             len: 48,
             max_current: Current::Milliamps(500),
             led2d: {
-                width: 12,
-                height: 4,
                 led_layout: LED_LAYOUT_12X4,
                 font: Font3x4Trim,
             }

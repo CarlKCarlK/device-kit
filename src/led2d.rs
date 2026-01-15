@@ -29,8 +29,8 @@
 //! # use embassy_rp::init;
 //! use device_kit::{Result, led2d, led2d::layout::LedLayout, led_strip::colors};
 //!
-//! // Tells us how the LED strip is wired up in the panel, in this case, a common snake-like
-//! // pattern.
+//! // Tells us how the LED strip is wired up in the panel
+//! // in this case, a common snake-like pattern.
 //! const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 //!
 //! // Generate a type named `Led12x4`.
