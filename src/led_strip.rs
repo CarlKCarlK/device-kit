@@ -143,7 +143,7 @@ use core::ops::{Deref, DerefMut};
 // Gamma Correction
 // ============================================================================
 
-/// Gamma correction mode for LED strips.
+/// Configuration enum used by the macros to configure gamma correction for LED strips.
 ///
 /// See the [module documentation](mod@crate::led_strip) for usage examples.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -160,6 +160,8 @@ impl Default for Gamma {
     }
 }
 
+// Public so led_strip!/led_strips! expansions in downstream crates can reference it.
+#[doc(hidden)]
 /// Default gamma correction curve for generated LED devices (`Gamma::Gamma2_2`).
 pub const GAMMA_DEFAULT: Gamma = Gamma::Gamma2_2;
 
@@ -462,6 +464,8 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
 }
 
 // cmk0000 need to described this better. It is kind of a prototype.
+// Public so macro-generated types can deref to it; hidden from docs.
+#[doc(hidden)]
 /// Internal deref target for generated LED strip types.
 ///
 /// All LED strip methods are available through macro-generated types.
@@ -2851,7 +2855,7 @@ impl LedStripPio for embassy_rp::peripherals::PIO2 {
 pub use led_strip;
 pub use led_strips;
 
-/// Used by [`led_strip!`] and [`led_strips!`] to budget current for LED strips.
+/// Configuration enum used by the macros to configure current budgeting for LED strips.
 ///
 /// See the [module documentation](mod@crate::led_strip) for usage examples.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -2874,9 +2878,13 @@ impl Default for Current {
     }
 }
 
+// Public so led_strip!/led_strips! expansions in downstream crates can reference it.
+#[doc(hidden)]
 /// Default current budget for generated LED devices (`Current::Milliamps(250)`).
 pub const MAX_CURRENT_DEFAULT: Current = Current::Milliamps(250);
 
+// Public so led_strip!/led_strips! expansions in downstream crates can reference it.
+#[doc(hidden)]
 /// Default maximum animation frames for generated LED devices (`16`).
 pub const MAX_FRAMES_DEFAULT: usize = 16;
 
