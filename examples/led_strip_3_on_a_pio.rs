@@ -16,9 +16,9 @@ use heapless::Vec;
 use panic_probe as _;
 
 led_strips! {
-    LedStrips0 {
-        gpio0: { pin: PIN_0, len: 8, max_current: Current::Milliamps(250) },
-        gpio3: {
+    pub LedStrips0 {
+        Gpio0LedStrip: { pin: PIN_0, len: 8, max_current: Current::Milliamps(250) },
+        Gpio3Led2d: {
             pin: PIN_3,
             len: 48,
             max_current: Current::Milliamps(250),
@@ -27,7 +27,7 @@ led_strips! {
                 font: Font3x4Trim,
             }
         },
-        gpio4: {
+        Gpio4Led2d: {
             pin: PIN_4,
             len: 96,
             max_current: Current::Milliamps(250),

@@ -86,6 +86,61 @@ mod test_module_visibility {
     // pub use LedStripModulePrivate as ExportedToParent;
 }
 
+// Test led_strips! visibility support
+mod test_led_strips {
+    use device_kit::led_strip::Current;
+    use device_kit::led_strips;
+
+    // Test explicit pub visibility (visibility now required)
+    led_strips! {
+        pub LedStripsDefault {
+            Gpio0LedStrip: { pin: PIN_0, len: 8, max_current: Current::Milliamps(250) }
+        }
+    }
+
+    // Test access to default visibility
+    pub fn test_default() {
+        type _Test = LedStripsDefault;
+    }
+}
+
+mod test_led_strips_explicit {
+    use device_kit::led_strip::Current;
+    use device_kit::led_strips;
+
+    // Test explicit pub visibility
+    led_strips! {
+        pub LedStripsExplicitPub {
+            Gpio2LedStrip: { pin: PIN_2, len: 24, max_current: Current::Milliamps(500) }
+        }
+    }
+}
+
+mod test_led_strips_crate {
+    use device_kit::led_strip::Current;
+    use device_kit::led_strips;
+
+    // Test pub(crate) visibility
+    led_strips! {
+        pub(crate) LedStripsPubCrate {
+            Gpio4LedStrip: { pin: PIN_4, len: 40, max_current: Current::Milliamps(750) }
+        }
+    }
+}
+
+mod test_led_strips_pio {
+    use device_kit::led_strip::Current;
+    use device_kit::led_strips;
+
+    // Test with explicit PIO
+    led_strips! {
+        pio: PIO1,
+        pub(super) LedStripsWithPio {
+            Gpio6LedStrip: { pin: PIN_6, len: 56, max_current: Current::Milliamps(1000) }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

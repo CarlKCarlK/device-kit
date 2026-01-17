@@ -6,19 +6,19 @@
 use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
-use device_kit::led2d::Frame2d;
-use device_kit::led2d::layout::LedLayout;
 use device_kit::led_strip::led_strips;
 use device_kit::led_strip::{Current, Frame1d, Rgb, colors};
+use device_kit::led2d::Frame2d;
+use device_kit::led2d::layout::LedLayout;
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 use heapless::Vec;
 
 led_strips! {
     pio: PIO1,
-    LedStripsPio1 {
-        gpio0: { pin: PIN_0, len: 8, max_current: Current::Milliamps(200) },
-        gpio3: {
+    pub LedStripsPio1 {
+        Gpio0LedStrip: { pin: PIN_0, len: 8, max_current: Current::Milliamps(200) },
+        Gpio3Led2d: {
             dma: DMA_CH1,
             pin: PIN_3,
             len: 48,
@@ -34,8 +34,8 @@ led_strips! {
 
 led_strips! {
     pio: PIO0,
-    LedStripsPio0 {
-        gpio4: {
+    pub LedStripsPio0 {
+        Gpio4Led2d: {
             dma: DMA_CH2,
             pin: PIN_4,
             len: 96,

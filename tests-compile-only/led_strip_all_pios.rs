@@ -14,23 +14,23 @@ const MAX_CURRENT: Current = Current::Milliamps(250);
 
 led_strips! {
     pio: PIO0,
-    LedStripsPio0 {
-        pio0: { pin: PIN_3, len: 48, max_current: MAX_CURRENT }
+    pub LedStripsPio0 {
+        Pio0LedStrip: { pin: PIN_3, len: 48, max_current: MAX_CURRENT }
     }
 }
 
 led_strips! {
     pio: PIO1,
-    LedStripsPio1 {
-        pio1: { dma: DMA_CH1, pin: PIN_4, len: 48, max_current: MAX_CURRENT }
+    pub LedStripsPio1 {
+        Pio1LedStrip: { dma: DMA_CH1, pin: PIN_4, len: 48, max_current: MAX_CURRENT }
     }
 }
 
 #[cfg(feature = "pico2")]
 led_strips! {
     pio: PIO2,
-    LedStripsPio2 {
-        pio2: { dma: DMA_CH2, pin: PIN_5, len: 48, max_current: MAX_CURRENT }
+    pub LedStripsPio2 {
+        Pio2LedStrip: { dma: DMA_CH2, pin: PIN_5, len: 48, max_current: MAX_CURRENT }
     }
 }
 

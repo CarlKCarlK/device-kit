@@ -1471,7 +1471,7 @@ macro_rules! __led2d_impl {
                 frame_alias: __SKIP_FRAME_ALIAS__,
                 pio: $pio,
                 [<$name Strips>] {
-                    [<$name:snake>]: {
+                    [<$name LedStrip>]: {
                         dma: $dma,
                         pin: $pin,
                         len: [<$name:upper _LEN>],

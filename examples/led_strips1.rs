@@ -14,13 +14,13 @@ use panic_probe as _;
 
 led_strips! {
     pio: PIO1,                          // Optional; default is PIO0
-    LedStrips1 {
-        gpio3: {
+    pub LedStrips1 {
+        Gpio3LedStrip: {
             pin: PIN_3,
             len: 48,
             max_current: Current::Milliamps(250),
         },
-        gpio4: {
+        Gpio4LedStrip: {
             pin: PIN_4,
             len: 96,
             max_current: Current::Milliamps(1000),
