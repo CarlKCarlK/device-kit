@@ -2327,6 +2327,7 @@ macro_rules! __led_strips_impl {
 /// If you have multiple LED strips or panels sharing a single PIO resource, consider using
 /// [`led_strips!`] instead.
 ///
+/// cmk0000000000 this should be first thing after the summary
 /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
 ///
 /// **Required fields:**
@@ -2381,7 +2382,7 @@ macro_rules! led_strip {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __led_strip_impl {
-    // Entry point - name and fields
+    // Entry point - name without visibility defaults to public
     (
         $name:ident {
             $($fields:tt)*
@@ -2389,6 +2390,28 @@ macro_rules! __led_strip_impl {
     ) => {
         $crate::__led_strip_impl! {
             @__fill_defaults
+            vis: pub,
+            pio: PIO0,
+            name: $name,
+            pin: _UNSET_,
+            dma: DMA_CH0,
+            len: _UNSET_,
+            max_current: _UNSET_,
+            gamma: $crate::led_strip::GAMMA_DEFAULT,
+            max_frames: $crate::led_strip::MAX_FRAMES_DEFAULT,
+            fields: [ $($fields)* ]
+        }
+    };
+
+    // Entry point - name with explicit visibility
+    (
+        $vis:vis $name:ident {
+            $($fields:tt)*
+        }
+    ) => {
+        $crate::__led_strip_impl! {
+            @__fill_defaults
+            vis: $vis,
             pio: PIO0,
             name: $name,
             pin: _UNSET_,
@@ -2403,6 +2426,7 @@ macro_rules! __led_strip_impl {
 
     // Fill defaults: pio
     (@__fill_defaults
+        vis: $vis:vis,
         pio: $pio:ident,
         name: $name:ident,
         pin: $pin:tt,
@@ -2415,6 +2439,7 @@ macro_rules! __led_strip_impl {
     ) => {
         $crate::__led_strip_impl! {
             @__fill_defaults
+            vis: $vis,
             pio: $new_pio,
             name: $name,
             pin: $pin,
@@ -2429,6 +2454,7 @@ macro_rules! __led_strip_impl {
 
     // Fill defaults: pin
     (@__fill_defaults
+        vis: $vis:vis,
         pio: $pio:ident,
         name: $name:ident,
         pin: $pin:tt,
@@ -2441,6 +2467,7 @@ macro_rules! __led_strip_impl {
     ) => {
         $crate::__led_strip_impl! {
             @__fill_defaults
+            vis: $vis,
             pio: $pio,
             name: $name,
             pin: $new_pin,
@@ -2455,6 +2482,7 @@ macro_rules! __led_strip_impl {
 
     // Fill defaults: dma
     (@__fill_defaults
+        vis: $vis:vis,
         pio: $pio:ident,
         name: $name:ident,
         pin: $pin:tt,
@@ -2467,6 +2495,7 @@ macro_rules! __led_strip_impl {
     ) => {
         $crate::__led_strip_impl! {
             @__fill_defaults
+            vis: $vis,
             pio: $pio,
             name: $name,
             pin: $pin,
@@ -2481,6 +2510,7 @@ macro_rules! __led_strip_impl {
 
     // Fill defaults: len (expression in braces)
     (@__fill_defaults
+        vis: $vis:vis,
         pio: $pio:ident,
         name: $name:ident,
         pin: $pin:tt,
@@ -2493,6 +2523,7 @@ macro_rules! __led_strip_impl {
     ) => {
         $crate::__led_strip_impl! {
             @__fill_defaults
+            vis: $vis,
             pio: $pio,
             name: $name,
             pin: $pin,
@@ -2507,6 +2538,7 @@ macro_rules! __led_strip_impl {
 
     // Fill defaults: len (plain expression)
     (@__fill_defaults
+        vis: $vis:vis,
         pio: $pio:ident,
         name: $name:ident,
         pin: $pin:tt,
@@ -2519,6 +2551,7 @@ macro_rules! __led_strip_impl {
     ) => {
         $crate::__led_strip_impl! {
             @__fill_defaults
+            vis: $vis,
             pio: $pio,
             name: $name,
             pin: $pin,
@@ -2533,6 +2566,7 @@ macro_rules! __led_strip_impl {
 
     // Fill defaults: max_current
     (@__fill_defaults
+        vis: $vis:vis,
         pio: $pio:ident,
         name: $name:ident,
         pin: $pin:tt,
@@ -2545,6 +2579,7 @@ macro_rules! __led_strip_impl {
     ) => {
         $crate::__led_strip_impl! {
             @__fill_defaults
+            vis: $vis,
             pio: $pio,
             name: $name,
             pin: $pin,
@@ -2559,6 +2594,7 @@ macro_rules! __led_strip_impl {
 
     // Fill defaults: gamma
     (@__fill_defaults
+        vis: $vis:vis,
         pio: $pio:ident,
         name: $name:ident,
         pin: $pin:tt,
@@ -2571,6 +2607,7 @@ macro_rules! __led_strip_impl {
     ) => {
         $crate::__led_strip_impl! {
             @__fill_defaults
+            vis: $vis,
             pio: $pio,
             name: $name,
             pin: $pin,
@@ -2585,6 +2622,7 @@ macro_rules! __led_strip_impl {
 
     // Fill defaults: max_frames
     (@__fill_defaults
+        vis: $vis:vis,
         pio: $pio:ident,
         name: $name:ident,
         pin: $pin:tt,
@@ -2597,6 +2635,7 @@ macro_rules! __led_strip_impl {
     ) => {
         $crate::__led_strip_impl! {
             @__fill_defaults
+            vis: $vis,
             pio: $pio,
             name: $name,
             pin: $pin,
@@ -2611,6 +2650,7 @@ macro_rules! __led_strip_impl {
 
     // Fill default max_current if still unset
     (@__fill_defaults
+        vis: $vis:vis,
         pio: $pio:ident,
         name: $name:ident,
         pin: $pin:ident,
@@ -2623,6 +2663,7 @@ macro_rules! __led_strip_impl {
     ) => {
         $crate::__led_strip_impl! {
             @__fill_defaults
+            vis: $vis,
             pio: $pio,
             name: $name,
             pin: $pin,
@@ -2637,6 +2678,7 @@ macro_rules! __led_strip_impl {
 
     // All fields processed - expand the type
     (@__fill_defaults
+        vis: $vis:vis,
         pio: $pio:ident,
         name: $name:ident,
         pin: $pin:ident,
@@ -2673,7 +2715,7 @@ macro_rules! __led_strip_impl {
                 "LED strip generated by [`led_strip!`] or [`led_strips!`](crate::led_strips!).\n\n",
                 "See the [led_strip module documentation](mod@crate::led_strip) for usage and examples."
             )]
-            pub struct $name {
+            $vis struct $name {
                 strip: $crate::led_strip::LedStrip<{ $len }, { $max_frames }>,
             }
 

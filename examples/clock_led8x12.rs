@@ -47,15 +47,16 @@ const LED8X12_STRIP_MAX_FRAMES: usize = 48;
 const LED8X12_STRIP_MAX_FRAMES: usize = 48;
 
 led2d! {
-    pub Led8x12,
-    pio: PIO1,
-    pin: PIN_4,
-    dma: DMA_CH1,
-    led_layout: LED_LAYOUT_8X12,
-    max_current: Current::Milliamps(250),
-    gamma: Gamma::Linear,
-    max_frames: LED8X12_STRIP_MAX_FRAMES,
-    font: Font4x6Trim,
+    pub Led8x12 {
+        pio: PIO1,
+        pin: PIN_4,
+        dma: DMA_CH1,
+        led_layout: LED_LAYOUT_8X12,
+        max_current: Current::Milliamps(250),
+        gamma: Gamma::Linear,
+        max_frames: LED8X12_STRIP_MAX_FRAMES,
+        font: Font4x6Trim,
+    }
 }
 
 const FAST_MODE_SPEED: f32 = 720.0;

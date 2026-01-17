@@ -17,23 +17,24 @@ const LED_LAYOUT: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 
 #[cfg(all(not(doc), not(feature = "host")))]
 led2d! {
-    Led2dGenerated,
-    // PIO resource (default: PIO0)
-    pio: PIO0,
-    // GPIO pin for LED data signal
-    pin: PIN_3,
-    // DMA channel for LED data transfer (default: DMA_CH0)
-    dma: DMA_CH0,
-    // LED layout mapping (defines panel dimensions)
-    led_layout: LED_LAYOUT,
-    // Power budget (default: unlimited)
-    max_current: Current::Unlimited,
-    // Gamma correction mode (default: Gamma2_2)
-    gamma: Gamma::Gamma2_2,
-    // Maximum number of aniamtion frames (default: 16)
-    max_frames: 16,
-    // Font variant (see [`Led2dFont`](crate::led2d::Led2dFont) for available fonts)
-    font: Font3x4Trim,
+    Led2dGenerated {
+        // PIO resource (default: PIO0)
+        pio: PIO0,
+        // GPIO pin for LED data signal
+        pin: PIN_3,
+        // DMA channel for LED data transfer (default: DMA_CH0)
+        dma: DMA_CH0,
+        // LED layout mapping (defines panel dimensions)
+        led_layout: LED_LAYOUT,
+        // Power budget (default: unlimited)
+        max_current: Current::Unlimited,
+        // Gamma correction mode (default: Gamma2_2)
+        gamma: Gamma::Gamma2_2,
+        // Maximum number of aniamtion frames (default: 16)
+        max_frames: 16,
+        // Font variant (see [`Led2dFont`](crate::led2d::Led2dFont) for available fonts)
+        font: Font3x4Trim,
+    }
 }
 
 #[cfg(doc)]

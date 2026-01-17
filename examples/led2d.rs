@@ -25,15 +25,16 @@ use smart_leds::colors;
 const LED_LAYOUT_4X12: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 
 led2d! {
-    pub Led4x12,
-    pin: PIN_3,
-    led_layout: LED_LAYOUT_4X12,
-    font: Font3x4Trim,
-    pio: PIO1,
-    dma: DMA_CH0,
-    max_current: Current::Milliamps(500),
-    gamma: Gamma::Linear,
-    max_frames: 32,
+    pub Led4x12 {
+        pin: PIN_3,
+        led_layout: LED_LAYOUT_4X12,
+        font: Font3x4Trim,
+        pio: PIO1,
+        dma: DMA_CH0,
+        max_current: Current::Milliamps(500),
+        gamma: Gamma::Linear,
+        max_frames: 32,
+    }
 }
 
 #[embassy_executor::main]

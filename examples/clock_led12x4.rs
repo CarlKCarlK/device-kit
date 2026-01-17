@@ -37,15 +37,16 @@ use smart_leds::RGB8;
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 
 led2d! {
-    pub Led12x4,
-    pio: PIO0,
-    pin: PIN_3,
-    dma: DMA_CH1,
-    led_layout: LED_LAYOUT_12X4,
-    max_current: Current::Milliamps(500),
-    gamma: Gamma::Linear,
-    max_frames: 32,
-    font: Font3x4Trim,
+    pub Led12x4 {
+        pio: PIO0,
+        pin: PIN_3,
+        dma: DMA_CH1,
+        led_layout: LED_LAYOUT_12X4,
+        max_current: Current::Milliamps(500),
+        gamma: Gamma::Linear,
+        max_frames: 32,
+        font: Font3x4Trim,
+    }
 }
 
 // cmk use the colors enum

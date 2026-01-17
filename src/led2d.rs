@@ -6,7 +6,7 @@
 //! A device abstraction for rectangular NeoPixel-style (WS2812) LED panel displays.
 //!
 //! See [`Led2dGenerated`](`crate::led2d::led2d_generated::Led2dGenerated`) for a
-//! concrete generated-struct example and [`led2d!`] for the macro that builds these types.
+//! concrete generated struct example and [`led2d!`] for the macro that builds these types.
 //!
 //! For custom graphics, create a [`Frame2d`] and use the
 //! [`embedded-graphics`](https://docs.rs/embedded-graphics) drawing API. See the
@@ -33,12 +33,14 @@
 //! // in this case, a common snake-like pattern.
 //! const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 //!
+//! // cmk0000000 does the static have the same visibility as the struct? should it?
 //! // Generate a type named `Led12x4`.
 //! led2d! {
-//!     pub Led12x4,                         // Struct name and visibility
-//!     pin: PIN_3,                          // GPIO pin for LED data signal
-//!     led_layout: LED_LAYOUT_12X4,         // LED layout mapping (defines dimensions)
-//!     font: Font3x4Trim,                   // Font variant
+//!     pub Led12x4 {
+//!         pin: PIN_3,                          // GPIO pin for LED data signal
+//!         led_layout: LED_LAYOUT_12X4,         // LED layout mapping (defines dimensions)
+//!         font: Font3x4Trim,                   // Font variant
+//!     }
 //! }
 //!
 //! # #[embassy_executor::main]
@@ -85,15 +87,16 @@
 //!
 //! // Generate a type named `Led12x8Animated`.
 //! led2d! {
-//!     pub Led12x8Animated,
-//!     pin: PIN_4,                           // GPIO pin for LED data signal
-//!     led_layout: LED_LAYOUT_12X8_ROTATED,  // Two 12×4 panels stacked and rotated
-//!     font: Font4x6Trim,                    // Use a 4x6 pixel font without the usual 1 pixel padding
-//!     pio: PIO1,                            // PIO resource, default is PIO0
-//!     dma: DMA_CH1,                         // DMA resource, default is DMA_CH0
-//!     max_current: Current::Milliamps(300), // Power budget, default is 250 mA.
-//!     gamma: Gamma::Linear,                 // Color correction curve, default is Gamma2_2
-//!     max_frames: 2,                        // maximum animation frames, default is 16
+//!     pub Led12x8Animated {
+//!         pin: PIN_4,                           // GPIO pin for LED data signal
+//!         led_layout: LED_LAYOUT_12X8_ROTATED,  // Two 12×4 panels stacked and rotated
+//!         font: Font4x6Trim,                    // Use a 4x6 pixel font without the usual 1 pixel padding
+//!         pio: PIO1,                            // PIO resource, default is PIO0
+//!         dma: DMA_CH1,                         // DMA resource, default is DMA_CH0
+//!         max_current: Current::Milliamps(300), // Power budget, default is 250 mA.
+//!         gamma: Gamma::Linear,                 // Color correction curve, default is Gamma2_2
+//!         max_frames: 2,                        // maximum animation frames, default is 16
+//!     }
 //! }
 //!
 //! # #[embassy_executor::main]
@@ -1067,9 +1070,62 @@ macro_rules! led2d {
 #[macro_export]
 #[cfg(not(feature = "host"))]
 macro_rules! __led2d_impl {
+    // Legacy entry point - comma syntax (temporary for backward compatibility)
+    (
+        $name:ident,
+        $($fields:tt)*
+    ) => {
+        $crate::__led2d_impl! { pub $name, $($fields)* }
+    };
+
+    // Legacy entry point - comma syntax with visibility (temporary for backward compatibility)
     (
         $vis:vis $name:ident,
         $($fields:tt)*
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pio: PIO0,
+            pin: _UNSET_,
+            dma: DMA_CH0,
+            led_layout: _UNSET_,
+            max_current: _UNSET_,
+            gamma: $crate::led_strip::GAMMA_DEFAULT,
+            max_frames: $crate::led_strip::MAX_FRAMES_DEFAULT,
+            font: _UNSET_,
+            fields: [ $($fields)* ]
+        }
+    };
+
+    // Entry point - name without visibility defaults to private
+    (
+        $name:ident {
+            $($fields:tt)*
+        }
+    ) => {
+        $crate::__led2d_impl! {
+            @__fill_defaults
+            vis: pub(self),
+            name: $name,
+            pio: PIO0,
+            pin: _UNSET_,
+            dma: DMA_CH0,
+            led_layout: _UNSET_,
+            max_current: _UNSET_,
+            gamma: $crate::led_strip::GAMMA_DEFAULT,
+            max_frames: $crate::led_strip::MAX_FRAMES_DEFAULT,
+            font: _UNSET_,
+            fields: [ $($fields)* ]
+        }
+    };
+
+    // Entry point - name with explicit visibility
+    (
+        $vis:vis $name:ident {
+            $($fields:tt)*
+        }
     ) => {
         $crate::__led2d_impl! {
             @__fill_defaults
@@ -1548,7 +1604,7 @@ macro_rules! led2d_from_strip {
     ) => {
         $crate::led2d::paste::paste! {
             /// Static resources for the LED matrix device.
-            $vis struct [<$name Static>] {
+            struct [<$name Static>] {
                 led2d_static: $crate::led2d::Led2dStatic<$n_const, $max_frames_const>,
             }
 
@@ -1590,7 +1646,7 @@ macro_rules! led2d_from_strip {
 
                 /// Create static resources.
                 #[must_use]
-                $vis const fn new_static() -> [<$name Static>] {
+                const fn new_static() -> [<$name Static>] {
                     [<$name Static>] {
                         led2d_static: $crate::led2d::Led2dStatic::new_static(),
                     }

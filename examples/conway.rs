@@ -6,7 +6,6 @@ use core::convert::Infallible;
 
 use defmt::info;
 use defmt_rtt as _;
-use device_kit::{Error, Result};
 use device_kit::button::{Button, PressDuration, PressedTo};
 use device_kit::led_strip::Current;
 use device_kit::led_strip::Gamma;
@@ -14,6 +13,7 @@ use device_kit::led_strip::Rgb;
 use device_kit::led2d;
 use device_kit::led2d::Frame2d;
 use device_kit::led2d::layout::LedLayout;
+use device_kit::{Error, Result};
 use embassy_executor::Spawner;
 use embassy_futures::select::{Either, select};
 use embassy_rp::init;
@@ -29,15 +29,16 @@ const LED_LAYOUT_8X12: LedLayout<96, 8, 12> = LED_LAYOUT_12X4.concat_v(LED_LAYOU
 
 // cmk000 add default
 led2d! {
-    pub Led8x12,
-    pio: PIO0,
-    pin: PIN_4,
-    dma: DMA_CH0,
-    led_layout: LED_LAYOUT_8X12,
-    max_current: Current::Milliamps(1000),
-    gamma: Gamma::Linear,
-    max_frames: 32,
-    font: Font4x6Trim,
+    pub Led8x12 {
+        pio: PIO0,
+        pin: PIN_4,
+        dma: DMA_CH0,
+        led_layout: LED_LAYOUT_8X12,
+        max_current: Current::Milliamps(1000),
+        gamma: Gamma::Linear,
+        max_frames: 32,
+        font: Font4x6Trim,
+    }
 }
 
 /// Message type for communicating pattern changes and speed adjustments to the Conway task.

@@ -24,15 +24,16 @@ const LED_LAYOUT_12X8: LedLayout<96, 12, 8> = LED_LAYOUT_12X4.concat_v(LED_LAYOU
 const LED_LAYOUT_12X8_ROTATED: LedLayout<96, 8, 12> = LED_LAYOUT_12X8.rotate_cw();
 
 led2d! {
-    pub Led12x8Animated,
-    pin: PIN_4, // GPIO pin for LED data signal
-    led_layout: LED_LAYOUT_12X8_ROTATED, // Two 12×4 panels stacked and rotated
-    font: Font4x6Trim, // Use a 4x6 pixel font without the usual 1 pixel spacing
-    pio: PIO1, // PIO resource, default is PIO0
-    dma: DMA_CH1, // DMA resource, default is DMA_CH0
-    max_current: Current::Milliamps(300), // Power budget, default is 250 mA
-    gamma: Gamma::Linear, // Color correction curve, default is Gamma2_2
-    max_frames: 2, // maximum animation frames, default is 16
+    pub Led12x8Animated {
+        pin: PIN_4, // GPIO pin for LED data signal
+        led_layout: LED_LAYOUT_12X8_ROTATED, // Two 12×4 panels stacked and rotated
+        font: Font4x6Trim, // Use a 4x6 pixel font without the usual 1 pixel spacing
+        pio: PIO1, // PIO resource, default is PIO0
+        dma: DMA_CH1, // DMA resource, default is DMA_CH0
+        max_current: Current::Milliamps(300), // Power budget, default is 250 mA
+        gamma: Gamma::Linear, // Color correction curve, default is Gamma2_2
+        max_frames: 2, // maximum animation frames, default is 16
+    }
 }
 
 #[embassy_executor::main]
