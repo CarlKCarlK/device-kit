@@ -1,7 +1,4 @@
-//! Compile-only verification that led2d! macro visibility modifiers work correctly.
-//!
-//! This demonstrates that the new braced syntax supports all visibility levels.
-//! Each test shows a different visibility level compiling successfully.
+//! Compile-only verification that led2d! public/private visibility works.
 //!
 //! Run via: `cargo check-all` (xtask compiles this for thumbv6m-none-eabi)
 
@@ -17,7 +14,7 @@ use device_kit::led2d::layout::LedLayout;
 use embassy_executor::Spawner;
 use panic_probe as _;
 
-// Test with private visibility (no modifier) - this is the simplest test
+// Private visibility (no modifier)
 const LED_LAYOUT: LedLayout<12, 4, 3> = LedLayout::serpentine_column_major();
 
 led2d! {
@@ -30,7 +27,7 @@ led2d! {
     }
 }
 
-/// Compile-time verification that the braced syntax works and generates accessible types
+/// Compile-time verification that the braced syntax works and generates accessible types.
 fn test_led2d_braced_syntax_compilation() {
     // Test that the macro generates the expected types with the new braced syntax
     let _device_size = core::mem::size_of::<TestLed>();
@@ -43,8 +40,7 @@ fn test_led2d_braced_syntax_compilation() {
     // 4. Generated code compiles without errors
 }
 
-// Test public visibility using a second example
-// Note: We test this separately in the module to avoid PIO resource conflicts
+// Public visibility in a separate module to avoid PIO conflicts.
 mod public_test {
     use super::*;
 
@@ -61,37 +57,32 @@ mod public_test {
         }
     }
 
-    /// Test that pub visibility modifier works with braced syntax
-    fn test_pub_visibility_compilation() {
-        // This tests that `pub` visibility modifier is parsed and applied correctly
+    pub fn use_public_type() {
         let _device_size = core::mem::size_of::<PublicLed>();
         let _static_size = core::mem::size_of::<PublicLedStatic>();
     }
 }
 
-// Test crate visibility in a third module to avoid conflicts
-mod crate_test {
+// Private visibility in a module to ensure it's inaccessible outside.
+mod private_test {
     use super::*;
 
-    const LED_LAYOUT_CRATE: LedLayout<8, 4, 2> = LedLayout::serpentine_column_major();
+    const LED_LAYOUT_PRIVATE: LedLayout<8, 4, 2> = LedLayout::serpentine_column_major();
 
     led2d! {
-        pub(crate) CrateLed {
+        pub(self) PrivateLed {
             pin: PIN_5,
             pio: PIO0,
-            dma: DMA_CH2,
-            led_layout: LED_LAYOUT_CRATE,
+            led_layout: LED_LAYOUT_PRIVATE,
             font: Font3x4Trim,
             max_current: Current::Milliamps(100),
             gamma: Gamma::Linear,
         }
     }
 
-    /// Test that pub(crate) visibility modifier works with braced syntax
-    fn test_crate_visibility_compilation() {
-        // This tests that `pub(crate)` visibility modifier is parsed and applied correctly
-        let _device_size = core::mem::size_of::<CrateLed>();
-        let _static_size = core::mem::size_of::<CrateLedStatic>();
+    pub fn use_private_type() {
+        let _device_size = core::mem::size_of::<PrivateLed>();
+        let _static_size = core::mem::size_of::<PrivateLedStatic>();
     }
 }
 
@@ -100,6 +91,11 @@ async fn main(_spawner: Spawner) {
     // This main function exists only to satisfy the compiler.
     // The actual verification happens at compile time via the functions above.
     test_led2d_braced_syntax_compilation();
+    public_test::use_public_type();
+    private_test::use_private_type();
+
+    // Private type should NOT be accessible here (would cause compile error if uncommented):
+    // let _private_size = core::mem::size_of::<private_test::PrivateLed>();
 }
 
 #[cfg(not(any(target_arch = "arm", target_arch = "riscv32", target_arch = "riscv64")))]

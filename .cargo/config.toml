@@ -10,6 +10,7 @@ xtask-check = "check --manifest-path xtask/Cargo.toml"
 check-all = "xtask check-all"
 check-examples = "xtask check-examples"
 check-compile-only = "xtask check-compile-only"
+check-compile-only-tests = "xtask check-compile-only"
 
 # Test documentation examples
 test-docs = "test --doc --target thumbv8m.main-none-eabihf --features pico2,wifi,arm --no-default-features"

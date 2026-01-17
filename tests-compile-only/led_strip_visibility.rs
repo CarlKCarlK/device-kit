@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 #![allow(dead_code)]
-//! Test visibility support for led_strip! macro.
+//! Test visibility support for led_strip! and led_strips! macros.
 
 use device_kit::led_strip;
 use panic_probe as _;
@@ -86,58 +86,91 @@ mod test_module_visibility {
     // pub use LedStripModulePrivate as ExportedToParent;
 }
 
-// Test led_strips! visibility support
-mod test_led_strips {
+// led_strips! public visibility (strip mode)
+mod test_led_strips_public_strip {
     use device_kit::led_strip::Current;
     use device_kit::led_strips;
 
-    // Test explicit pub visibility (visibility now required)
+    // Public visibility
     led_strips! {
-        pub LedStripsDefault {
+        pub LedStripsPublicStrip {
             Gpio0LedStrip: { pin: PIN_0, len: 8, max_current: Current::Milliamps(250) }
         }
     }
 
-    // Test access to default visibility
-    pub fn test_default() {
-        type _Test = LedStripsDefault;
+    pub fn use_public_strip() {
+        type _Test = LedStripsPublicStrip;
     }
 }
 
-mod test_led_strips_explicit {
+// led_strips! private visibility (strip mode)
+mod test_led_strips_private_strip {
     use device_kit::led_strip::Current;
     use device_kit::led_strips;
 
-    // Test explicit pub visibility
     led_strips! {
-        pub LedStripsExplicitPub {
+        pub(self) LedStripsPrivateStrip {
             Gpio2LedStrip: { pin: PIN_2, len: 24, max_current: Current::Milliamps(500) }
         }
     }
-}
 
-mod test_led_strips_crate {
-    use device_kit::led_strip::Current;
-    use device_kit::led_strips;
-
-    // Test pub(crate) visibility
-    led_strips! {
-        pub(crate) LedStripsPubCrate {
-            Gpio4LedStrip: { pin: PIN_4, len: 40, max_current: Current::Milliamps(750) }
-        }
+    pub fn use_private_strip() {
+        type _Test = LedStripsPrivateStrip;
     }
 }
 
-mod test_led_strips_pio {
+// led_strips! public visibility (led2d mode)
+mod test_led_strips_public_led2d {
     use device_kit::led_strip::Current;
     use device_kit::led_strips;
+    use device_kit::led2d::layout::LedLayout;
 
-    // Test with explicit PIO
+    const LED_LAYOUT_PUBLIC: LedLayout<12, 4, 3> = LedLayout::serpentine_column_major();
+
     led_strips! {
         pio: PIO1,
-        pub(super) LedStripsWithPio {
-            Gpio6LedStrip: { pin: PIN_6, len: 56, max_current: Current::Milliamps(1000) }
+        pub LedStripsPublicLed2d {
+            Gpio4Led2d: {
+                pin: PIN_4,
+                len: 12,
+                max_current: Current::Milliamps(250),
+                led2d: {
+                    led_layout: LED_LAYOUT_PUBLIC,
+                    font: Font3x4Trim,
+                }
+            }
         }
+    }
+
+    pub fn use_public_led2d() {
+        type _Test = LedStripsPublicLed2d;
+    }
+}
+
+// led_strips! private visibility (led2d mode)
+mod test_led_strips_private_led2d {
+    use device_kit::led_strip::Current;
+    use device_kit::led_strips;
+    use device_kit::led2d::layout::LedLayout;
+
+    const LED_LAYOUT_PRIVATE: LedLayout<12, 4, 3> = LedLayout::serpentine_column_major();
+
+    led_strips! {
+        pub(self) LedStripsPrivateLed2d {
+            Gpio6Led2d: {
+                pin: PIN_6,
+                len: 12,
+                max_current: Current::Milliamps(250),
+                led2d: {
+                    led_layout: LED_LAYOUT_PRIVATE,
+                    font: Font3x4Trim,
+                }
+            }
+        }
+    }
+
+    pub fn use_private_led2d() {
+        type _Test = LedStripsPrivateLed2d;
     }
 }
 
@@ -182,6 +215,11 @@ fn main() {
 
     let _ = test_private::use_private_type();
     let _ = test_module_visibility::use_module_type();
+
+    let _ = test_led_strips_public_strip::use_public_strip();
+    let _ = test_led_strips_private_strip::use_private_strip();
+    let _ = test_led_strips_public_led2d::use_public_led2d();
+    let _ = test_led_strips_private_led2d::use_private_led2d();
 
     // Private types should NOT be accessible (would cause compile error if uncommented):
     // type _Test4 = test_private::LedStripPrivate;  // Should fail - pub(self) means private

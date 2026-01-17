@@ -2,9 +2,9 @@
 //!
 //! Run with: `cargo xtask <command>`
 
-mod video_frames_gen;
 mod led2d_generated;
 mod led_strip_generated;
+mod video_frames_gen;
 
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
@@ -26,6 +26,8 @@ struct Cli {
 enum Commands {
     /// Run all checks: build lib, examples, run tests, generate docs
     CheckAll,
+    /// Check compile-only tests (tests-compile-only)
+    CheckCompileOnly,
     /// Check all examples (pico1 + pico2, with and without wifi)
     CheckExamples,
     /// Check documentation: run doc tests and generate docs
@@ -117,6 +119,7 @@ fn main() -> ExitCode {
 
     match cli.command {
         Commands::CheckAll => check_all(),
+        Commands::CheckCompileOnly => check_compile_only(),
         Commands::CheckExamples => check_examples(),
         Commands::CheckDocs => check_docs(),
         Commands::VideoFramesGen => {
@@ -165,6 +168,62 @@ fn main() -> ExitCode {
             wifi,
         } => build_uf2(&name, board, arch, wifi),
     }
+}
+
+fn check_compile_only() -> ExitCode {
+    let workspace_root = workspace_root();
+    let arch = Arch::Arm;
+    let board = Board::Pico1;
+    let target = arch.target(board);
+
+    println!("{}", "==> Checking compile-only tests...".cyan());
+
+    let compile_tests_dir = workspace_root.join("tests-compile-only");
+    if !compile_tests_dir.exists() {
+        eprintln!("{}", "No tests-compile-only directory found.".red());
+        return ExitCode::FAILURE;
+    }
+
+    let mut compile_tests = Vec::new();
+    if let Ok(entries) = fs::read_dir(&compile_tests_dir) {
+        for entry in entries.flatten() {
+            if let Some(filename) = entry.file_name().to_str() {
+                if filename.ends_with(".rs") {
+                    let test_name = filename.trim_end_matches(".rs");
+                    compile_tests.push(test_name.to_string());
+                }
+            }
+        }
+    }
+    compile_tests.sort();
+
+    let failures = Mutex::new(Vec::new());
+    compile_tests.par_iter().for_each(|test| {
+        if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
+            "check",
+            "--bin",
+            test,
+            "--target",
+            target,
+            "--features",
+            "pico1,arm,wifi",
+            "--no-default-features",
+        ])) {
+            failures.lock().unwrap().push(test.clone());
+        }
+    });
+
+    let failures = failures.lock().unwrap();
+    if !failures.is_empty() {
+        eprintln!("\n{}", "Failed compile-only tests:".red().bold());
+        for failure in failures.iter() {
+            eprintln!("  - {}", failure.red());
+        }
+        return ExitCode::FAILURE;
+    }
+
+    println!("\n{}", "==> Compile-only tests passed! 🎉".green().bold());
+    ExitCode::SUCCESS
 }
 
 fn check_all() -> ExitCode {
