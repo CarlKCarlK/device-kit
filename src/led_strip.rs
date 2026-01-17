@@ -2890,7 +2890,7 @@ macro_rules! __led_strip_impl {
         ::paste::paste! {
             // Create the PIO bus (shared across all SM0 strips using this PIO)
             #[allow(non_upper_case_globals)]
-            static [<$pio _BUS>]: ::static_cell::StaticCell<
+            static [<$name:snake _ $pio _BUS>]: ::static_cell::StaticCell<
                 $crate::led_strip::PioBus<'static, ::embassy_rp::peripherals::$pio>
             > = ::static_cell::StaticCell::new();
 
@@ -2898,12 +2898,12 @@ macro_rules! __led_strip_impl {
             ///
             /// Returns SM0 only for single-strip usage.
             #[allow(dead_code)]
-            fn [<$pio:lower _split_sm0>](
+            fn [<$name:snake _split_sm0>](
                 pio: ::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$pio>,
             ) -> $crate::led_strip::PioStateMachine<::embassy_rp::peripherals::$pio, 0> {
                 let ::embassy_rp::pio::Pio { common, sm0, .. } =
                     ::embassy_rp::pio::Pio::new(pio, <::embassy_rp::peripherals::$pio as $crate::led_strip::LedStripPio>::irqs());
-                let pio_bus = [<$pio _BUS>].init_with(|| {
+                let pio_bus = [<$name:snake _ $pio _BUS>].init_with(|| {
                     $crate::led_strip::PioBus::new(common)
                 });
                 $crate::led_strip::PioStateMachine::new(pio_bus, sm0)
@@ -2964,10 +2964,10 @@ macro_rules! __led_strip_impl {
                     let pin = pin.into();
                     let dma = dma.into();
 
-                    let sm0 = [<$pio:lower _split_sm0>](pio);
+                    let sm0 = [<$name:snake _split_sm0>](pio);
                     let (bus, sm) = sm0.into_parts();
 
-                    let token = [<$name:snake _animation_task>](
+                    let token = [<$name:snake _device_loop>](
                         bus,
                         sm,
                         dma,
@@ -2999,7 +2999,7 @@ macro_rules! __led_strip_impl {
             }
 
             #[::embassy_executor::task]
-            async fn [<$name:snake _animation_task>](
+            async fn [<$name:snake _device_loop>](
                 bus: &'static $crate::led_strip::PioBus<'static, ::embassy_rp::peripherals::$pio>,
                 sm: ::embassy_rp::pio::StateMachine<'static, ::embassy_rp::peripherals::$pio, 0>,
                 dma: ::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$dma>,

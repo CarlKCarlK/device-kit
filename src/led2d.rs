@@ -1461,9 +1461,6 @@ macro_rules! __led2d_impl {
                 { $led_layout.width() },
                 { $led_layout.height() }
             > = $led_layout;
-            const [<$name:upper _WIDTH>]: usize = [<$name:upper _LAYOUT>].width();
-            const [<$name:upper _HEIGHT>]: usize = [<$name:upper _LAYOUT>].height();
-            const [<$name:upper _LEN>]: usize = [<$name:upper _LAYOUT>].len();
 
             // Generate the LED strip infrastructure with a CamelCase strip type
             $crate::__led_strips_impl! {
@@ -1474,7 +1471,7 @@ macro_rules! __led2d_impl {
                     [<$name LedStrip>]: {
                         dma: $dma,
                         pin: $pin,
-                        len: [<$name:upper _LEN>],
+                        len: { [<$name:upper _LAYOUT>].len() },
                         max_current: $max_current,
                         gamma: $gamma,
                         max_frames: $max_frames,
@@ -1483,13 +1480,18 @@ macro_rules! __led2d_impl {
             }
 
             // Generate the Led2d device from the strip with custom mapping
+            const [<$name:upper _MAX_FRAMES>]: usize = [<$name LedStrip>]::MAX_FRAMES;
+
+            // Compile-time assertion that strip length matches led_layout length
+            const _: () = assert!([<$name:upper _LAYOUT>].map().len() == [<$name LedStrip>]::LEN);
+
             $crate::led2d::led2d_from_strip! {
+                @__from_layout_const
                 $vis $name,
                 strip_type: [<$name LedStrip>],
-                width: [<$name:upper _WIDTH>],
-                height: [<$name:upper _HEIGHT>],
-                led_layout: [<$name:upper _LAYOUT>],
+                led_layout_const: [<$name:upper _LAYOUT>],
                 font: $font_variant,
+                max_frames_const: [<$name:upper _MAX_FRAMES>],
             }
 
             // Add simplified constructor that handles PIO splitting and both statics
@@ -1547,18 +1549,15 @@ macro_rules! led2d_from_strip {
         font: $font_variant:ident $(,)?
     ) => {
         $crate::led2d::paste::paste! {
-            const [<$name:upper _W>]: usize = $width;
-            const [<$name:upper _H>]: usize = $height;
-            const [<$name:upper _N>]: usize = [<$name:upper _W>] * [<$name:upper _H>];
-            const [<$name:upper _LED_LAYOUT>]: $crate::led2d::LedLayout<[<$name:upper _N>], [<$name:upper _W>], [<$name:upper _H>]> =
-                $crate::led2d::LedLayout::<[<$name:upper _N>], [<$name:upper _W>], [<$name:upper _H>]>::serpentine_column_major();
+            const [<$name:upper _LED_LAYOUT>]: $crate::led2d::LedLayout<{ $width * $height }, { $width }, { $height }> =
+                $crate::led2d::LedLayout::<{ $width * $height }, { $width }, { $height }>::serpentine_column_major();
             const [<$name:upper _MAX_FRAMES>]: usize = $strip_type::MAX_FRAMES;
 
             // Compile-time assertion that strip length matches led_layout length
             const _: () = assert!([<$name:upper _LED_LAYOUT>].map().len() == $strip_type::LEN);
 
             $crate::led2d::led2d_from_strip!(
-                @common $vis, $name, $strip_type, [<$name:upper _W>], [<$name:upper _H>], [<$name:upper _N>], [<$name:upper _LED_LAYOUT>],
+                @common $vis, $name, $strip_type, [<$name:upper _LED_LAYOUT>],
                 $font_variant,
                 [<$name:upper _MAX_FRAMES>]
             );
@@ -1574,30 +1573,39 @@ macro_rules! led2d_from_strip {
         font: $font_variant:ident $(,)?
     ) => {
         $crate::led2d::paste::paste! {
-            const [<$name:upper _W>]: usize = $width;
-            const [<$name:upper _H>]: usize = $height;
-            const [<$name:upper _N>]: usize = [<$name:upper _W>] * [<$name:upper _H>];
-            const [<$name:upper _LED_LAYOUT>]: $crate::led2d::LedLayout<[<$name:upper _N>], [<$name:upper _W>], [<$name:upper _H>]> = $led_layout;
+            const [<$name:upper _LED_LAYOUT>]: $crate::led2d::LedLayout<{ $width * $height }, { $width }, { $height }> = $led_layout;
             const [<$name:upper _MAX_FRAMES>]: usize = $strip_type::MAX_FRAMES;
 
             // Compile-time assertion that strip length matches led_layout length
             const _: () = assert!([<$name:upper _LED_LAYOUT>].map().len() == $strip_type::LEN);
 
             $crate::led2d::led2d_from_strip!(
-                @common $vis, $name, $strip_type, [<$name:upper _W>], [<$name:upper _H>], [<$name:upper _N>], [<$name:upper _LED_LAYOUT>],
+                @common $vis, $name, $strip_type, [<$name:upper _LED_LAYOUT>],
                 $font_variant,
                 [<$name:upper _MAX_FRAMES>]
             );
         }
+    };
+    // Internal: use existing led_layout const (avoids redundant constants)
+    (
+        @__from_layout_const
+        $vis:vis $name:ident,
+        strip_type: $strip_type:ident,
+        led_layout_const: $led_layout_const:ident,
+        font: $font_variant:ident,
+        max_frames_const: $max_frames_const:ident $(,)?
+    ) => {
+        $crate::led2d::led2d_from_strip!(
+            @common $vis, $name, $strip_type, $led_layout_const,
+            $font_variant,
+            $max_frames_const
+        );
     };
     // Common implementation (shared by both variants)
     (
         @common $vis:vis,
         $name:ident,
         $strip_type:ident,
-        $cols_const:ident,
-        $rows_const:ident,
-        $n_const:ident,
         $led_layout_const:ident,
         $font_variant:expr,
         $max_frames_const:ident
@@ -1605,20 +1613,20 @@ macro_rules! led2d_from_strip {
         $crate::led2d::paste::paste! {
             /// Static resources for the LED matrix device.
             struct [<$name Static>] {
-                led2d_static: $crate::led2d::Led2dStatic<$n_const, $max_frames_const>,
+                led2d_static: $crate::led2d::Led2dStatic<{ $led_layout_const.len() }, $max_frames_const>,
             }
 
             // Generate the task wrapper
             $crate::led2d::led2d_device_task!(
                 [<$name:snake _device_loop>],
                 &'static $strip_type,
-                $n_const,
+                { $led_layout_const.len() },
                 $max_frames_const
             );
 
             /// LED matrix device handle generated by [`led2d_from_strip!`](crate::led2d::led2d_from_strip).
             $vis struct [<$name>] {
-                led2d: $crate::led2d::Led2d<$n_const, $max_frames_const>,
+                led2d: $crate::led2d::Led2d<{ $led_layout_const.len() }, $max_frames_const>,
                 font: embedded_graphics::mono_font::MonoFont<'static>,
                 font_variant: $crate::led2d::Led2dFont,
             }
@@ -1626,21 +1634,21 @@ macro_rules! led2d_from_strip {
             #[allow(non_snake_case, dead_code)]
             impl [<$name>] {
                 /// Number of columns in the panel.
-                pub const WIDTH: usize = $cols_const;
+                pub const WIDTH: usize = $led_layout_const.width();
                 /// Number of rows in the panel.
-                pub const HEIGHT: usize = $rows_const;
+                pub const HEIGHT: usize = $led_layout_const.height();
                 /// Total number of LEDs (WIDTH * HEIGHT).
-                pub const N: usize = $n_const;
+                pub const N: usize = $led_layout_const.len();
                 /// Frame dimensions as a [`Size`] for embedded-graphics.
-                pub const SIZE: $crate::led2d::Size = $crate::led2d::Frame2d::<$cols_const, $rows_const>::SIZE;
+                pub const SIZE: $crate::led2d::Size = $crate::led2d::Frame2d::<{ $led_layout_const.width() }, { $led_layout_const.height() }>::SIZE;
                 /// Top-left corner coordinate for embedded-graphics drawing.
-                pub const TOP_LEFT: $crate::led2d::Point = $crate::led2d::Frame2d::<$cols_const, $rows_const>::TOP_LEFT;
+                pub const TOP_LEFT: $crate::led2d::Point = $crate::led2d::Frame2d::<{ $led_layout_const.width() }, { $led_layout_const.height() }>::TOP_LEFT;
                 /// Top-right corner coordinate for embedded-graphics drawing.
-                pub const TOP_RIGHT: $crate::led2d::Point = $crate::led2d::Frame2d::<$cols_const, $rows_const>::TOP_RIGHT;
+                pub const TOP_RIGHT: $crate::led2d::Point = $crate::led2d::Frame2d::<{ $led_layout_const.width() }, { $led_layout_const.height() }>::TOP_RIGHT;
                 /// Bottom-left corner coordinate for embedded-graphics drawing.
-                pub const BOTTOM_LEFT: $crate::led2d::Point = $crate::led2d::Frame2d::<$cols_const, $rows_const>::BOTTOM_LEFT;
+                pub const BOTTOM_LEFT: $crate::led2d::Point = $crate::led2d::Frame2d::<{ $led_layout_const.width() }, { $led_layout_const.height() }>::BOTTOM_LEFT;
                 /// Bottom-right corner coordinate for embedded-graphics drawing.
-                pub const BOTTOM_RIGHT: $crate::led2d::Point = $crate::led2d::Frame2d::<$cols_const, $rows_const>::BOTTOM_RIGHT;
+                pub const BOTTOM_RIGHT: $crate::led2d::Point = $crate::led2d::Frame2d::<{ $led_layout_const.width() }, { $led_layout_const.height() }>::BOTTOM_RIGHT;
                 /// Maximum number of aniamtion frames supported for this device.
                 pub const MAX_FRAMES: usize = $max_frames_const;
 
@@ -1683,12 +1691,23 @@ macro_rules! led2d_from_strip {
                 }
 
                 /// Render a fully defined frame to the panel.
-                $vis async fn write_frame(&self, frame: $crate::led2d::Frame2d<$cols_const, $rows_const>) -> $crate::Result<()> {
+                $vis async fn write_frame(
+                    &self,
+                    frame: $crate::led2d::Frame2d<{ $led_layout_const.width() }, { $led_layout_const.height() }>,
+                ) -> $crate::Result<()> {
                     self.led2d.write_frame(frame).await
                 }
 
                 /// Loop through a sequence of animation frames. Pass arrays by value or Vecs/iters.
-                $vis async fn animate(&self, frames: impl IntoIterator<Item = ($crate::led2d::Frame2d<$cols_const, $rows_const>, ::embassy_time::Duration)>) -> $crate::Result<()> {
+                $vis async fn animate(
+                    &self,
+                    frames: impl IntoIterator<
+                        Item = (
+                            $crate::led2d::Frame2d<{ $led_layout_const.width() }, { $led_layout_const.height() }>,
+                            ::embassy_time::Duration,
+                        ),
+                    >,
+                ) -> $crate::Result<()> {
                     self.led2d.animate(frames).await
                 }
 
@@ -1697,14 +1716,14 @@ macro_rules! led2d_from_strip {
                     &self,
                     text: &str,
                     colors: &[smart_leds::RGB8],
-                    frame: &mut $crate::led2d::Frame2d<$cols_const, $rows_const>,
+                    frame: &mut $crate::led2d::Frame2d<{ $led_layout_const.width() }, { $led_layout_const.height() }>,
                 ) -> $crate::Result<()> {
                     $crate::led2d::render_text_to_frame(frame, &self.font, text, colors, self.font_variant.spacing_reduction())
                 }
 
                 /// Render text and display it on the LED matrix.
                 pub async fn write_text(&self, text: &str, colors: &[smart_leds::RGB8]) -> $crate::Result<()> {
-                    let mut frame = $crate::led2d::Frame2d::<$cols_const, $rows_const>::new();
+                    let mut frame = $crate::led2d::Frame2d::<{ $led_layout_const.width() }, { $led_layout_const.height() }>::new();
                     self.write_text_to_frame(text, colors, &mut frame)?;
                     self.write_frame(frame).await
                 }
