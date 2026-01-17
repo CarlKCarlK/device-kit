@@ -97,7 +97,7 @@
 //! // Define LedStripAnimated, a struct type for a 96-LED strip on PIN_4.
 //! // We change some defaults including setting a 1A power budget and disabling gamma correction.
 //! led_strip! {
-//!     LedStripAnimated {
+//!     pub(self) LedStripAnimated {               // Can provide visibility modifier
 //!         pin: PIN_4,                            // GPIO pin for LED data
 //!         len: 96,                               // 96 LEDs
 //!         pio: PIO1,                             // Use PIO resource 1

@@ -170,7 +170,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                     .execute_minutes_seconds(&clock, &mut button, &time_sync, &led12x4)
                     .await?
             }
-        Led12x4 {
+            State::EditOffset => {
                 state
                     .execute_edit_offset(&clock, &mut button, &timezone_field, &led12x4)
                     .await?
