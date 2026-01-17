@@ -1,4 +1,5 @@
-//! A fully const module that tells the x,y location of each LED pixel.
+//! Fully const struct for specifying how LED strips are arranged into a 2D panel (includes examples).
+//!
 //! cmk0000000 read and review this
 //!
 //! See [`LedLayout`] for examples including: linear strips,
