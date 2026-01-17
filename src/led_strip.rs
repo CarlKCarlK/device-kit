@@ -1078,7 +1078,7 @@ macro_rules! __led_strips_impl {
                     let dma = dma.into();
 
                     let (bus, sm) = state_machine.into_parts();
-                    let token = [<$group:snake _ $label:snake _device_task>](
+                    let token = [<$label:snake _device_task>](
                         bus,
                         sm,
                         dma,
@@ -1109,7 +1109,7 @@ macro_rules! __led_strips_impl {
             }
 
             #[::embassy_executor::task]
-            async fn [<$group:snake _ $label:snake _device_task>](
+            async fn [<$label:snake _device_task>](
                 bus: &'static $crate::led_strip::PioBus<'static, ::embassy_rp::peripherals::$pio>,
                 sm: ::embassy_rp::pio::StateMachine<'static, ::embassy_rp::peripherals::$pio, $sm_index>,
                 dma: ::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$dma>,
@@ -1197,7 +1197,7 @@ macro_rules! __led_strips_impl {
                     let dma = dma.into();
 
                     let (bus, sm) = state_machine.into_parts();
-                    let token = [<$group:snake _ $label:snake _device_task>](
+                    let token = [<$label:snake _led_strip _device_task>](
                         bus,
                         sm,
                         dma,
@@ -1228,7 +1228,7 @@ macro_rules! __led_strips_impl {
             }
 
             #[::embassy_executor::task]
-            async fn [<$group:snake _ $label:snake _device_task>](
+            async fn [<$label:snake _led_strip _device_task>](
                 bus: &'static $crate::led_strip::PioBus<'static, ::embassy_rp::peripherals::$pio>,
                 sm: ::embassy_rp::pio::StateMachine<'static, ::embassy_rp::peripherals::$pio, $sm_index>,
                 dma: ::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$dma>,
@@ -1254,23 +1254,13 @@ macro_rules! __led_strips_impl {
                 >(driver, command_signal, completion_signal, &[<$label:camel LedStrip>]::COMBO_TABLE).await
             }
 
-            const [<$label:upper _LED_LAYOUT_CONFIG>]: $crate::led2d::LedLayout<
-                { $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?.len() },
-                { $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?.width() },
-                { $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?.height() }
-            > = $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?;
-            const [<$label:upper _LED_LAYOUT_WIDTH>]: usize =
-                [<$label:upper _LED_LAYOUT_CONFIG>].width();
-            const [<$label:upper _LED_LAYOUT_HEIGHT>]: usize =
-                [<$label:upper _LED_LAYOUT_CONFIG>].height();
-
             #[cfg(not(feature = "host"))]
             $crate::led2d::led2d_from_strip! {
                 $vis $label,
                 strip_type: [<$label:camel LedStrip>],
-                width: [<$label:upper _LED_LAYOUT_WIDTH>],
-                height: [<$label:upper _LED_LAYOUT_HEIGHT>],
-                led_layout: [<$label:upper _LED_LAYOUT_CONFIG>],
+                width: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?.width(),
+                height: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?.height(),
+                led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                 font: $led2d_font,
             }
 
