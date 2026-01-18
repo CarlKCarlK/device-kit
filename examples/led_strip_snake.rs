@@ -5,7 +5,7 @@ use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::led_strip::led_strips;
-use device_kit::led_strip::{Current, Frame1d, Rgb, colors};
+use device_kit::led_strip::{Current, Frame1d, RGB8, colors};
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 use panic_probe as _;
@@ -41,8 +41,8 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
     );
 
     const FRAME_DURATION: Duration = Duration::from_millis(300);
-    const BRIGHT: Rgb = colors::WHITE;
-    const GAP: Rgb = colors::BLACK;
+    const BRIGHT: RGB8 = colors::WHITE;
+    const GAP: RGB8 = colors::BLACK;
     const GAP_SPACING: usize = 4;
     const FRAME_COUNT: usize = GAP_SPACING;
 

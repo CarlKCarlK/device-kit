@@ -46,7 +46,7 @@ pub struct Led2dGenerated;
 #[cfg(doc)]
 use crate::led2d::{Frame2d, Led2dStatic, Point, Size};
 #[cfg(doc)]
-use crate::led_strip::Rgb;
+use crate::led_strip::RGB8;
 #[cfg(doc)]
 use crate::Result;
 
@@ -165,7 +165,7 @@ impl Led2dGenerated {
     /// Write text to the LED panel.
     ///
     /// See the [`led2d`](mod@crate::led2d) module docs for usage.
-    pub async fn write_text(&self, text: &str, colors: &[Rgb]) -> Result<()> {
+    pub async fn write_text(&self, text: &str, colors: &[RGB8]) -> Result<()> {
         let _ = (text, colors);
         Ok(())
     }
@@ -176,7 +176,7 @@ impl Led2dGenerated {
     pub fn write_text_to_frame(
         &self,
         text: &str,
-        colors: &[Rgb],
+        colors: &[RGB8],
         frame: &mut Frame2d<{ Self::WIDTH }, { Self::HEIGHT }>,
     ) -> Result<()> {
         let _ = (text, colors, frame);

@@ -137,7 +137,26 @@
 #[doc(inline)]
 pub use smart_leds::colors;
 
+/// 8-bit-per-channel RGB color (24-bit total) from `embedded_graphics`.
+#[doc(inline)]
+pub use embedded_graphics::pixelcolor::Rgb888;
+
+/// Convert [`RGB8`](https://docs.rs/smart-leds/latest/smart_leds/type.RGB8.html) ([`smart_leds`](https://docs.rs/smart-leds/latest/smart_leds/index.html)) to
+/// [`Rgb888`](https://docs.rs/embedded-graphics/latest/embedded_graphics/pixelcolor/struct.Rgb888.html) (embedded_graphics).
+#[must_use]
+pub const fn rgb8_to_rgb888(color: RGB8) -> Rgb888 {
+    Rgb888::new(color.r, color.g, color.b)
+}
+
+/// Convert [`Rgb888`](https://docs.rs/embedded-graphics/latest/embedded_graphics/pixelcolor/struct.Rgb888.html) ([embedded_graphics](https://docs.rs/embedded-graphics/latest/embedded_graphics/)) to
+/// [`RGB8`](https://docs.rs/smart-leds/latest/smart_leds/type.RGB8.html) ([smart_leds](https://docs.rs/smart-leds/latest/smart_leds/index.html)).
+#[must_use]
+pub fn rgb888_to_rgb8(color: Rgb888) -> RGB8 {
+    RGB8::new(color.r(), color.g(), color.b())
+}
+
 use core::ops::{Deref, DerefMut};
+use embedded_graphics::prelude::RgbColor;
 
 // ============================================================================
 // Gamma Correction
@@ -145,6 +164,7 @@ use core::ops::{Deref, DerefMut};
 
 /// Configuration enum used by the macros to configure gamma correction for LED strips.
 ///
+/// cmk000000 read and review. Maybe give a link to Wiikipedia or other explanation of gamma correction?
 /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Gamma {
@@ -240,7 +260,9 @@ use embassy_sync::once_lock::OnceLock;
 use embassy_sync::signal::Signal;
 use embassy_time::{Duration, Timer};
 use heapless::Vec;
-use smart_leds::RGB8;
+/// 8-bit-per-channel RGB color (24-bit total) from `smart_leds`.
+#[doc(inline)]
+pub use smart_leds::RGB8;
 
 use crate::Result;
 
@@ -250,16 +272,13 @@ use crate::Result;
 
 pub mod led_strip_generated;
 
-/// RGB color representation re-exported from the `smart_leds` crate for compatibility with generated LED devices.
-pub type Rgb = RGB8;
-
-/// [`Rgb`] pixel frame data for a 1-dimensional LED strip.
+/// [`RGB8`] pixel frame data for a 1-dimensional LED strip.
 ///
 /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
 ///
-/// Frames deref to `[Rgb; N]`, so you can mutate pixels directly before passing them to the generated strip's `write_frame` method.
+/// Frames deref to `[RGB8; N]`, so you can mutate pixels directly before passing them to the generated strip's `write_frame` method.
 #[derive(Clone, Copy, Debug)]
-pub struct Frame1d<const N: usize>(pub [Rgb; N]);
+pub struct Frame1d<const N: usize>(pub [RGB8; N]);
 
 impl<const N: usize> Frame1d<N> {
     /// Number of LEDs in this frame.
@@ -270,20 +289,20 @@ impl<const N: usize> Frame1d<N> {
     /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
     #[must_use]
     pub const fn new() -> Self {
-        Self([Rgb::new(0, 0, 0); N])
+        Self([RGB8::new(0, 0, 0); N])
     }
 
     /// Create a frame filled with a single color.
     ///
     /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
     #[must_use]
-    pub const fn filled(color: Rgb) -> Self {
+    pub const fn filled(color: RGB8) -> Self {
         Self([color; N])
     }
 }
 
 impl<const N: usize> Deref for Frame1d<N> {
-    type Target = [Rgb; N];
+    type Target = [RGB8; N];
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -296,13 +315,13 @@ impl<const N: usize> DerefMut for Frame1d<N> {
     }
 }
 
-impl<const N: usize> From<[Rgb; N]> for Frame1d<N> {
-    fn from(array: [Rgb; N]) -> Self {
+impl<const N: usize> From<[RGB8; N]> for Frame1d<N> {
+    fn from(array: [RGB8; N]) -> Self {
         Self(array)
     }
 }
 
-impl<const N: usize> From<Frame1d<N>> for [Rgb; N] {
+impl<const N: usize> From<Frame1d<N>> for [RGB8; N] {
     fn from(frame: Frame1d<N>) -> Self {
         frame.0
     }
@@ -623,7 +642,7 @@ where
 
 fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 256]) {
     for color in frame.iter_mut() {
-        *color = Rgb::new(
+        *color = RGB8::new(
             combo_table[usize::from(color.r)],
             combo_table[usize::from(color.g)],
             combo_table[usize::from(color.b)],
@@ -3068,6 +3087,7 @@ pub use led_strips;
 
 /// Configuration enum used by the macros to configure current budgeting for LED strips.
 ///
+/// cmk000000 read and review
 /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Current {

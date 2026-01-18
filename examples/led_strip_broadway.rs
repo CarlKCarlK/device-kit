@@ -7,7 +7,7 @@ use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::led_strip::led_strip;
-use device_kit::led_strip::{Current, Frame1d, Rgb, colors};
+use device_kit::led_strip::{Current, Frame1d, RGB8, colors};
 use embassy_executor::Spawner;
 use embassy_time::Duration;
 use panic_probe as _;
@@ -39,9 +39,9 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     const PULSE_SPACING: usize = 16;
     const TAIL_LENGTH: usize = 4;
     const FRAME_COUNT: usize = PULSE_SPACING;
-    const GAP: Rgb = colors::BLACK;
-    const HEAD: Rgb = colors::RED;
-    const TAIL: Rgb = colors::GREEN;
+    const GAP: RGB8 = colors::BLACK;
+    const HEAD: RGB8 = colors::RED;
+    const TAIL: RGB8 = colors::GREEN;
 
     let mut frames = heapless::Vec::<_, FRAME_COUNT>::new();
 

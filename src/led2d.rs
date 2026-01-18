@@ -142,8 +142,10 @@
 #[doc(hidden)]
 pub use paste;
 
-// Re-export geometric types from embedded-graphics for convenience
-pub use embedded_graphics::geometry::{Point, Size};
+/// Re-exported from the [`embedded-graphics`](https://docs.rs/embedded-graphics) crate.
+pub use embedded_graphics::geometry::Point;
+/// Re-exported from the [`embedded-graphics`](https://docs.rs/embedded-graphics) crate.
+pub use embedded_graphics::geometry::Size;
 
 pub mod layout;
 
@@ -161,6 +163,7 @@ use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal}
 use embassy_time::Duration;
 #[cfg(not(feature = "host"))]
 use embassy_time::Timer;
+use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::{
     draw_target::DrawTarget,
     mono_font::{
@@ -173,7 +176,6 @@ use embedded_graphics::{
         },
         mapping::StrGlyphMapping,
     },
-    pixelcolor::Rgb888, // cmk should this just be color?
     prelude::*,
 };
 use heapless::Vec;
@@ -184,18 +186,6 @@ use crate::led_strip::{Frame1d as StripFrame, LedStrip};
 #[cfg(feature = "host")]
 type StripFrame<const N: usize> = [RGB8; N];
 use crate::Result;
-
-/// Convert RGB8 (smart-leds) to Rgb888 (embedded-graphics).
-#[must_use]
-pub const fn rgb8_to_rgb888(color: RGB8) -> Rgb888 {
-    Rgb888::new(color.r, color.g, color.b)
-}
-
-/// Convert Rgb888 (embedded-graphics) to RGB8 (smart-leds).
-#[must_use]
-pub fn rgb888_to_rgb8(color: Rgb888) -> RGB8 {
-    RGB8::new(color.r(), color.g(), color.b())
-}
 
 // Packed bitmap for the internal 3x4 font (ASCII 0x20-0x7E).
 const BIT_MATRIX3X4_FONT_DATA: [u8; 144] = [
@@ -277,7 +267,10 @@ pub fn render_text_to_frame<const W: usize, const H: usize>(
 
         let mut buf = [0u8; 4];
         let slice = ch.encode_utf8(&mut buf);
-        let style = embedded_graphics::mono_font::MonoTextStyle::new(font, rgb8_to_rgb888(color));
+        let style = embedded_graphics::mono_font::MonoTextStyle::new(
+            font,
+            crate::led_strip::rgb8_to_rgb888(color),
+        );
         let position = embedded_graphics::prelude::Point::new(x, y);
         embedded_graphics::Drawable::draw(
             &embedded_graphics::text::Text::new(slice, position, style),
@@ -291,8 +284,9 @@ pub fn render_text_to_frame<const W: usize, const H: usize>(
     Ok(())
 }
 
-/// Font options for [`Led2d`] text rendering.
+/// Font options for [`Led2d`] text rendering. //cmk000000 link from the macro, too
 ///
+/// cmk000000 review and read. Need link to example and to macro
 /// Fonts with `Trim` suffix remove blank spacing to pack text more tightly on small displays.
 #[derive(Clone, Copy, Debug)]
 pub enum Led2dFont {
@@ -646,6 +640,9 @@ pub enum Command<const N: usize, const MAX_FRAMES: usize> {
     Animate(Vec<(StripFrame<N>, Duration), MAX_FRAMES>),
 }
 
+// Must be `pub` (not `pub(crate)`) because called by macro-generated code that expands at the call site in downstream crates.
+// This is an implementation detail, not part of the user-facing API.
+#[doc(hidden)]
 /// Static type for the [`Led2d`] device abstraction.
 ///
 /// Most users should use the `led2d!` or `led2d_from_strip!` macros which generate
@@ -667,6 +664,9 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2dStatic<N, MAX_FRAMES> {
 
 // cmk000 don't use the phrase 'module-level' in docs.
 // cmk00 this needs a compiled-only doc test.
+// Must be `pub` (not `pub(crate)`) because called by macro-generated code that expands at the call site in downstream crates.
+// This is an implementation detail, not part of the user-facing API.
+#[doc(hidden)]
 /// A device abstraction for rectangular NeoPixel-style (WS2812) LED matrix displays.
 ///
 /// Supports any size display with arbitrary LED-index-to-coordinate mapping. The provided mapping
@@ -1010,7 +1010,10 @@ pub use led2d_device;
 
 /// Macro to generate an LED-panel struct type (includes syntax details). See [`Led2dGenerated`](`crate::led2d::led2d_generated::Led2dGenerated`) for a sample of a generated type.
 ///
-/// See the [led2d module documentation](mod@crate::led2d) for usage examples.
+/// # Usage Example
+/// *See the [led2d module](mod@crate::led2d) documentation.*
+///
+/// # Fields
 ///
 /// **Required fields:**
 ///
@@ -1056,12 +1059,10 @@ pub use led2d_device;
 /// The gamma curve is baked into a compile-time lookup table, so it has no
 /// runtime cost.
 ///
-/// # When to Use This Macro
+/// # Related Macros
 ///
-/// Use `led2d!` when you want a **single LED panel** generated from a strip.
-///
-/// If you need to share a PIO resource or build from an existing strip, use
-/// [`led_strips!`](crate::led_strip::led_strips)'s led2d feature instead.
+/// - [`led_strips!`](crate::led_strips) — Alternative macro to share a PIO resource with other panels or LED strips (includes examples)
+/// - [`led_strip!`](mod@crate::led_strip) — For 1-dimensional strips
 #[macro_export]
 #[cfg(not(feature = "host"))]
 macro_rules! led2d {

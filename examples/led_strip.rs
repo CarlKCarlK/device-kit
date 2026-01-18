@@ -5,7 +5,7 @@ use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::led_strip::led_strip;
-use device_kit::led_strip::{Current, Frame1d, Rgb};
+use device_kit::led_strip::{Current, Frame1d, RGB8};
 use embassy_executor::Spawner;
 use embassy_time::Timer;
 use panic_probe as _;
@@ -53,7 +53,7 @@ async fn update_rainbow(led_strip: &Gpio0LedStrip, base: u8) -> Result<()> {
     Ok(())
 }
 
-fn wheel(pos: u8) -> Rgb {
+fn wheel(pos: u8) -> RGB8 {
     let pos = 255 - pos;
     if pos < 85 {
         rgb(255 - pos * 3, 0, pos * 3)
@@ -66,6 +66,6 @@ fn wheel(pos: u8) -> Rgb {
     }
 }
 
-const fn rgb(r: u8, g: u8, b: u8) -> Rgb {
-    Rgb { r, g, b }
+const fn rgb(r: u8, g: u8, b: u8) -> RGB8 {
+    RGB8 { r, g, b }
 }

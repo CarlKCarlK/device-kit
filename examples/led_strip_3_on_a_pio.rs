@@ -7,7 +7,7 @@ use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::led_strip::led_strips;
-use device_kit::led_strip::{Current, Frame1d, Rgb, colors};
+use device_kit::led_strip::{Current, Frame1d, RGB8, colors};
 use device_kit::led2d::Frame2d;
 use device_kit::led2d::layout::LedLayout;
 use embassy_executor::Spawner;
@@ -43,7 +43,7 @@ const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major
 const LED_LAYOUT_8X12: LedLayout<96, 8, 12> = LED_LAYOUT_12X4.concat_v(LED_LAYOUT_12X4).rotate_cw();
 
 const SNAKE_LENGTH: usize = 4;
-const SNAKE_COLORS: [Rgb; SNAKE_LENGTH] =
+const SNAKE_COLORS: [RGB8; SNAKE_LENGTH] =
     [colors::YELLOW, colors::ORANGE, colors::RED, colors::MAGENTA];
 
 #[embassy_executor::main]

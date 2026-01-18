@@ -9,7 +9,7 @@ use defmt_rtt as _;
 use device_kit::button::{Button, PressDuration, PressedTo};
 use device_kit::led_strip::Current;
 use device_kit::led_strip::Gamma;
-use device_kit::led_strip::Rgb;
+use device_kit::led_strip::RGB8;
 use device_kit::led2d;
 use device_kit::led2d::Frame2d;
 use device_kit::led2d::layout::LedLayout;
@@ -326,7 +326,7 @@ impl<const H: usize, const W: usize> Board<H, W> {
     }
 
     /// Convert board state to an LED frame with the specified color for alive cells.
-    fn to_frame(&self, alive_color: Rgb) -> Frame2d<8, 12> {
+    fn to_frame(&self, alive_color: RGB8) -> Frame2d<8, 12> {
         let mut frame = Frame2d::new();
         for y_index in 0..H {
             for x_index in 0..W {

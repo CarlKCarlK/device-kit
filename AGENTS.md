@@ -1,5 +1,7 @@
 # Coding Notes for Agents
 
+- While the crate version remains `0.0.1-alpha`, I do not care about breaking changes. Optimize for the best API design.
+
 - When loading data from flash (or any other storage) into a local variable, name the variable after the concrete type. Example: `DeviceConfig` data should live in variables like `device_config` and partitions like `device_config_flash`, not generic `config` or `flash0`.
 - Avoid introducing `unsafe` blocks. If a change truly requires `unsafe`, call it out explicitly and explain the justification so the user can review it carefully.
 - Avoid silent clamping; prefer asserts or typed ranges so out-of-range inputs fail fast.
