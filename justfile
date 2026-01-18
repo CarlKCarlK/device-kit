@@ -17,6 +17,24 @@ attach-probe:
 regenerate-text-pngs:
 	./scripts/regenerate-text-pngs.sh
 
+# Update led2d_graphics PNG expected output (host-only)
+pngs-update-led2d-graphics:
+	DEVICE_KIT_UPDATE_PNGS=1 cargo test --no-default-features --features host --test pngs led2d_graphics_png_matches_expected
+
+# Update all expected PNG outputs (host-only)
+pngs-update-all:
+	DEVICE_KIT_UPDATE_PNGS=1 cargo test --no-default-features --features host --test pngs
+
+# Full validation (docs + embedded + host PNGs)
+verify-all:
+	just docdoc
+	cargo check-all
+	just pngs-check-all
+
+# Host-only PNG checks without updating
+pngs-check-all:
+	cargo test --no-default-features --features host --test pngs
+
 # Generate video frames data (uses SANTA_VIDEO_PATH or SANTA_FRAMES_DIR)
 video-frames:
 	cargo xtask video-frames-gen > video_frames_data.rs

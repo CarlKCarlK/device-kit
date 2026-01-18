@@ -15,18 +15,70 @@ pub use embedded_graphics::pixelcolor::Rgb888;
 /// RGB color type used by LED strip frames.
 pub use smart_leds::RGB8;
 
-/// Convert [`RGB8`](https://docs.rs/smart-leds/latest/smart_leds/type.RGB8.html) ([`smart_leds`](https://docs.rs/smart-leds/latest/smart_leds/index.html)) to
-/// [`Rgb888`](https://docs.rs/embedded-graphics/latest/embedded_graphics/pixelcolor/struct.Rgb888.html) (embedded_graphics).
-#[must_use]
-pub const fn rgb8_to_rgb888(color: RGB8) -> Rgb888 {
-    Rgb888::new(color.r, color.g, color.b)
+/// Convert colors to [`RGB8`] for LED strip rendering.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use device_kit::led_strip::{Rgb888, ToRgb8, RGB8};
+///
+/// let rgb8 = RGB8::new(16, 32, 48).to_rgb8();
+/// let rgb888 = Rgb888::new(16, 32, 48);
+/// let converted = rgb888.to_rgb8();
+///
+/// assert_eq!(rgb8, converted);
+/// ```
+pub trait ToRgb8 {
+    /// Convert this color to [`RGB8`].
+    #[must_use]
+    fn to_rgb8(self) -> RGB8;
 }
 
-/// Convert [`Rgb888`](https://docs.rs/embedded-graphics/latest/embedded_graphics/pixelcolor/struct.Rgb888.html) ([embedded_graphics](https://docs.rs/embedded-graphics/latest/embedded_graphics/)) to
-/// [`RGB8`](https://docs.rs/smart-leds/latest/smart_leds/type.RGB8.html) ([smart_leds](https://docs.rs/smart-leds/latest/smart_leds/index.html)).
-#[must_use]
-pub fn rgb888_to_rgb8(color: Rgb888) -> RGB8 {
-    RGB8::new(color.r(), color.g(), color.b())
+impl ToRgb8 for RGB8 {
+    #[inline(always)]
+    fn to_rgb8(self) -> RGB8 {
+        self
+    }
+}
+
+impl ToRgb8 for Rgb888 {
+    #[inline(always)]
+    fn to_rgb8(self) -> RGB8 {
+        RGB8::new(self.r(), self.g(), self.b())
+    }
+}
+
+/// Convert colors to [`Rgb888`] for embedded-graphics rendering.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use device_kit::led_strip::{Rgb888, ToRgb888, RGB8};
+///
+/// let rgb8 = RGB8::new(16, 32, 48);
+/// let rgb888 = rgb8.to_rgb888();
+/// let already_rgb888 = Rgb888::new(16, 32, 48).to_rgb888();
+///
+/// assert_eq!(rgb888, already_rgb888);
+/// ```
+pub trait ToRgb888 {
+    /// Convert this color to [`Rgb888`].
+    #[must_use]
+    fn to_rgb888(self) -> Rgb888;
+}
+
+impl ToRgb888 for RGB8 {
+    #[inline(always)]
+    fn to_rgb888(self) -> Rgb888 {
+        Rgb888::new(self.r, self.g, self.b)
+    }
+}
+
+impl ToRgb888 for Rgb888 {
+    #[inline(always)]
+    fn to_rgb888(self) -> Rgb888 {
+        self
+    }
 }
 
 /// Fixed-size 1D LED strip frame.

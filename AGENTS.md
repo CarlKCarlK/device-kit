@@ -229,7 +229,7 @@ let green = Rgb::new(0, 255, 0);
 
 Common colors available: `RED`, `GREEN`, `BLUE`, `YELLOW`, `WHITE`, `BLACK`, `CYAN`, `MAGENTA`, `ORANGE`, `PURPLE`, etc.
 
-When working directly with the `embedded_graphics` crate, using `embedded_graphics::pixelcolor::Rgb888` constants (e.g., `Rgb888::RED`) is acceptable to avoid conversions.
+When working directly with the `embedded_graphics` crate, using `colors::RED.to_rgb888()` (with `device_kit::led_strip::ToRgb888` in scope) is acceptable to avoid conversions.
 
 ## Terminology: "Panel" vs "Matrix"
 

@@ -1,6 +1,6 @@
 #![cfg(feature = "host")]
 
-use device_kit::led_strip::{Frame1d, Rgb888};
+use device_kit::led_strip::{Frame1d, ToRgb888};
 use device_kit::led2d::{Frame2d, Led2dFont, render_text_to_frame};
 use device_kit::to_png::{write_frame_png_with_gamma, write_frames_apng_with_gamma};
 use embassy_time::Duration;
@@ -81,7 +81,7 @@ fn build_frame() -> Frame {
     let mut frame: Frame = Frame::new();
 
     Rectangle::new(Frame::TOP_LEFT, Frame::SIZE)
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::RED, 1))
+        .into_styled(PrimitiveStyle::with_stroke(colors::RED.to_rgb888(), 1))
         .draw(&mut frame)
         .expect("rectangle draw must succeed");
 
@@ -90,7 +90,7 @@ fn build_frame() -> Frame {
     const DIAMETER: u32 = 6;
     const CIRCLE_TOP_LEFT: Point = centered_top_left(12, 8, DIAMETER as usize);
     Circle::new(CIRCLE_TOP_LEFT, DIAMETER)
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::GREEN, 1))
+        .into_styled(PrimitiveStyle::with_stroke(colors::LIME.to_rgb888(), 1))
         .draw(&mut frame)
         .expect("circle draw must succeed");
 

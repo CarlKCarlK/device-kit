@@ -6,7 +6,7 @@ use core::{convert::Infallible, future};
 
 use defmt::info;
 use defmt_rtt as _;
-use device_kit::{Result, led_strip::Rgb888, led2d, led2d::Frame2d, led2d::layout::LedLayout};
+use device_kit::{Result, led_strip::ToRgb888, led2d, led2d::Frame2d, led2d::layout::LedLayout};
 use embassy_executor::Spawner;
 use embassy_rp::init;
 use embedded_graphics::{
@@ -45,7 +45,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     // Use the embedded-graphics crate to draw a red rectangle border around the edge of the frame.
     Rectangle::new(Led12x8::TOP_LEFT, Led12x8::SIZE)
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::RED, 1))
+        .into_styled(PrimitiveStyle::with_stroke(colors::RED.to_rgb888(), 1))
         .draw(&mut frame)?;
 
     // Direct pixel access: set the upper-left LED pixel (x = 0, y = 0).
@@ -57,7 +57,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     const CIRCLE_TOP_LEFT: Point =
         centered_top_left(Led12x8::WIDTH, Led12x8::HEIGHT, DIAMETER as usize);
     Circle::new(CIRCLE_TOP_LEFT, DIAMETER)
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::GREEN, 1))
+        .into_styled(PrimitiveStyle::with_stroke(colors::LIME.to_rgb888(), 1))
         .draw(&mut frame)?;
 
     // Write the frame to the LED panel.

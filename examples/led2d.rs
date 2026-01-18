@@ -144,12 +144,12 @@ async fn demo_blink_pattern(led4x12: &Led4x12) -> Result<()> {
 
 /// Create a red rectangle border with blue diagonals using embedded-graphics.
 async fn demo_rectangle_diagonals_embedded_graphics(led4x12: &Led4x12) -> Result<()> {
+    use device_kit::led_strip::ToRgb888;
     use embedded_graphics::{
         Drawable,
         prelude::*,
         primitives::{Line, PrimitiveStyle, Rectangle},
     };
-    use device_kit::led_strip::Rgb888;
 
     let mut frame = Frame2d::new();
 
@@ -163,16 +163,16 @@ async fn demo_rectangle_diagonals_embedded_graphics(led4x12: &Led4x12) -> Result
 
     // Draw red rectangle border
     Rectangle::new(frame_top_left, frame_size)
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::RED, 1))
+        .into_styled(PrimitiveStyle::with_stroke(colors::RED.to_rgb888(), 1))
         .draw(&mut frame)?;
 
     // Draw blue diagonal lines from corner to corner
     Line::new(frame_top_left, frame_bottom_right)
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::BLUE, 1))
+        .into_styled(PrimitiveStyle::with_stroke(colors::BLUE.to_rgb888(), 1))
         .draw(&mut frame)?;
 
     Line::new(frame_bottom_left, frame_top_right)
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::BLUE, 1))
+        .into_styled(PrimitiveStyle::with_stroke(colors::BLUE.to_rgb888(), 1))
         .draw(&mut frame)?;
 
     led4x12.write_frame(frame).await

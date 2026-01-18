@@ -186,6 +186,7 @@ use crate::led_strip::{Frame1d as StripFrame, LedStrip};
 #[cfg(feature = "host")]
 type StripFrame<const N: usize> = [RGB8; N];
 use crate::Result;
+use crate::led_strip::ToRgb888;
 
 // Packed bitmap for the internal 3x4 font (ASCII 0x20-0x7E).
 const BIT_MATRIX3X4_FONT_DATA: [u8; 144] = [
@@ -267,10 +268,7 @@ pub fn render_text_to_frame<const W: usize, const H: usize>(
 
         let mut buf = [0u8; 4];
         let slice = ch.encode_utf8(&mut buf);
-        let style = embedded_graphics::mono_font::MonoTextStyle::new(
-            font,
-            crate::led_strip::rgb8_to_rgb888(color),
-        );
+        let style = embedded_graphics::mono_font::MonoTextStyle::new(font, color.to_rgb888());
         let position = embedded_graphics::prelude::Point::new(x, y);
         embedded_graphics::Drawable::draw(
             &embedded_graphics::text::Text::new(slice, position, style),
@@ -457,8 +455,7 @@ impl Led2dFont {
 /// # #![no_std]
 /// # #![no_main]
 /// # use panic_probe as _;
-/// use device_kit::led2d::Frame2d;
-/// use device_kit::led_strip::Rgb888;
+/// use device_kit::{led2d::Frame2d, led_strip::ToRgb888};
 /// use embedded_graphics::{
 ///     prelude::*,
 ///     primitives::{Circle, PrimitiveStyle, Rectangle},
@@ -479,8 +476,9 @@ impl Led2dFont {
 /// let mut frame = Frame::new();
 ///
 /// // Use the embedded-graphics crate to draw a red rectangle border around the edge of the frame.
+/// // We use `to_rgb888()` to convert from smart-leds RGB8 to embedded-graphics Rgb888.
 /// Rectangle::new(Frame::TOP_LEFT, Frame::SIZE)
-///     .into_styled(PrimitiveStyle::with_stroke(Rgb888::RED, 1))
+///     .into_styled(PrimitiveStyle::with_stroke(colors::RED.to_rgb888(), 1))
 ///     .draw(&mut frame)
 ///     .expect("rectangle draw must succeed");
 ///
@@ -492,7 +490,7 @@ impl Led2dFont {
 /// const DIAMETER: u32 = 6;
 /// const CIRCLE_TOP_LEFT: Point = centered_top_left(Frame::WIDTH, Frame::HEIGHT, DIAMETER as usize);
 /// Circle::new(CIRCLE_TOP_LEFT, DIAMETER)
-///     .into_styled(PrimitiveStyle::with_stroke(Rgb888::GREEN, 1))
+///     .into_styled(PrimitiveStyle::with_stroke(colors::LIME.to_rgb888(), 1))
 ///     .draw(&mut frame)
 ///     .expect("circle draw must succeed");
 /// # }
