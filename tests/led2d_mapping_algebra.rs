@@ -117,5 +117,5 @@ const CLOCK_COMPOSED: LedLayout<96, 8, 12> =
 
 #[test]
 fn clock_mapping_matches_composition() {
-    assert_eq!(*CLOCK_COMPOSED.map(), CLOCK_EXPECTED);
+    assert_eq!(*CLOCK_COMPOSED.index_to_xy(), CLOCK_EXPECTED);
 }

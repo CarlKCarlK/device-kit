@@ -701,7 +701,7 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
     ///
     /// The `led_layout` defines how LED indices map to `(column, row)` coordinates. Entry `i`
     /// provides the `(col, row)` destination for LED `i`. The layout is inverted via
-    /// [`LedLayout::mapping_by_xy`] so (row, col) queries are O(1) when converting frames.
+    /// [`LedLayout::xy_to_index`] so (row, col) queries are O(1) when converting frames.
     ///
     /// See the [struct-level example](Self) for usage.
     #[must_use]
@@ -717,7 +717,7 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
         Self {
             command_signal: &led2d_static.command_signal,
             completion_signal: &led2d_static.completion_signal,
-            mapping_by_xy: led_layout.mapping_by_xy(),
+            mapping_by_xy: led_layout.xy_to_index(),
             width: W,
         }
     }
@@ -1498,7 +1498,7 @@ macro_rules! __led2d_impl {
             const [<$name:upper _MAX_FRAMES>]: usize = [<$name LedStrip>]::MAX_FRAMES;
 
             // Compile-time assertion that strip length matches led_layout length
-            const _: () = assert!([<$name:upper _LAYOUT>].map().len() == [<$name LedStrip>]::LEN);
+            const _: () = assert!([<$name:upper _LAYOUT>].index_to_xy().len() == [<$name LedStrip>]::LEN);
 
             $crate::led2d::led2d_from_strip! {
                 @__from_layout_const
@@ -1569,7 +1569,7 @@ macro_rules! led2d_from_strip {
             const [<$name:upper _MAX_FRAMES>]: usize = $strip_type::MAX_FRAMES;
 
             // Compile-time assertion that strip length matches led_layout length
-            const _: () = assert!([<$name:upper _LED_LAYOUT>].map().len() == $strip_type::LEN);
+            const _: () = assert!([<$name:upper _LED_LAYOUT>].index_to_xy().len() == $strip_type::LEN);
 
             $crate::led2d::led2d_from_strip!(
                 @common $vis, $name, $strip_type, [<$name:upper _LED_LAYOUT>],
@@ -1592,7 +1592,7 @@ macro_rules! led2d_from_strip {
             const [<$name:upper _MAX_FRAMES>]: usize = $strip_type::MAX_FRAMES;
 
             // Compile-time assertion that strip length matches led_layout length
-            const _: () = assert!([<$name:upper _LED_LAYOUT>].map().len() == $strip_type::LEN);
+            const _: () = assert!([<$name:upper _LED_LAYOUT>].index_to_xy().len() == $strip_type::LEN);
 
             $crate::led2d::led2d_from_strip!(
                 @common $vis, $name, $strip_type, [<$name:upper _LED_LAYOUT>],

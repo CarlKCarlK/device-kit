@@ -45,7 +45,7 @@ pub struct LedLayout<const N: usize, const W: usize, const H: usize> {
 impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
     /// Access the checked (col,row) mapping.
     #[must_use]
-    pub const fn map(&self) -> &[(u16, u16); N] {
+    pub const fn index_to_xy(&self) -> &[(u16, u16); N] {
         &self.map
     }
 
@@ -77,14 +77,14 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
     /// use device_kit::led2d::layout::LedLayout;
     ///
     /// const LED_LAYOUT: LedLayout<6, 3, 2> = LedLayout::serpentine_column_major();
-    /// const MAPPING_BY_XY: [u16; 6] = LED_LAYOUT.mapping_by_xy();
+    /// const XY_TO_INDEX: [u16; 6] = LED_LAYOUT.xy_to_index();
     /// // Result: [0, 3, 4, 1, 2, 5]
     /// ```
     #[must_use]
-    pub const fn mapping_by_xy(&self) -> [u16; N] {
+    pub const fn xy_to_index(&self) -> [u16; N] {
         assert!(
             N <= u16::MAX as usize,
-            "total LEDs must fit in u16 for mapping_by_xy"
+            "total LEDs must fit in u16 for xy_to_index"
         );
 
         let mut mapping = [None; N];
@@ -94,14 +94,14 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
             let (col, row) = self.map[led_index];
             let col = col as usize;
             let row = row as usize;
-            assert!(col < W, "column out of bounds in mapping_by_xy");
-            assert!(row < H, "row out of bounds in mapping_by_xy");
+            assert!(col < W, "column out of bounds in xy_to_index");
+            assert!(row < H, "row out of bounds in xy_to_index");
             let target_index = row * W + col;
 
             let slot = &mut mapping[target_index];
             assert!(
                 slot.is_none(),
-                "duplicate (col,row) in mapping_by_xy inversion"
+                "duplicate (col,row) in xy_to_index inversion"
             );
             *slot = Some(led_index as u16);
 
@@ -111,8 +111,7 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
         let mut finalized = [0u16; N];
         let mut i = 0;
         while i < N {
-            finalized[i] =
-                mapping[i].expect("mapping_by_xy requires every (col,row) to be covered");
+            finalized[i] = mapping[i].expect("xy_to_index requires every (col,row) to be covered");
             i += 1;
         }
 
