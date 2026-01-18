@@ -7,7 +7,7 @@
 //! For 1-dimensional strips, see the [`led_strip`](mod@crate::led_strip) module.
 //!
 //! This page provides the primary documentation and examples for programming LED panels.
-//! This device abstraction supports text, graphics, and animation.
+//! The device abstraction supports text, graphics, and animation.
 //!
 //! **For details see:**
 //!
@@ -32,7 +32,7 @@
 //! # use core::result::Result::Ok;
 //! # use embassy_executor::Spawner;
 //! # use embassy_rp::init;
-//! use device_kit::{Result, led2d, led2d::layout::LedLayout, led_strip::colors};
+//! use device_kit::{Result, led2d, led2d::layout::LedLayout, led2d::Led2dFont, led_strip::colors};
 //!
 //! // Tells us how the LED strip is wired up in the panel
 //! // in this case, a common snake-like pattern.
@@ -43,7 +43,7 @@
 //!     Led12x4 {
 //!         pin: PIN_3,                          // GPIO pin for LED data signal
 //!         led_layout: LED_LAYOUT_12X4,         // LED layout mapping (defines dimensions)
-//!         font: Font3x4Trim,                   // Font variant
+//!         font: Led2dFont::Font3x4Trim,        // Font variant
 //!     }
 //! }
 //!
@@ -56,12 +56,13 @@
 //!     let p = init(Default::default());
 //!
 //!     // Create a device abstraction for the LED panel.
-//!     // Behind the scenes, this spawns a channel & background task to manage the display.
+//!     // Behind the scenes, this creates a channel & background task to manage the display.
 //!     let led12x4 = Led12x4::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;
 //!
-//!     // Write text to the display with cycling colors.
+//!     // Write text to the display with per-character colors.
 //!     let colors = [colors::CYAN, colors::RED, colors::YELLOW];
-//!     led12x4.write_text("Rust", &colors).await?; // Colors cycle as needed.
+//!     // Each character takes the next color; when we run out, we start over.
+//!     led12x4.write_text("Rust", &colors).await?;
 //!
 //!     future::pending().await // run forever
 //! }
@@ -81,7 +82,7 @@
 //! # use core::future;
 //! # use embassy_executor::Spawner;
 //! # use embassy_rp::init;
-//! use device_kit::{Result, led2d, led2d::layout::LedLayout, led2d::Frame2d, led_strip::{Current, Gamma, colors}};
+//! use device_kit::{Result, led2d, led2d::layout::LedLayout, led2d::Frame2d, led2d::Led2dFont, led_strip::{Current, Gamma, colors}};
 //! use embassy_time::Duration;
 //!
 //! // Our panel is two 12x4 panels stacked vertically and then rotated clockwise.
@@ -91,10 +92,10 @@
 //!
 //! // Generate a type named `Led12x8Animated`.
 //! led2d! {
-//!     pub(self) Led12x8Animated {               // Visibility modifier optional
+//!     pub(self) Led12x8Animated {               // Can provide a visibility modifier
 //!         pin: PIN_4,                           // GPIO pin for LED data signal
 //!         led_layout: LED_LAYOUT_12X8_ROTATED,  // Two 12×4 panels stacked and rotated
-//!         font: Font4x6Trim,                    // Use a 4x6 pixel font without the usual 1 pixel padding
+//!         font: Led2dFont::Font4x6Trim,         // Use a 4x6 pixel font without the usual 1 pixel padding
 //!         pio: PIO1,                            // PIO resource, default is PIO0
 //!         dma: DMA_CH1,                         // DMA resource, default is DMA_CH0
 //!         max_current: Current::Milliamps(300), // Power budget, default is 250 mA.
@@ -282,9 +283,8 @@ pub fn render_text_to_frame<const W: usize, const H: usize>(
     Ok(())
 }
 
-/// Font options for [`Led2d`] text rendering. //cmk000000 link from the macro, too
+/// Fonts available for use with [led2d module](mod@crate::led2d) panels.
 ///
-/// cmk000000 review and read. Need link to example and to macro
 /// Fonts with `Trim` suffix remove blank spacing to pack text more tightly on small displays.
 #[derive(Clone, Copy, Debug)]
 pub enum Led2dFont {
@@ -1017,7 +1017,7 @@ pub use led2d_device;
 ///
 /// - `pin` — GPIO pin for LED data
 /// - `led_layout` — LED strip physical layout (see [`LedLayout`]); this defines the panel size
-/// - `font` — Built-in font variant (see [`Led2dFont`])
+/// - `font` — Built-in font variant (see [`Led2dFont`]), e.g. `Led2dFont::Font4x6Trim`
 ///
 /// The `led_layout` value must be a const so its dimensions can be derived at compile time.
 ///
@@ -1367,7 +1367,7 @@ macro_rules! __led2d_impl {
         gamma: $gamma:expr,
         max_frames: $max_frames:expr,
         font: $font_variant:tt,
-        fields: [ font: $new_font_variant:ident $(, $($rest:tt)* )? ]
+        fields: [ font: Led2dFont::$new_font_variant:ident $(, $($rest:tt)* )? ]
     ) => {
         $crate::__led2d_impl! {
             @__fill_defaults
@@ -1492,7 +1492,7 @@ macro_rules! __led2d_impl {
                 $vis $name,
                 strip_type: [<$name LedStrip>],
                 led_layout_const: [<$name:upper _LAYOUT>],
-                font: $font_variant,
+                font: Led2dFont::$font_variant,
                 max_frames_const: [<$name:upper _MAX_FRAMES>],
             }
 
@@ -1548,7 +1548,7 @@ macro_rules! led2d_from_strip {
         width: $width:expr,
         height: $height:expr,
         led_layout: serpentine_column_major,
-        font: $font_variant:ident $(,)?
+        font: Led2dFont::$font_variant:ident $(,)?
     ) => {
         $crate::led2d::paste::paste! {
             const [<$name:upper _LED_LAYOUT>]: $crate::led2d::LedLayout<{ $width * $height }, { $width }, { $height }> =
@@ -1572,7 +1572,7 @@ macro_rules! led2d_from_strip {
         width: $width:expr,
         height: $height:expr,
         led_layout: $led_layout:expr,
-        font: $font_variant:ident $(,)?
+        font: Led2dFont::$font_variant:ident $(,)?
     ) => {
         $crate::led2d::paste::paste! {
             const [<$name:upper _LED_LAYOUT>]: $crate::led2d::LedLayout<{ $width * $height }, { $width }, { $height }> = $led_layout;
@@ -1594,7 +1594,7 @@ macro_rules! led2d_from_strip {
         $vis:vis $name:ident,
         strip_type: $strip_type:ident,
         led_layout_const: $led_layout_const:ident,
-        font: $font_variant:ident,
+        font: Led2dFont::$font_variant:ident,
         max_frames_const: $max_frames_const:ident $(,)?
     ) => {
         $crate::led2d::led2d_from_strip!(

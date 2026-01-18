@@ -42,7 +42,7 @@ led_strips! {
             max_frames: 2,
             led2d: {                                // Optional panel configuration for 2D displays.
                 led_layout: LED_LAYOUT_12X8_ROTATED, // Two 12x4 panels stacked and rotated.
-                font: Font4x6Trim,                  // 4x6 pixel font without the usual 1 pixel spacing.
+                font: Led2dFont::Font4x6Trim,       // 4x6 pixel font without the usual 1 pixel spacing.
             }
         },
     }

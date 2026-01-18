@@ -28,7 +28,7 @@ led2d! {
     Led4x12 {
         pin: PIN_3,
         led_layout: LED_LAYOUT_4X12,
-        font: Font3x4Trim,
+        font: Led2dFont::Font3x4Trim,
         pio: PIO1,
         dma: DMA_CH0,
         max_current: Current::Milliamps(500),

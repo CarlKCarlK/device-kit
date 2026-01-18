@@ -136,7 +136,7 @@ mod test_led_strips_public_led2d {
                 max_current: Current::Milliamps(250),
                 led2d: {
                     led_layout: LED_LAYOUT_PUBLIC,
-                    font: Font3x4Trim,
+                    font: Led2dFont::Font3x4Trim,
                 }
             }
         }
@@ -163,7 +163,7 @@ mod test_led_strips_private_led2d {
                 max_current: Current::Milliamps(250),
                 led2d: {
                     led_layout: LED_LAYOUT_PRIVATE,
-                    font: Font3x4Trim,
+                    font: Led2dFont::Font3x4Trim,
                 }
             }
         }

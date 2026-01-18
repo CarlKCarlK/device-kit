@@ -24,7 +24,7 @@ led_strips! {
             max_current: Current::Milliamps(250),
             led2d: {
                 led_layout: LED_LAYOUT_12X4,
-                font: Font3x4Trim,
+                font: Led2dFont::Font3x4Trim,
             }
         },
         Gpio4Led2d: {
@@ -33,7 +33,7 @@ led_strips! {
             max_current: Current::Milliamps(250),
             led2d: {
                 led_layout: LED_LAYOUT_8X12,
-                font: Font4x6Trim,
+                font: Led2dFont::Font4x6Trim,
             }
         }
     }

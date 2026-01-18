@@ -21,7 +21,7 @@ led2d! {
     TestLed {
         pin: PIN_3,
         led_layout: LED_LAYOUT,
-        font: Font3x4Trim,
+        font: Led2dFont::Font3x4Trim,
         max_current: Current::Milliamps(100),
         gamma: Gamma::Linear,
     }
@@ -51,7 +51,7 @@ mod public_test {
             pin: PIN_4,
             pio: PIO1,
             led_layout: LED_LAYOUT_PUB,
-            font: Font3x4Trim,
+            font: Led2dFont::Font3x4Trim,
             max_current: Current::Milliamps(100),
             gamma: Gamma::Linear,
         }
@@ -74,7 +74,7 @@ mod private_test {
             pin: PIN_5,
             pio: PIO0,
             led_layout: LED_LAYOUT_PRIVATE,
-            font: Font3x4Trim,
+            font: Led2dFont::Font3x4Trim,
             max_current: Current::Milliamps(100),
             gamma: Gamma::Linear,
         }

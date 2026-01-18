@@ -37,7 +37,7 @@ led2d! {
         // Maximum number of aniamtion frames (default: 16)
         max_frames: 16,
         // Font variant (see [`Led2dFont`](crate::led2d::Led2dFont) for available fonts)
-        font: Font3x4Trim,
+        font: Led2dFont::Font3x4Trim,
     }
 }
 

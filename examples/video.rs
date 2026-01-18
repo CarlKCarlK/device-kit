@@ -107,7 +107,7 @@ led2d! {
         max_current: Current::Milliamps(250),
         gamma: Gamma::Gamma2_2,
         max_frames: 70,
-        font: Font3x4Trim,
+        font: Led2dFont::Font3x4Trim,
     }
 }
 

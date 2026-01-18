@@ -26,7 +26,7 @@ led_strips! {
             led2d: {
                 led_layout: LED_LAYOUT_12X4,
                 max_frames: 48,
-                font: Font3x4Trim,
+                font: Led2dFont::Font3x4Trim,
             }
         }
     }
@@ -43,7 +43,7 @@ led_strips! {
             led2d: {
                 led_layout: LED_LAYOUT_8X12,
                 max_frames: 48,
-                font: Font4x6Trim,
+                font: Led2dFont::Font4x6Trim,
             }
         }
     }

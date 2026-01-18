@@ -27,7 +27,7 @@ led2d! {
     Led12x8Animated {
         pin: PIN_4, // GPIO pin for LED data signal
         led_layout: LED_LAYOUT_12X8_ROTATED, // Two 12×4 panels stacked and rotated
-        font: Font4x6Trim, // Use a 4x6 pixel font without the usual 1 pixel spacing
+        font: Led2dFont::Font4x6Trim, // Use a 4x6 pixel font without the usual 1 pixel spacing
         pio: PIO1, // PIO resource, default is PIO0
         dma: DMA_CH1, // DMA resource, default is DMA_CH0
         max_current: Current::Milliamps(300), // Power budget, default is 250 mA

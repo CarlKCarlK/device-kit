@@ -33,7 +33,7 @@ led_strips! {
             max_current: Current::Milliamps(500),
             led2d: {
                 led_layout: LED_LAYOUT_4X12,
-                font: Font3x4Trim,
+                font: Led2dFont::Font3x4Trim,
             }
         }
     }
@@ -49,7 +49,7 @@ led_strips! {
             max_current: Current::Milliamps(300),
             led2d: {
                 led_layout: LED_LAYOUT_8X8,
-                font: Font3x4Trim,
+                font: Led2dFont::Font3x4Trim,
             }
         }
     }

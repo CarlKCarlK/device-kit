@@ -16,7 +16,7 @@ led2d! {
     Led12x4 {
         pin: PIN_3,
         led_layout: LED_LAYOUT_12X4,
-        font: Font3x4Trim,
+        font: Led2dFont::Font3x4Trim,
     }
 }
 
