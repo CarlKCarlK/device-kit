@@ -341,18 +341,30 @@ pub const fn generate_combo_table(gamma: Gamma, max_brightness: u8) -> [u8; 256]
     result
 }
 
+#[cfg(not(feature = "host"))]
 use core::cell::RefCell;
+#[cfg(not(feature = "host"))]
 use embassy_futures::select::{Either, select};
+#[cfg(not(feature = "host"))]
 use embassy_rp::pio::{Common, Instance};
+#[cfg(not(feature = "host"))]
 use embassy_rp::pio_programs::ws2812::{PioWs2812, PioWs2812Program};
+#[cfg(not(feature = "host"))]
 use embassy_sync::blocking_mutex::Mutex;
+#[cfg(not(feature = "host"))]
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+#[cfg(not(feature = "host"))]
 use embassy_sync::channel::Channel as EmbassyChannel;
+#[cfg(not(feature = "host"))]
 use embassy_sync::once_lock::OnceLock;
+#[cfg(not(feature = "host"))]
 use embassy_sync::signal::Signal;
+#[cfg(not(feature = "host"))]
 use embassy_time::{Duration, Timer};
+#[cfg(not(feature = "host"))]
 use heapless::Vec;
 
+#[cfg(not(feature = "host"))]
 use crate::Result;
 
 // ============================================================================
@@ -430,6 +442,7 @@ impl<const N: usize> Default for Frame1d<N> {
 ///
 /// This trait is automatically implemented by the `led_strips!` macro
 /// for the PIO peripheral specified in the macro invocation.
+#[cfg(not(feature = "host"))]
 #[doc(hidden)] // Required pub for macro expansion in downstream crates
 pub trait LedStripPio: Instance {
     /// The interrupt binding type for this PIO
@@ -444,6 +457,7 @@ pub trait LedStripPio: Instance {
 /// A state machine bundled with its PIO bus.
 ///
 /// This is returned by `pio_split!` and passed to strip constructors.
+#[cfg(not(feature = "host"))]
 #[doc(hidden)] // Support type for macro-generated strip types; not intended as surface API
 pub struct PioStateMachine<PIO: Instance + 'static, const SM: usize> {
     bus: &'static PioBus<'static, PIO>,
@@ -451,6 +465,7 @@ pub struct PioStateMachine<PIO: Instance + 'static, const SM: usize> {
 }
 // cmk should spell out sm and name bus pio_bus, this this be PioBusStateMachine?ks
 
+#[cfg(not(feature = "host"))]
 impl<PIO: Instance + 'static, const SM: usize> PioStateMachine<PIO, SM> {
     #[doc(hidden)]
     pub fn new(
@@ -476,12 +491,14 @@ impl<PIO: Instance + 'static, const SM: usize> PioStateMachine<PIO, SM> {
     }
 }
 /// Shared PIO bus that manages the Common resource and WS2812 program
+#[cfg(not(feature = "host"))]
 #[doc(hidden)] // Support type for macro-generated strip types; not intended as surface API
 pub struct PioBus<'d, PIO: Instance> {
     common: Mutex<CriticalSectionRawMutex, RefCell<Common<'d, PIO>>>,
     ws2812_program: OnceLock<PioWs2812Program<'d, PIO>>,
 }
 
+#[cfg(not(feature = "host"))]
 impl<'d, PIO: Instance> PioBus<'d, PIO> {
     /// Create a new PIO bus with the given Common resource
     pub fn new(common: Common<'d, PIO>) -> Self {
@@ -517,16 +534,20 @@ impl<'d, PIO: Instance> PioBus<'d, PIO> {
 // LED Strip Command Channel and Static
 // ============================================================================
 
+#[cfg(not(feature = "host"))]
 #[doc(hidden)] // Required pub for macro expansion in downstream crates
 pub type LedStripCommands<const N: usize> = EmbassyChannel<CriticalSectionRawMutex, Frame1d<N>, 2>;
 
+#[cfg(not(feature = "host"))]
 #[doc(hidden)] // Required pub for macro expansion in downstream crates
 pub type LedStripCommandSignal<const N: usize, const MAX_FRAMES: usize> =
     Signal<CriticalSectionRawMutex, Command<N, MAX_FRAMES>>;
 
+#[cfg(not(feature = "host"))]
 #[doc(hidden)] // Required pub for macro expansion in downstream crates
 pub type LedStripCompletionSignal = Signal<CriticalSectionRawMutex, ()>;
 
+#[cfg(not(feature = "host"))]
 #[doc(hidden)]
 // Command for the LED strip animation loop.
 #[derive(Clone)]
@@ -536,6 +557,7 @@ pub enum Command<const N: usize, const MAX_FRAMES: usize> {
 }
 
 /// Static used to construct LED strip instances with animation support.
+#[cfg(not(feature = "host"))]
 #[doc(hidden)] // Must be pub for method signatures and macro expansion in downstream crates
 pub struct LedStripStatic<const N: usize, const MAX_FRAMES: usize> {
     command_signal: LedStripCommandSignal<N, MAX_FRAMES>,
@@ -543,6 +565,7 @@ pub struct LedStripStatic<const N: usize, const MAX_FRAMES: usize> {
     commands: LedStripCommands<N>,
 }
 
+#[cfg(not(feature = "host"))]
 impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
     /// Creates static resources.
     #[must_use]
@@ -573,6 +596,7 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
 
 // cmk0000 need to described this better. It is kind of a prototype.
 // Public so macro-generated types can deref to it; hidden from docs.
+#[cfg(not(feature = "host"))]
 #[doc(hidden)]
 /// Internal deref target for generated LED strip types.
 ///
@@ -583,6 +607,7 @@ pub struct LedStrip<const N: usize, const MAX_FRAMES: usize> {
     completion_signal: &'static LedStripCompletionSignal,
 }
 
+#[cfg(not(feature = "host"))]
 impl<const N: usize, const MAX_FRAMES: usize> LedStrip<N, MAX_FRAMES> {
     /// Creates LED strip resources.
     #[must_use]
@@ -645,6 +670,7 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStrip<N, MAX_FRAMES> {
     }
 }
 
+#[cfg(not(feature = "host"))]
 #[doc(hidden)] // Required pub for macro expansion in downstream crates
 pub async fn led_strip_animation_loop<
     PIO,
@@ -700,6 +726,7 @@ where
     }
 }
 
+#[cfg(not(feature = "host"))]
 async fn run_frame_animation<PIO, const SM: usize, const N: usize, const MAX_FRAMES: usize, ORDER>(
     driver: &mut PioWs2812<'static, PIO, SM, N, ORDER>,
     frames: Vec<(Frame1d<N>, Duration), MAX_FRAMES>,
@@ -729,6 +756,7 @@ where
     }
 }
 
+#[cfg(not(feature = "host"))]
 fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 256]) {
     for color in frame.iter_mut() {
         *color = RGB8::new(
@@ -956,12 +984,14 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
         "docs/assets/led2d2.png"
     )
 )]
+#[cfg(not(feature = "host"))]
 #[macro_export]
 macro_rules! led_strips {
     ($($tt:tt)*) => { $crate::__led_strips_impl! { $($tt)* } };
 }
 
 /// Implementation macro. Not part of the public API; use [`led_strips!`] instead.
+#[cfg(not(feature = "host"))]
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __led_strips_impl {
@@ -2669,12 +2699,14 @@ macro_rules! __led_strips_impl {
 ///
 /// For 2D LED panels and graphics-style rendering, see the [`led2d`](mod@crate::led2d) module.
 ///
+#[cfg(not(feature = "host"))]
 #[macro_export]
 macro_rules! led_strip {
     ($($tt:tt)*) => { $crate::__led_strip_impl! { $($tt)* } };
 }
 
 /// Implementation macro. Not part of the public API; use [`led_strip!`] instead.
+#[cfg(not(feature = "host"))]
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __led_strip_impl {
@@ -3130,6 +3162,7 @@ macro_rules! __led_strip_impl {
 ///
 /// **See the module docs.** Most users should use the group constructor instead.
 #[doc(hidden)]
+#[cfg(not(feature = "host"))]
 #[macro_export]
 macro_rules! pio_split {
     ($p:ident . PIO0) => {
@@ -3143,9 +3176,11 @@ macro_rules! pio_split {
     };
 }
 
+#[cfg(not(feature = "host"))]
 pub use pio_split;
 
 // Implement LedStripPio for all PIO peripherals
+#[cfg(not(feature = "host"))]
 impl LedStripPio for embassy_rp::peripherals::PIO0 {
     type Irqs = crate::pio_irqs::Pio0Irqs;
 
@@ -3154,6 +3189,7 @@ impl LedStripPio for embassy_rp::peripherals::PIO0 {
     }
 }
 
+#[cfg(not(feature = "host"))]
 impl LedStripPio for embassy_rp::peripherals::PIO1 {
     type Irqs = crate::pio_irqs::Pio1Irqs;
 
@@ -3162,7 +3198,7 @@ impl LedStripPio for embassy_rp::peripherals::PIO1 {
     }
 }
 
-#[cfg(feature = "pico2")]
+#[cfg(all(feature = "pico2", not(feature = "host")))]
 impl LedStripPio for embassy_rp::peripherals::PIO2 {
     type Irqs = crate::pio_irqs::Pio2Irqs;
 
@@ -3171,7 +3207,9 @@ impl LedStripPio for embassy_rp::peripherals::PIO2 {
     }
 }
 
+#[cfg(not(feature = "host"))]
 pub use led_strip;
+#[cfg(not(feature = "host"))]
 pub use led_strips;
 
 /// Configuration enum used by the macros to configure current budgeting for LED strips.
