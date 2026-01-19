@@ -5,9 +5,45 @@
 //! See [`LedLayout`] for examples including: linear strips,
 //! serpentine grids, rotations, flips, and concatenation.
 
-/// Fully const description of panel geometry and wiring, including dimensions (with examples)
+/// Compile-time description of LED panel geometry and wiring.
 ///
-/// # Examples
+/// `LedLayout` defines how a rectangular `(x, y)` pixel grid maps to the linear
+/// order of LEDs on a NeoPixel-style (WS2812) panel.
+///
+/// - The mapping is stored as **LED index → (x, y)**.
+/// - The panel dimensions `(W × H)` are part of the type.
+///
+/// You’ll usually use `LedLayout` indirectly through the [`led2d`](mod@crate::led2d) module.
+/// For drawing examples, see [`Frame2d`](crate::led2d::Frame2d).
+///
+/// ## Constructing layouts
+///
+/// Prefer the built-in constructors when possible:
+/// - [`serpentine_row_major`](Self::serpentine_row_major)
+/// - [`serpentine_column_major`](Self::serpentine_column_major)
+/// - [`linear_h`](Self::linear_h) / [`linear_v`](Self::linear_v)
+///
+/// For unusual wiring, you can construct a layout directly with [`LedLayout::new`]
+/// by listing `(x, y)` for each LED in physical order.
+///
+/// ## Transforming layouts
+///
+/// You can adapt a layout without rewriting it:
+/// - rotate: [`rotate_cw`](Self::rotate_cw), [`rotate_ccw`](Self::rotate_ccw), [`rotate_180`](Self::rotate_180)
+/// - flip: [`flip_h`](Self::flip_h), [`flip_v`](Self::flip_v)
+/// - combine: [`concat_h`](Self::concat_h), [`concat_v`](Self::concat_v)
+///
+/// ## Validation
+///
+/// Layouts are validated at **compile time**:
+/// - coordinates must be in-bounds
+/// - every `(x, y)` cell must appear exactly once
+///
+/// If you want the final mapping, use [`index_to_xy`](Self::index_to_xy).
+///
+/// # Example
+///
+/// Rotate a serpentine-wired 3×2 panel into a 2×3 layout and verify the result at compile time:
 ///
 /// ```rust,no_run
 /// # #![no_std]
@@ -24,18 +60,11 @@
 ///
 /// ```text
 /// Serpentine 3×2 rotated to 2×3:
-///   Before:            After:
-///     LED0  LED3  LED4    LED1  LED0
-///     LED1  LED2  LED5    LED2  LED3
-///                         LED5  LED4
-/// ```
 ///
-/// Compile-time validation catches configuration errors:
-///
-/// ```compile_fail
-/// use device_kit::led2d::layout::LedLayout;
-/// // Duplicate coordinate (0,0) - caught at compile time
-/// const INVALID: LedLayout<3, 2, 2> = LedLayout::new([(0, 0), (0, 0), (1, 1)]);
+///   Before:              After:
+///     LED0  LED3  LED4     LED1  LED0
+///     LED1  LED2  LED5     LED2  LED3
+///                          LED5  LED4
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LedLayout<const N: usize, const W: usize, const H: usize> {
@@ -67,21 +96,8 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
         N
     }
 
-    /// Reverse lookup: (row, col) → LED index in row-major order.
-    ///
-    /// ```rust,no_run
-    /// # #![no_std]
-    /// # #![no_main]
-    /// # #[panic_handler]
-    /// # fn panic(_: &core::panic::PanicInfo) -> ! { loop {} }
-    /// use device_kit::led2d::layout::LedLayout;
-    ///
-    /// const LED_LAYOUT: LedLayout<6, 3, 2> = LedLayout::serpentine_column_major();
-    /// const XY_TO_INDEX: [u16; 6] = LED_LAYOUT.xy_to_index();
-    /// // Result: [0, 3, 4, 1, 2, 5]
-    /// ```
     #[must_use]
-    pub const fn xy_to_index(&self) -> [u16; N] {
+    pub(crate) const fn xy_to_index(&self) -> [u16; N] {
         assert!(
             N <= u16::MAX as usize,
             "total LEDs must fit in u16 for xy_to_index"
