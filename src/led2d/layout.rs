@@ -1,20 +1,26 @@
-//! Fully const description of panel geometry and wiring, including dimensions (with examples).
+//! Compile-time description of panel geometry and wiring, including dimensions (with examples).
 //!
 //! cmk0000000 read and review this
 //!
 //! See [`LedLayout`] for examples including: linear strips,
-//! serpentine grids, rotations, flips, and concatenation.
+//! serpentine panels, rotations, flips, and concatenation.
 
-/// Compile-time description of LED panel geometry and wiring.
+/// Compile-time description of panel geometry and wiring, including dimensions (with examples).
 ///
-/// `LedLayout` defines how a rectangular `(x, y)` pixel grid maps to the linear
+/// `LedLayout` defines how a rectangular `(x, y)` panel of LEDs maps to the linear
 /// order of LEDs on a NeoPixel-style (WS2812) panel.
 ///
-/// - The mapping is stored as **LED index → (x, y)**.
-/// - The panel dimensions `(W × H)` are part of the type.
+/// LedLayout lets you describe LED panel wiring once, then write text, graphics, and animations
+/// in (x, y) space without caring about LED strip order
 ///
-/// You’ll usually use `LedLayout` indirectly through the [`led2d`](mod@crate::led2d) module.
-/// For drawing examples, see [`Frame2d`](crate::led2d::Frame2d).
+/// Coordinates use a screen-style convention: `(0, 0)` is the top-left corner,
+/// `x` increases to the right, and `y` increases downward.
+///
+/// For examples of `LedLayout` in use, see the [`led2d`](mod@crate::led2d) module
+/// and [`Frame2d`](crate::led2d::Frame2d).
+///
+/// Most users should start with one of the constructors below,
+/// then apply transforms ([`Self::rotate_cw`], [`Self::flip_h`], [`Self::concat_v`], etc.) if needed.
 ///
 /// ## Constructing layouts
 ///
@@ -24,7 +30,10 @@
 /// - [`linear_h`](Self::linear_h) / [`linear_v`](Self::linear_v)
 ///
 /// For unusual wiring, you can construct a layout directly with [`LedLayout::new`]
-/// by listing `(x, y)` for each LED in physical order.
+/// by listing `(x, y)` for each LED in the order the strip is wired.
+///
+/// **The example below shows both construction methods.** Also, every construtor
+/// and method includes illustations of use.
 ///
 /// ## Transforming layouts
 ///
@@ -55,7 +64,7 @@
 /// const ROTATED: LedLayout<6, 2, 3> = LedLayout::serpentine_column_major().rotate_cw();
 /// const EXPECTED: LedLayout<6, 2, 3> =
 ///     LedLayout::new([(1, 0), (0, 0), (0, 1), (1, 1), (1, 2), (0, 2)]);
-/// const _: () = assert!(ROTATED.equals(&EXPECTED));
+/// const _: () = assert!(ROTATED.equals(&EXPECTED)); // Compile-time assert
 /// ```
 ///
 /// ```text
@@ -72,7 +81,7 @@ pub struct LedLayout<const N: usize, const W: usize, const H: usize> {
 }
 
 impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
-    /// Access the checked (col,row) mapping.
+    /// Return the array mapping LED wiring order to `(x, y)` coordinates.
     #[must_use]
     pub const fn index_to_xy(&self) -> &[(u16, u16); N] {
         &self.map
@@ -146,8 +155,8 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
     /// const LINEAR: LedLayout<4, 4, 1> = LedLayout::linear_h();
     /// const ROTATED: LedLayout<4, 4, 1> = LedLayout::linear_v().rotate_cw();
     ///
-    /// const _: () = assert!(LINEAR.equals(&LINEAR));
-    /// const _: () = assert!(!LINEAR.equals(&ROTATED));
+    /// const _: () = assert!(LINEAR.equals(&LINEAR));   // assert equal
+    /// const _: () = assert!(!LINEAR.equals(&ROTATED)); // assert not equal
     /// ```
     ///
     /// ```text
@@ -166,7 +175,7 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
         true
     }
 
-    /// Constructor: verifies mapping covers every cell exactly once across the W×H grid.
+    /// Constructor: verifies mapping covers every cell exactly once across the W×H (width x heightpanel.
     ///
     /// ```rust,no_run
     /// # #![no_std]
@@ -175,14 +184,14 @@ impl<const N: usize, const W: usize, const H: usize> LedLayout<N, W, H> {
     /// # fn panic(_: &core::panic::PanicInfo) -> ! { loop {} }
     /// use device_kit::led2d::layout::LedLayout;
     ///
-    /// // 3×2 grid (landscape, W×H)
+    /// // 3×2 panel (landscape, W×H)
     /// const MAP: LedLayout<6, 3, 2> =
     ///     LedLayout::new([(0, 0), (1, 0), (2, 0), (2, 1), (1, 1), (0, 1)]);
     ///
     /// // Rotate to portrait (CW)
     /// const ROTATED: LedLayout<6, 2, 3> = MAP.rotate_cw();
     ///
-    /// // Expected: 2×3 grid (W×H)
+    /// // Expected: 2×3 panel (W×H)
     /// const EXPECTED: LedLayout<6, 2, 3> =
     ///     LedLayout::new([(1, 0), (1, 1), (1, 2), (0, 2), (0, 1), (0, 0)]);
     ///
