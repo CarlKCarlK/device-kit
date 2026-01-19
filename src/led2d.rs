@@ -727,7 +727,6 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
         self.mapping_by_xy[y_index * self.width + x_index] as usize
     }
 
-    // cmk000000 need to explain the 0,0 is the top-left
     /// Convert 2D frame to 1D array using the LED layout.
     fn convert_frame<const W: usize, const H: usize>(
         &self,
