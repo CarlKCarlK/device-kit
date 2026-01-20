@@ -21,13 +21,13 @@
 //! panels, see the [`led2d`](mod@crate::led2d) module.
 //!
 //! This page provides the primary documentation and examples for programming LED strips.
-//! The device abstraction supports setting and animating the LEDs of the strip.
+//! The device abstraction supports patterns and animation on the LED strip.
 //!
 //! **After reading the examples below, see also:**
 //!
 //! - [`led_strip!`](macro@crate::led_strip) — Macro to generate an LED strip struct type (includes syntax details). See [`LedStripGenerated`](led_strip_generated::LedStripGenerated) for a sample of a generated type.
 //! - [`LedStripGenerated`](led_strip_generated::LedStripGenerated) — Sample struct type showing all methods and associated constants.
-//! - [`Frame1d`] — 1D pixel array used for strip graphics (includes examples).
+//! - [`Frame1d`] — 1D pixel array used for pixel patterns.
 //! - [`led_strips!`](crate::led_strips) — Alternative macro to share a PIO resource with other strips or panels (includes examples).
 //!
 //! # Example: Write a Single 1-Dimensional Frame
@@ -147,7 +147,7 @@
 #[doc(inline)]
 pub use smart_leds::RGB8;
 
-/// Predefined [`RGB8`] color constants re-exported from the
+/// Module containing predefined [`RGB8`] color constants, re-exported from the
 /// [`smart_leds`](https://docs.rs/smart-leds/latest/smart_leds/index.html) crate.
 ///
 /// These constants follow CSS/Web color names. In particular, `GREEN` is
@@ -257,7 +257,7 @@ use embedded_graphics::prelude::RgbColor;
 // Gamma Correction
 // ============================================================================
 
-/// Configuration enum used by the macros to configure gamma correction for LED strips.
+/// Gamma correction configuration for LED strips.
 ///
 /// cmk000000 read and review. Maybe give a link to Wikipedia or other explanation of gamma correction?
 /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
@@ -320,7 +320,7 @@ const LINEAR_TABLE: [u8; 256] = [
 ///
 /// This combines two operations into a single table lookup for efficiency:
 /// 1. Apply gamma correction based on the `gamma` parameter
-/// 2. Scale by `max_brightness` for current limiting
+/// 2. Scale by `max_brightness` for electrical current limiting
 ///
 /// The result is a table where `combo_table[input_value]` gives the final output value.
 #[doc(hidden)] // Implementation detail used by macro-generated strip types
@@ -376,7 +376,7 @@ use crate::Result;
 
 pub mod led_strip_generated;
 
-/// [`RGB8`] pixel frame data for a 1-dimensional LED strip.
+/// 1D pixel array used for pixel patterns.
 ///
 /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
 ///
@@ -493,7 +493,7 @@ impl<PIO: Instance + 'static, const SM: usize> PioStateMachine<PIO, SM> {
         (self.bus, self.sm)
     }
 }
-/// Shared PIO bus that manages the Common resource and WS2812 program
+/// Shared PIO bus that manages the Common resource and WS2812 program.
 #[cfg(not(feature = "host"))]
 #[doc(hidden)] // Support type for macro-generated strip types; not intended as surface API
 pub struct PioBus<'d, PIO: Instance> {
@@ -770,8 +770,8 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
     }
 }
 
-/// Macro to generate multiple NeoPixel-style (WS2812) LED strips and panels
-/// that share a single [PIO resource](crate#glossary).
+/// Macro to generate multiple LED strip and panel struct types that share a single
+/// [PIO resource](crate#glossary) (includes syntax details).
 ///
 /// See [`LedStripGenerated`](led_strip_generated::LedStripGenerated)
 /// and [`Led2dGenerated`](crate::led2d::led2d_generated::Led2dGenerated)
@@ -790,7 +790,7 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 /// # Example: Connect Three LED Strips/Panels to One PIO Resource
 ///
 /// This example creates three LED strips/panels on GPIO0, GPIO3, and GPIO4,
-/// all sharing PIO0. It demonstrates setting lights on the first two strips
+/// all sharing PIO0. It demonstrates showing a pattern on the first two strips
 /// and animating text on the 2D panel. (See [`led2d!`](macro@crate::led2d)
 /// for details on 2D panel configuration and usage.)
 ///
@@ -824,7 +824,7 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///         Gpio0LedStrip: {                // Exact struct name for this strip.
 ///             pin: PIN_0,                 // GPIO pin for LED data signal.
 ///             len: 8,                     // 8 LEDs on this strip.
-///             max_current: Current::Milliamps(25), // Every strip/panel requires a current budget.
+///             max_current: Current::Milliamps(25), // Every strip/panel requires an electrical current budget.
 ///         },
 ///         // 2. a 48-LED strip on GPIO3
 ///         Gpio3LedStrip: {
@@ -909,7 +909,7 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///
 /// - `pin` — GPIO pin for LED data
 /// - `len` — Number of LEDs (pixels)
-/// - `max_current` — Current budget per strip (required; no default)
+/// - `max_current` — Electrical current budget per strip (required; no default)
 ///
 /// ## Optional Fields per Strip/Panel
 ///
@@ -934,14 +934,14 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 /// # Current Limiting
 ///
 /// The `max_current` field is **required for each strip or panel** to prevent
-/// over-current conditions.
+/// electrical overcurrent conditions.
 ///
 /// When powering LEDs from the Pico’s 5 V USB rail (pin 40), keep the **total
-/// current across all strips below ~500 mA**. LED current draw adds up quickly,
+/// electrical current across all strips below ~500 mA**. LED electrical current draw adds up quickly,
 /// especially at full brightness. For larger installations, use an external 5V
 /// power supply.
 ///
-/// The `max_current` value sets a per-strip current budget. Brightness is scaled
+/// The `max_current` value sets a per-strip electrical current budget. Brightness is scaled
 /// automatically using a compile-time lookup table (no runtime cost) to stay
 /// within this budget.
 ///
@@ -2643,7 +2643,8 @@ macro_rules! __led_strips_impl {
     };
 }
 
-/// Macro to generate a device abstraction for a NeoPixel-style (WS2812) LED strip.
+/// Macro to generate an LED-strip struct type (includes syntax details). See
+/// [`LedStripGenerated`](led_strip_generated::LedStripGenerated) for a sample of a generated type.
 ///
 /// This macro generates a concrete LED strip device type with associated methods and constants
 /// at compile time.
@@ -2668,24 +2669,24 @@ macro_rules! __led_strips_impl {
 ///
 /// - `pio` — PIO resource (default: `PIO0`)
 /// - `dma` — DMA channel (default: `DMA_CH0`)
-/// - `max_current` — Current budget (default: 250 mA)
+/// - `max_current` — Electrical current budget (default: 250 mA)
 /// - `gamma` — Color curve (default: `Gamma::Gamma2_2`)
 /// - `max_frames` — Maximum number of animation frames (default: 16 frames)
 ///
 /// # Current Limiting
 ///
-/// The `max_current` field automatically scales brightness to stay within your power budget.
+/// The `max_current` field automatically scales brightness to stay within your electrical current budget.
 ///
 /// Each WS2812 LED is assumed to draw 60 mA at full brightness. For example:
 /// - 16 LEDs × 60 mA = 960 mA at full brightness
 /// - With `max_current: Current::Milliamps(1000)`, all LEDs fit at 100% brightness
-/// - With the default current limit (250 mA), the generated `MAX_BRIGHTNESS` limits LEDs to ~26% brightness
+/// - With the default electrical current limit (250 mA), the generated `MAX_BRIGHTNESS` limits LEDs to ~26% brightness
 ///
-/// The current limit is baked into a compile-time lookup table, so it has no
+/// The electrical current limit is baked into a compile-time lookup table, so it has no
 /// runtime cost.
 ///
 /// **Powering LEDs from the Pico's pin 40 (VBUS):** Pin 40 is the USB 5 V rail
-/// pass-through, but the Pico itself has practical current limits — the USB connector,
+/// pass-through, but the Pico itself has practical electrical current limits — the USB connector,
 /// cable, and internal circuitry aren't designed for heavy loads. Small LED strips
 /// (a few hundred mA) can usually power from pin 40 with a decent USB supply; for
 /// larger loads (1 A+), **use a separate 5 V supply and share ground with the Pico.**
@@ -2700,7 +2701,7 @@ macro_rules! __led_strips_impl {
 /// The gamma curve is baked into a compile-time lookup table, so it has no
 /// runtime cost.
 ///
-/// For 2D LED panels and graphics-style rendering, see the [`led2d`](mod@crate::led2d) module.
+/// For 2D LED panels and pattern-style rendering, see the [`led2d`](mod@crate::led2d) module.
 ///
 #[cfg(not(feature = "host"))]
 #[macro_export]
@@ -3215,7 +3216,7 @@ pub use led_strip;
 #[cfg(not(feature = "host"))]
 pub use led_strips;
 
-/// Configuration enum used by the macros to configure current budgeting for LED strips.
+/// Electrical current budget configuration for LED strips.
 ///
 /// cmk000000 read and review
 /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
@@ -3223,9 +3224,9 @@ pub use led_strips;
 pub enum Current {
     /// Limit brightness to stay within a specific milliamp budget.
     ///
-    /// The `max_brightness` is automatically calculated to ensure the worst-case current
+    /// The `max_brightness` is automatically calculated to ensure the worst-case electrical current
     /// (all LEDs at full brightness) does not exceed this limit. For example, a 16-LED strip
-    /// draws 960 mA at full brightness (60 mA per LED); with the default current limit, brightness
+    /// draws 960 mA at full brightness (60 mA per LED); with the default electrical current limit, brightness
     /// is capped at ~26%.
     Milliamps(u16),
     /// No limit — brightness stays at 100% (subject to practical hardware constraints like
@@ -3241,7 +3242,7 @@ impl Default for Current {
 
 // Public so led_strip!/led_strips! expansions in downstream crates can reference it.
 #[doc(hidden)]
-/// Default current budget for generated LED devices (`Current::Milliamps(250)`).
+/// Default electrical current budget for generated LED devices (`Current::Milliamps(250)`).
 pub const MAX_CURRENT_DEFAULT: Current = Current::Milliamps(250);
 
 // Public so led_strip!/led_strips! expansions in downstream crates can reference it.
@@ -3250,7 +3251,7 @@ pub const MAX_CURRENT_DEFAULT: Current = Current::Milliamps(250);
 pub const MAX_FRAMES_DEFAULT: usize = 16;
 
 impl Current {
-    /// Calculate maximum brightness based on current budget and worst-case current draw.
+    /// Calculate maximum brightness based on electrical current budget and worst-case electrical current draw.
     ///
     /// Returns 255 (full brightness) for Unlimited, or a scaled value for Milliamps.
     #[doc(hidden)] // Called by macro-generated code; not part of public API

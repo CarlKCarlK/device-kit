@@ -456,7 +456,7 @@ impl Led2dFont {
 ///
 /// - Maps `(x, y)` pixels to the physical LED wiring order
 /// - Applies gamma correction
-/// - Scales brightness to respect the configured current budget
+/// - Scales brightness to respect the configured electrical current budget
 ///
 /// These steps are implemented using two **compile-time–generated lookup tables**.
 /// Writing a frame performs only indexed memory reads and writes.
@@ -1035,24 +1035,24 @@ pub use led2d_device;
 ///
 /// - `pio` — PIO resource to use (default: `PIO0`)
 /// - `dma` — DMA channel (default: `DMA_CH0`)
-/// - `max_current` — Current budget (default: 250 mA)
+/// - `max_current` — Electrical current budget (default: 250 mA)
 /// - `gamma` — Color curve (default: `Gamma::Gamma2_2`)
 /// - `max_frames` — Maximum number of animation frames for the generated strip (default: 16 frames)
 ///
 /// # Current Limiting
 ///
-/// The `max_current` field automatically scales brightness to stay within your power budget.
+/// The `max_current` field automatically scales brightness to stay within your electrical current budget.
 ///
 /// Each WS2812 LED is assumed to draw 60 mA at full brightness. For example:
 /// - 16 LEDs × 60 mA = 960 mA at full brightness
 /// - With `max_current: Current::Milliamps(1000)`, all LEDs fit at 100% brightness
-/// - With the default current limit (250 mA), the generated `MAX_BRIGHTNESS` limits LEDs to ~26% brightness
+/// - With the default electrical current limit (250 mA), the generated `MAX_BRIGHTNESS` limits LEDs to ~26% brightness
 ///
-/// The current limit is baked into a compile-time lookup table, so it has no
+/// The electrical current limit is baked into a compile-time lookup table, so it has no
 /// runtime cost.
 ///
 /// **Powering LEDs from the Pico's pin 40 (VBUS):** Pin 40 is the USB 5 V rail
-/// pass-through, but the Pico itself has practical current limits — the USB connector,
+/// pass-through, but the Pico itself has practical electrical current limits — the USB connector,
 /// cable, and internal circuitry aren't designed for heavy loads. Small LED panels
 /// (a few hundred mA) can usually power from pin 40 with a decent USB supply; for
 /// larger loads (1 A+), use a separate 5 V supply and share ground with the Pico.
