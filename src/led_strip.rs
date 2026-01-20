@@ -268,9 +268,6 @@ use embedded_graphics::prelude::RgbColor;
 ///
 /// For background on gamma correction, see the
 /// [Wikipedia article on gamma correction](https://en.wikipedia.org/wiki/Gamma_correction).
-///
-/// cmk000000 read and review. Maybe give a link to Wikipedia or other explanation of gamma correction?
-/// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Gamma {
     /// Linear gamma (no correction). Gamma = 1.0
@@ -607,7 +604,6 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
     }
 }
 
-// cmk0000 need to described this better. It is kind of a prototype.
 // Public so macro-generated types can deref to it; hidden from docs.
 #[cfg(not(feature = "host"))]
 #[doc(hidden)]
@@ -944,17 +940,21 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///
 /// The `led_layout` value must be a const so its dimensions can be derived at compile time.
 ///
-/// # Capacity and Limitations
+/// # Capacity and Board Capabilities
 ///
-/// Each `led_strips!` macro invocation supports up to **4 LED strips or panels**
-/// sharing the same PIO resource.
+/// The `led_strips!` macro is designed to **fully utilize the PIO resources**
+/// of supported Pico boards.
 ///
-/// Each invocation uses one PIO resource.
+/// Each `led_strips!` invocation can drive up to **4 LED strips or panels**
+/// while sharing a single PIO resource. This lets you consolidate multiple
+/// LED outputs efficiently instead of consuming one PIO per strip.
 ///
-/// On supported boards:
+/// Each invocation consumes exactly one PIO resource.
 ///
-/// - **Pico 1** provides 2 PIO resources, supporting up to **8 LED strips or panels**
-/// - **Pico 2** provides 3 PIO resources, supporting up to **12 LED strips or panels**
+/// On supported boards, this enables the maximum practical LED capacity:
+///
+/// - **Pico 1** provides **2 PIO resources**, allowing up to **8 LED strips or panels**
+/// - **Pico 2** provides **3 PIO resources**, allowing up to **12 LED strips or panels**
 ///
 #[doc = include_str!("docs/current_limiting_and_gamma.md")]
 ///
