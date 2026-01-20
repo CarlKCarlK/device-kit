@@ -17,20 +17,23 @@
         "docs/assets/led_strip_animated.png"
     )
 )]
-//! A device abstraction for NeoPixel-style (WS2812) LED strips. For 2-dimensional panels, see the [`led2d`](mod@crate::led2d) module.
+//! A device abstraction for 1-dimensional NeoPixel-style (WS2812) LED strips. For 2-dimensional
+//! panels, see the [`led2d`](mod@crate::led2d) module.
 //!
-//! LED strip device types are defined using the [`led_strip!`] and [`led_strips!`](crate::led_strips!) macros.
+//! This page provides the primary documentation and examples for programming LED strips.
+//! The device abstraction supports setting and animating the LEDs of the strip.
 //!
-//! See [`LedStripGenerated`](led_strip_generated::LedStripGenerated) for a concrete example of the
-//! struct types produced by these macros. It documents the full set of methods and associated
-//! constants that are available on all generated LED strip types.
+//! **After reading the examples below, see also:**
 //!
-//! For examples that treat LED strips as 2D panels, see the [`led2d`](mod@crate::led2d) module.
+//! - [`led_strip!`](macro@crate::led_strip) — Macro to generate an LED strip struct type (includes syntax details). See [`LedStripGenerated`](led_strip_generated::LedStripGenerated) for a sample of a generated type.
+//! - [`LedStripGenerated`](led_strip_generated::LedStripGenerated) — Sample struct type showing all methods and associated constants.
+//! - [`Frame1d`] — 1D pixel array used for strip graphics (includes examples).
+//! - [`led_strips!`](crate::led_strips) — Alternative macro to share a PIO resource with other strips or panels (includes examples).
 //!
 //! # Example: Write a Single 1-Dimensional Frame
 //!
-//! In this example, we set every other LED to blue and gray. Here, the generated struct type is named
-//! `LedStripSimple`.
+//! In this example, we set every other LED to blue and gray. Here, the generated struct type is
+//! named `LedStripSimple`.
 //!
 //! ![LED strip preview][led_strip_simple]
 //!
@@ -44,11 +47,11 @@
 //! use device_kit::{Result, led_strip::{Frame1d, colors}};
 //! use device_kit::led_strip;
 //!
-//! // Define LedStripSimple, a struct type for a 48-LED strip on PIN_3.
+//! // Define LedStripSimple, a struct type for an 8-LED strip on PIN_0.
 //! led_strip! {
 //!     LedStripSimple {
-//!         pin: PIN_3,  // GPIO pin for LED data
-//!         len: 48,     // 48 LEDs
+//!         pin: PIN_0,  // GPIO pin for LED data
+//!         len: 8,      // 8 LEDs
 //!         // other inputs set to their defaults
 //!     }
 //! }
@@ -60,8 +63,8 @@
 //! # }
 //! async fn example(spawner: embassy_executor::Spawner) -> Result<Infallible> {
 //!     let p = embassy_rp::init(Default::default());
-//!     // Create an LedStripSimple instance.
-//!     let led_strip_simple = LedStripSimple::new(p.PIN_3, p.PIO0, p.DMA_CH0, spawner)?;
+//!     // Create a LedStripSimple instance.
+//!     let led_strip_simple = LedStripSimple::new(p.PIN_0, p.PIO0, p.DMA_CH0, spawner)?;
 //!
 //!     // Create and write a frame with alternating blue and gray pixels.
 //!     let mut frame = Frame1d::new();
@@ -79,8 +82,8 @@
 //!
 //! # Example: Animate a Sequence
 //!
-//! This example animates a 96-LED strip through red, green, and blue frames, cycling
-//! continuously. Here, the generated struct type is named `LedStripAnimated`.
+//! This example animates a 96-LED strip through red, green, and blue frames, cycling continuously.
+//! Here, the generated struct type is named `LedStripAnimated`.
 //!
 //! ![LED strip preview][led_strip_animated]
 //!
