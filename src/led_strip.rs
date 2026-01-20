@@ -931,30 +931,6 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///
 /// The `led_layout` value must be a const so its dimensions can be derived at compile time.
 ///
-/// # Current Limiting
-///
-/// The `max_current` field is **required for each strip or panel** to prevent
-/// electrical overcurrent conditions.
-///
-/// When powering LEDs from the Pico’s 5 V USB rail (pin 40), keep the **total
-/// electrical current across all strips below ~500 mA**. LED electrical current draw adds up quickly,
-/// especially at full brightness. For larger installations, use an external 5V
-/// power supply.
-///
-/// The `max_current` value sets a per-strip electrical current budget. Brightness is scaled
-/// automatically using a compile-time lookup table (no runtime cost) to stay
-/// within this budget.
-///
-/// # Color Correction (Gamma)
-///
-/// The `gamma` field applies a color response curve to make colors look more natural:
-///
-/// - [`Gamma::Linear`] — No correction (raw, linear values)
-/// - [`Gamma::Gamma2_2`] — sRGB-like display gamma (γ ≈ 2.2, default)
-///
-/// The gamma curve is implemented as a compile-time lookup table, so it has no
-/// runtime cost.
-///
 /// # Capacity and Limitations
 ///
 /// Each `led_strips!` macro invocation supports up to **4 LED strips or panels**
@@ -966,6 +942,13 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///
 /// - **Pico 1** provides 2 PIO resources, supporting up to **8 LED strips or panels**
 /// - **Pico 2** provides 3 PIO resources, supporting up to **12 LED strips or panels**
+///
+#[doc = include_str!("docs/current_limiting_and_gamma.md")]
+///
+/// # Related Macros
+///
+/// - [`led_strip!`](macro@crate::led_strip) — For a single 1-dimensional LED strip (includes examples)
+/// - [`led2d!`](mod@crate::led2d) — For 2-dimensional LED panels
 #[cfg_attr(
     feature = "doc-images",
     doc = ::embed_doc_image::embed_image!(
