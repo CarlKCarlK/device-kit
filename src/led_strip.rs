@@ -155,8 +155,8 @@ pub use smart_leds::RGB8;
 /// `LIME`.
 ///
 /// All examples in this crate use `smart_leds::colors::*` as the single source
-/// of named colors; when an embedded-graphics API needs `Rgb888`, convert with
-/// `ToRgb888::to_rgb888()`.
+/// of named colors; when an embedded-graphics API needs [`Rgb888`], convert with
+/// [`ToRgb888::to_rgb888`].
 #[doc(inline)]
 pub use smart_leds::colors;
 
@@ -258,6 +258,12 @@ use embedded_graphics::prelude::RgbColor;
 // ============================================================================
 
 /// Gamma correction configuration for LED strips.
+///
+/// See the [`led_strip!`](macro@crate::led_strip), [`led_strips!`](crate::led_strips),
+/// and [`led2d!`](mod@crate::led2d) macro docs for usage and context.
+///
+/// For background on gamma correction, see the
+/// [Wikipedia article on gamma correction](https://en.wikipedia.org/wiki/Gamma_correction).
 ///
 /// cmk000000 read and review. Maybe give a link to Wikipedia or other explanation of gamma correction?
 /// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
@@ -3166,19 +3172,25 @@ pub use led_strips;
 
 /// Electrical current budget configuration for LED strips.
 ///
-/// cmk000000 read and review
-/// See the [led_strip module documentation](mod@crate::led_strip) for usage examples.
+/// See the [`led_strip!`](macro@crate::led_strip), [`led_strips!`](crate::led_strips),
+/// and [`led2d!`](mod@crate::led2d) macro docs for usage and context.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Current {
     /// Limit brightness to stay within a specific milliamp budget.
     ///
     /// The `max_brightness` is automatically calculated to ensure the worst-case electrical current
     /// (all LEDs at full brightness) does not exceed this limit. For example, a 16-LED strip
-    /// draws 960 mA at full brightness (60 mA per LED); with the default electrical current limit, brightness
-    /// is capped at ~26%.
+    /// draws 960 mA at full brightness (assuming 60 mA per LED); with the default electrical current
+    /// limit, brightness is capped at ~26%.
+    ///
+    /// See the [`led_strip!`](macro@crate::led_strip), [`led_strips!`](crate::led_strips),
+    /// and [`led2d!`](mod@crate::led2d) macro docs for usage and context.
     Milliamps(u16),
     /// No limit — brightness stays at 100% (subject to practical hardware constraints like
     /// USB power delivery and the Pico's circuitry).
+    ///
+    /// See the [`led_strip!`](macro@crate::led_strip), [`led_strips!`](crate::led_strips),
+    /// and [`led2d!`](mod@crate::led2d) macro docs for usage and context.
     Unlimited,
 }
 
