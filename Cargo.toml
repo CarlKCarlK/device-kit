@@ -74,14 +74,14 @@ test = false
 required-features = ["arm"]
 
 [[bin]]
-name = "demo_a2_strip_8_blue_white_dot"
-path = "demos/a_led/a2_strip_8_blue_white_dot.rs"
+name = "demo_a2_strip_8_blue_white_blink"
+path = "demos/a_led/a2_strip_8_blue_white_blink.rs"
 test = false
 required-features = ["arm"]
 
 [[bin]]
-name = "demo_a3_strip_8_blue_white_blink"
-path = "demos/a_led/a3_strip_8_blue_white_blink.rs"
+name = "demo_a3_strip_8_blue_white_blink_animate"
+path = "demos/a_led/a3_strip_8_blue_white_blink_animate.rs"
 test = false
 required-features = ["arm"]
 

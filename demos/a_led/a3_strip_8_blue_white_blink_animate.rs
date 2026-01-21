@@ -9,7 +9,7 @@ use device_kit::{
     led_strip::{Current, Frame1d, colors, led_strip},
 };
 use embassy_executor::Spawner;
-use embassy_time::{Duration, Timer};
+use embassy_time::Duration;
 use {defmt_rtt as _, panic_probe as _};
 
 led_strip! {
@@ -31,20 +31,22 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     let led_strip8 = LedStrip8::new(p.PIN_0, p.PIO0, p.DMA_CH0, spawner)?;
 
-    // Start with all blue LEDs
-    let mut frame1d = Frame1d::filled(colors::BLUE);
-    // Do 0,1,2,3 over and over (a computer-science foxtrot)
-    for dot_index in (0..4).cycle() {
-        frame1d[dot_index] = colors::WHITE;
-        frame1d[dot_index + 4] = colors::WHITE;
-
-        led_strip8.write_frame(frame1d).await?;
-        Timer::after(Duration::from_millis(150)).await;
-
-        frame1d[dot_index] = colors::BLUE;
-        frame1d[dot_index + 4] = colors::BLUE;
+    // Create two frames
+    let palette = [colors::BLUE, colors::WHITE];
+    let mut frame0 = Frame1d::new();
+    let mut frame1 = frame0.clone();
+    for pixel_index in 0..frame0.len() {
+        frame0[pixel_index] = palette[pixel_index % 2];
+        frame1[pixel_index] = palette[(pixel_index + 1) % 2];
     }
 
-    // Needed because compiler can't tell this is an infinite loop
+    // Animate between the two frames forever until replaced
+    const FRAME_DURATION: Duration = Duration::from_millis(150);
+    led_strip8
+        .animate([(frame0, FRAME_DURATION), (frame1, FRAME_DURATION)])
+        .await?;
+
+    // Could do more things here. The animation runs in the background.
+
     future::pending().await // run forever
 }

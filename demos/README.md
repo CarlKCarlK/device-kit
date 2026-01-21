@@ -11,23 +11,23 @@ Run/flash (Pico 1 ARM):
 cargo run --release --bin demo_a1_strip_8_blue_gray --target thumbv6m-none-eabi --features pico1,arm
 ```
 
-## A2 – 8-LED strip, white dot on blue background
+## A2 – 8-LED strip, blue/white blink
 
-Animates a single white dot over a blue background without using `animate`.
+Alternates blue/white and white/blue frames without using `animate`.
 Shows frame updates in a tight loop inside the demo.
 
 Run/flash (Pico 1 ARM):
 
 ```bash
-cargo run --release --bin demo_a2_strip_8_blue_white_dot --target thumbv6m-none-eabi --features pico1,arm
+cargo run --release --bin demo_a2_strip_8_blue_white_blink --target thumbv6m-none-eabi --features pico1,arm
 ```
 
-## A3 – 8-LED strip, blue/white blink with animate
+## A3 – 8-LED strip, blue/white blink (animate)
 
-Uses `animate` to blink between blue/white and white/blue frames.
+Uses `animate` to alternate blue/white and white/blue frames.
 
 Run/flash (Pico 1 ARM):
 
 ```bash
-cargo run --release --bin demo_a3_strip_8_blue_white_blink --target thumbv6m-none-eabi --features pico1,arm
+cargo run --release --bin demo_a3_strip_8_blue_white_blink_animate --target thumbv6m-none-eabi --features pico1,arm
 ```

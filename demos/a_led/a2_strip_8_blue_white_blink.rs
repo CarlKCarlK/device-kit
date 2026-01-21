@@ -2,14 +2,14 @@
 #![no_main]
 #![cfg(not(feature = "host"))]
 
-use core::{convert::Infallible, future, panic};
+use core::{convert::Infallible, panic};
 
 use device_kit::{
     Result,
     led_strip::{Current, Frame1d, colors, led_strip},
 };
 use embassy_executor::Spawner;
-use embassy_time::Duration;
+use embassy_time::{Duration, Timer};
 use {defmt_rtt as _, panic_probe as _};
 
 led_strip! {
@@ -39,11 +39,10 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         frame1[pixel_index] = palette[(pixel_index + 1) % 2];
     }
 
-    // Animate the frames in a loop, until replaced
-    const FRAME_DURATION: Duration = Duration::from_millis(150);
-    led_strip8
-        .animate([(frame0, FRAME_DURATION), (frame1, FRAME_DURATION)])
-        .await?;
-
-    future::pending().await // run forever
+    loop {
+        led_strip8.write_frame(frame0).await?;
+        Timer::after(Duration::from_millis(150)).await;
+        led_strip8.write_frame(frame1).await?;
+        Timer::after(Duration::from_millis(150)).await;
+    }
 }
