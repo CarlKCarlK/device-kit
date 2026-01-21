@@ -36,8 +36,8 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let mut frame0 = Frame1d::new();
     let mut frame1 = frame0.clone();
     for pixel_index in 0..frame0.len() {
-        frame0[pixel_index] = palette[pixel_index % palette.len()];
-        frame1[pixel_index] = palette[(pixel_index + 1) % palette.len()];
+        frame0[pixel_index] = palette[pixel_index % 2];
+        frame1[pixel_index] = palette[(pixel_index + 1) % 2];
     }
 
     // Animate the frames in a loop

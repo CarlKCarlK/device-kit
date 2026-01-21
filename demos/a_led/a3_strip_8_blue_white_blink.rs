@@ -6,20 +6,20 @@ use core::{convert::Infallible, future, panic};
 
 use device_kit::{
     Result,
-    led_strip::{Frame1d, colors, led_strip},
+    led_strip::{Current, Frame1d, colors, led_strip},
 };
 use embassy_executor::Spawner;
+use embassy_time::Duration;
 use {defmt_rtt as _, panic_probe as _};
 
-// Define a struct `LedStrip8` to control 8 LEDs on PIN_0
 led_strip! {
     LedStrip8 {
         pin: PIN_0,
         len: 8,
+        max_current: Current::Milliamps(50),
     }
 }
 
-// Nice trick: Two "mains" let's us use Results.
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
     let err = inner_main(spawner).await.unwrap_err();
@@ -29,18 +29,21 @@ async fn main(spawner: Spawner) -> ! {
 async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let p = embassy_rp::init(Default::default());
 
-    // Create a struct to control the LED strip from Pico resources.
     let led_strip8 = LedStrip8::new(p.PIN_0, p.PIO0, p.DMA_CH0, spawner)?;
 
-    // Fill an array of pixels with alternating blue and gray colors
-    let mut frame1d = Frame1d::new(); // just an owned array of RGB pixels
     let palette = [colors::BLUE, colors::WHITE];
-    for pixel_index in 0..frame1d.len() {
-        frame1d[pixel_index] = palette[pixel_index % 2];
+    let mut frame0 = Frame1d::new();
+    let mut frame1 = frame0.clone();
+    for pixel_index in 0..frame0.len() {
+        frame0[pixel_index] = palette[pixel_index % 2];
+        frame1[pixel_index] = palette[(pixel_index + 1) % 2];
     }
 
-    // Write the frame to the LED strip. Will stay until replaced.
-    led_strip8.write_frame(frame1d).await?;
+    // Animate the frames in a loop, until replaced
+    const FRAME_DURATION: Duration = Duration::from_millis(150);
+    led_strip8
+        .animate([(frame0, FRAME_DURATION), (frame1, FRAME_DURATION)])
+        .await?;
 
     future::pending().await // run forever
 }
