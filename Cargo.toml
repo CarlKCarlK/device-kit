@@ -73,6 +73,12 @@ path = "demos/a_led/a1_strip_8_blue_gray.rs"
 test = false
 required-features = ["arm"]
 
+[[bin]]
+name = "demo_a2_strip_8_blue_white_dot"
+path = "demos/a_led/a2_strip_8_blue_white_dot.rs"
+test = false
+required-features = ["arm"]
+
 [features]
 default = ["defmt", "pico1", "arm"]
 defmt = []
