@@ -31,3 +31,13 @@ Run/flash (Pico 1 ARM):
 ```bash
 cargo run --release --bin demo_a3_strip_8_blue_white_blink_animate --target thumbv6m-none-eabi --features pico1,arm
 ```
+
+## A4 – 48-LED strip, white dot on blue background
+
+Moves a single white dot along a 48-LED strip on PIN_4.
+
+Run/flash (Pico 1 ARM):
+
+```bash
+cargo run --release --bin demo_a4_strip_48_blue_white_dot --target thumbv6m-none-eabi --features pico1,arm
+```
