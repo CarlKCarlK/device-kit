@@ -20,8 +20,8 @@ use {defmt_rtt as _, panic_probe as _};
 
 // As before: Two 12x4 panels stacked vertically to create a 12x8 display.
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
-const LED_LAYOUT_12X8: LedLayout<96, 12, 8> = LED_LAYOUT_12X4.combine_v(LED_LAYOUT_12X4);
-const LED_LAYOUT_12X8_ROTATED: LedLayout<96, 8, 12> = LED_LAYOUT_12X8.rotate_cw();
+const LED_LAYOUT_12X8_ROTATED: LedLayout<96, 8, 12> =
+    LED_LAYOUT_12X4.combine_v(LED_LAYOUT_12X4).rotate_cw();
 
 led2d! {
     Led12x8 {
@@ -83,3 +83,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     future::pending().await // run forever
 }
+
+// Not shown today: 2D animations. They work as you'd expect from the 1D example.
+// Animations take an iterator of (frame, duration) and copy it into their own frame array.
