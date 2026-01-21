@@ -19,9 +19,9 @@ led_strip! {
         // Optionals
         pio: PIO1,     // which of 2 or 3 PIO resources to use
         dma: DMA_CH5,  // which of 12 DMA resources to use
-        max_current: Current::Milliamps(500), // limit max current to 500mA
+        max_current: Current::Milliamps(500), // default is 300ma
         gamma: Gamma::Gamma2_2, // apply gamma correction
-        max_frames: 1, // Allocate space for 1 frame of animation
+        max_frames: 0, // Allocate no space for animation
     }
 }
 
