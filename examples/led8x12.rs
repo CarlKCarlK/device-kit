@@ -19,7 +19,7 @@ use embassy_rp::init;
 use embassy_time::{Duration, Timer};
 use heapless::Vec;
 use panic_probe as _;
-use smart_leds::colors;
+use smart_leds::{RGB8, colors};
 
 // Two 12x4 panels stacked vertically and rotated 90° CW → 8×12 display.
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
@@ -55,30 +55,30 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     loop {
         info!("Demo 1: Clock-style two-line text");
         demo_clock_text(&led8x12).await?;
-        button.wait_for_press_duration().await;
+        button.wait_for_press2().await;
 
         info!("Demo 2: Colored corners (orientation test)");
         demo_colored_corners(&led8x12).await?;
-        button.wait_for_press_duration().await;
+        button.wait_for_press2().await;
 
         info!("Demo 3: Blink text");
         demo_blink_text(&led8x12).await?;
-        button.wait_for_press_duration().await;
+        button.wait_for_press2().await;
 
         info!("Demo 4: Blink pattern");
         demo_blink_pattern(&led8x12).await?;
-        button.wait_for_press_duration().await;
+        button.wait_for_press2().await;
 
         info!("Demo 5: Rectangle with diagonals (embedded-graphics)");
         demo_rectangle_diagonals_embedded_graphics(&led8x12).await?;
-        button.wait_for_press_duration().await;
+        button.wait_for_press2().await;
 
         info!("Demo 6: Bouncing dot (manual frames)");
         demo_bouncing_dot_manual(&led8x12, &mut button).await?;
 
         info!("Demo 7: Bouncing dot (animation)");
         demo_bouncing_dot_animation(&led8x12).await?;
-        button.wait_for_press_duration().await;
+        button.wait_for_press2().await;
     }
 }
 
@@ -169,11 +169,36 @@ async fn demo_rectangle_diagonals_embedded_graphics(led8x12: &Led8x12) -> Result
     led8x12.write_frame(frame).await
 }
 
-async fn demo_bouncing_dot_manual(led8x12: &Led8x12, button: &mut Button<'_>) -> Result<()> {
-    let mut color_cycle = [colors::RED, colors::GREEN, colors::BLUE].iter().cycle();
+struct BouncingDot {
+    x_position: isize,
+    y_position: isize,
+    x_velocity: isize,
+    y_velocity: isize,
+    x_limit: isize,
+    y_limit: isize,
+    color_index: usize,
+    colors: [RGB8; 3],
+    frame_delay: Duration,
+}
 
-    // Steps one position coordinate and reports if it hit an edge.
-    fn step_and_hit(position: &mut isize, velocity: &mut isize, limit: isize) -> bool {
+impl BouncingDot {
+    fn new() -> Self {
+        const FRAME_DELAY: Duration = Duration::from_millis(50);
+
+        Self {
+            x_position: 0,
+            y_position: 0,
+            x_velocity: 1,
+            y_velocity: 1,
+            x_limit: Led8x12::WIDTH as isize,
+            y_limit: Led8x12::HEIGHT as isize,
+            color_index: 0,
+            colors: [colors::RED, colors::GREEN, colors::BLUE],
+            frame_delay: FRAME_DELAY,
+        }
+    }
+
+    fn step_axis(position: &mut isize, velocity: &mut isize, limit: isize) -> bool {
         *position += *velocity;
         if (0..limit).contains(position) {
             return false;
@@ -183,26 +208,47 @@ async fn demo_bouncing_dot_manual(led8x12: &Led8x12, button: &mut Button<'_>) ->
         true
     }
 
-    let (mut x, mut y) = (0isize, 0isize);
-    let (mut vx, mut vy) = (1isize, 1isize);
-    let (x_limit, y_limit) = (Led8x12::WIDTH as isize, Led8x12::HEIGHT as isize);
-    let mut color = *color_cycle.next().unwrap(); // Safe: cycle() over a non-empty array never returns None
-
-    loop {
-        let mut frame = Frame2d::new();
-        frame[(x as usize, y as usize)] = color;
-        led8x12.write_frame(frame).await?;
-
-        if step_and_hit(&mut x, &mut vx, x_limit) | step_and_hit(&mut y, &mut vy, y_limit) {
-            color = *color_cycle.next().unwrap();
-        }
-
-        if let Either::Second(_) = select(Timer::after_millis(50), button.wait_for_press()).await {
-            break;
-        }
+    fn advance(&mut self) -> bool {
+        let hit_x = Self::step_axis(&mut self.x_position, &mut self.x_velocity, self.x_limit);
+        let hit_y = Self::step_axis(&mut self.y_position, &mut self.y_velocity, self.y_limit);
+        hit_x | hit_y
     }
 
-    Ok(())
+    fn current_color(&self) -> RGB8 {
+        self.colors[self.color_index]
+    }
+
+    fn advance_color(&mut self) {
+        self.color_index = (self.color_index + 1) % self.colors.len();
+    }
+
+    async fn run(&mut self, led8x12: &Led8x12) -> Result<()> {
+        loop {
+            let mut frame = Frame2d::new();
+            let x_position =
+                usize::try_from(self.x_position).expect("x position must be nonnegative");
+            let y_position =
+                usize::try_from(self.y_position).expect("y position must be nonnegative");
+            assert!(x_position < Led8x12::WIDTH);
+            assert!(y_position < Led8x12::HEIGHT);
+            frame[(x_position, y_position)] = self.current_color();
+            led8x12.write_frame(frame).await?;
+
+            if self.advance() {
+                self.advance_color();
+            }
+
+            Timer::after(self.frame_delay).await;
+        }
+    }
+}
+
+async fn demo_bouncing_dot_manual(led8x12: &Led8x12, button: &mut Button<'_>) -> Result<()> {
+    let mut bouncing_dot = BouncingDot::new();
+    match select(bouncing_dot.run(led8x12), button.wait_for_press2()).await {
+        Either::First(result) => result,
+        Either::Second(_) => Ok(()),
+    }
 }
 
 /// Bouncing dot using pre-built animation frames.

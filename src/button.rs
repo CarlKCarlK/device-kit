@@ -72,7 +72,8 @@ pub enum PressDuration {
 /// This allows for responsive UI feedback.
 ///
 /// If you only need to detect when the button is pressed without measuring duration,
-/// use [`wait_for_press()`](Self::wait_for_press) instead.
+/// use [`wait_for_press1()`](Self::wait_for_press1) or
+/// [`wait_for_press2()`](Self::wait_for_press2) instead.
 ///
 /// # Example
 ///
@@ -85,7 +86,13 @@ pub enum PressDuration {
 /// # fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 ///
 /// async fn example(p: embassy_rp::Peripherals) {
-///     let mut button = Button::new(p.PIN_15, PressedTo::Ground);
+///     let mut button = Button::new(p.PIN_13, PressedTo::Ground);
+///
+///     // Wait for a press without measuring duration.
+///     button.wait_for_press1().await;
+///
+///     // Wait for a press using the same gating as wait_for_press_duration.
+///     button.wait_for_press2().await;
 ///
 ///     // Measure press durations in a loop
 ///     loop {
@@ -161,7 +168,8 @@ impl<'a> Button<'a> {
     /// This method does not wait for the button to be released. It only waits
     /// as long as necessary to determine whether the press was "short" or "long".
     ///
-    /// See also: [`wait_for_press()`](Self::wait_for_press) for simple press detection.
+    /// See also: [`wait_for_press1()`](Self::wait_for_press1) or
+    /// [`wait_for_press2()`](Self::wait_for_press2) for simple press detection.
     pub async fn wait_for_press_duration(&mut self) -> PressDuration {
         self.wait_for_button_up().await;
         Timer::after(BUTTON_DEBOUNCE_DELAY).await;
@@ -182,10 +190,25 @@ impl<'a> Button<'a> {
     /// without waiting for release or measuring duration.
     ///
     /// Use this when you only need to detect button presses. If you need to
-    /// distinguish between short and long presses, use [`wait_for_press_duration()`](Self::wait_for_press_duration) instead.
+    /// distinguish between short and long presses, use
+    /// [`wait_for_press_duration()`](Self::wait_for_press_duration) instead.
+    ///
+    /// See the [struct-level example](Self) for usage.
     #[inline]
-    pub async fn wait_for_press(&mut self) -> &mut Self {
+    pub async fn wait_for_press1(&mut self) -> &mut Self {
         self.wait_for_button_down().await;
+        self
+    }
+
+    /// Waits for the button to be pressed.
+    ///
+    /// This method calls [`wait_for_press_duration()`](Self::wait_for_press_duration) and
+    /// discards the duration while preserving its press-start behavior.
+    ///
+    /// See the [struct-level example](Self) for usage.
+    #[inline]
+    pub async fn wait_for_press2(&mut self) -> &mut Self {
+        self.wait_for_press_duration().await;
         self
     }
 }
