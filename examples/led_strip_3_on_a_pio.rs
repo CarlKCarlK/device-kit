@@ -40,7 +40,8 @@ led_strips! {
 }
 
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
-const LED_LAYOUT_8X12: LedLayout<96, 8, 12> = LED_LAYOUT_12X4.combine_v(LED_LAYOUT_12X4).rotate_cw();
+const LED_LAYOUT_8X12: LedLayout<96, 8, 12> =
+    LED_LAYOUT_12X4.combine_v(LED_LAYOUT_12X4).rotate_cw();
 
 const SNAKE_LENGTH: usize = 4;
 const SNAKE_COLORS: [RGB8; SNAKE_LENGTH] =
@@ -114,13 +115,8 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
     // Frame 2: "  \nGO" - two lines
     let mut frame2_8x12 = Frame2d::new();
     gpio4_led2d.write_text_to_frame(
-        "  \nGO",
-        &[
-            colors::BLACK,
-            colors::BLACK,
-            colors::ORANGE,
-            colors::HOT_PINK,
-        ],
+        "\nGO",
+        &[colors::ORANGE, colors::HOT_PINK],
         &mut frame2_8x12,
     )?;
     go_frames_8x12

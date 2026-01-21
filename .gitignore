@@ -6,3 +6,4 @@ all_code.txt
 target-tmp/
 rustc-ice-*.txt
 DOC_CONSISTENCY_SURVEY.md
+all_docs.txt
