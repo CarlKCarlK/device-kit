@@ -161,12 +161,7 @@ use core::{
     convert::Infallible,
     ops::{Deref, DerefMut, Index, IndexMut},
 };
-#[cfg(not(feature = "host"))]
-use embassy_futures::select::{Either, select};
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 use embassy_time::Duration;
-#[cfg(not(feature = "host"))]
-use embassy_time::Timer;
 use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::{
     draw_target::DrawTarget,
@@ -189,6 +184,21 @@ use smart_leds::RGB8;
 use crate::led_strip::{Frame1d as StripFrame, LedStrip};
 #[cfg(feature = "host")]
 type StripFrame<const N: usize> = [RGB8; N];
+#[cfg(feature = "host")]
+pub struct LedStrip<const N: usize, const MAX_FRAMES: usize>;
+#[cfg(feature = "host")]
+impl<const N: usize, const MAX_FRAMES: usize> LedStrip<N, MAX_FRAMES> {
+    fn write_frame(&self, _frame: StripFrame<N>) -> Result<()> {
+        Ok(())
+    }
+
+    fn animate_frames(
+        &self,
+        _sequence: Vec<(StripFrame<N>, Duration), MAX_FRAMES>,
+    ) -> Result<()> {
+        Ok(())
+    }
+}
 use crate::Result;
 use crate::led_strip::ToRgb888;
 
@@ -632,39 +642,6 @@ impl<const W: usize, const H: usize> DrawTarget for Frame2d<W, H> {
     }
 }
 
-#[doc(hidden)]
-// Public so macro expansions in downstream crates can share the command signal type.
-pub type Led2dCommandSignal<const N: usize, const MAX_FRAMES: usize> =
-    Signal<CriticalSectionRawMutex, Command<N, MAX_FRAMES>>;
-#[doc(hidden)]
-// Public so macro-generated tasks can share the command channel type.
-/// Command for the LED device loop.
-#[derive(Clone)]
-pub enum Command<const N: usize, const MAX_FRAMES: usize> {
-    DisplayStatic(StripFrame<N>),
-    Animate(Vec<(StripFrame<N>, Duration), MAX_FRAMES>),
-}
-
-// Must be `pub` (not `pub(crate)`) because called by macro-generated code that expands at the call site in downstream crates.
-// This is an implementation detail, not part of the user-facing API.
-#[doc(hidden)]
-/// Static type for the [`Led2d`] device abstraction.
-///
-/// Most users should use the `led2d!` or `led2d_from_strip!` macros which generate
-/// a higher-level wrapper.
-pub struct Led2dStatic<const N: usize, const MAX_FRAMES: usize> {
-    pub command_signal: Led2dCommandSignal<N, MAX_FRAMES>,
-}
-
-impl<const N: usize, const MAX_FRAMES: usize> Led2dStatic<N, MAX_FRAMES> {
-    #[must_use]
-    pub const fn new_static() -> Self {
-        Self {
-            command_signal: Signal::new(),
-        }
-    }
-}
-
 // Must be `pub` (not `pub(crate)`) because called by macro-generated code that expands at the call site in downstream crates.
 // This is an implementation detail, not part of the user-facing API.
 #[doc(hidden)]
@@ -680,7 +657,7 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2dStatic<N, MAX_FRAMES> {
 /// Most users should use the `led2d!` or `led2d_from_strip!` macros which generate
 /// a higher-level wrapper. See the [led2d](mod@crate::led2d) module docs for examples.
 pub struct Led2d<const N: usize, const MAX_FRAMES: usize> {
-    command_signal: &'static Led2dCommandSignal<N, MAX_FRAMES>,
+    led_strip: &'static LedStrip<N, MAX_FRAMES>,
     mapping_by_xy: [u16; N],
     width: usize,
 }
@@ -695,7 +672,7 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
     /// See the [struct-level example](Self) for usage.
     #[must_use]
     pub fn new<const W: usize, const H: usize>(
-        led2d_static: &'static Led2dStatic<N, MAX_FRAMES>,
+        led_strip: &'static LedStrip<N, MAX_FRAMES>,
         led_layout: &LedLayout<N, W, H>,
     ) -> Self {
         assert_eq!(
@@ -704,7 +681,7 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
             "width * height must equal N (total LEDs for led_layout reversal)"
         );
         Self {
-            command_signal: &led2d_static.command_signal,
+            led_strip,
             mapping_by_xy: led_layout.xy_to_index(),
             width: W,
         }
@@ -736,9 +713,7 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
     /// Frame2d is a 2D array in row-major order where `frame[(col, row)]` is the pixel at (col, row).
     pub fn write_frame<const W: usize, const H: usize>(&self, frame: Frame2d<W, H>) -> Result<()> {
         let strip_frame = self.convert_frame(frame);
-        self.command_signal
-            .signal(Command::DisplayStatic(strip_frame));
-        Ok(())
+        self.led_strip.write_frame(strip_frame)
     }
 
     /// Loop through a sequence of animation frames until interrupted by another command.
@@ -772,197 +747,9 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
             "animation requires at least one frame"
         );
         defmt::info!("Led2d::animate: sending {} frames", sequence.len());
-        self.command_signal.signal(Command::Animate(sequence));
-        Ok(())
+        self.led_strip.animate_frames(sequence)
     }
 }
-
-// Must be `pub` (not `pub(crate)`) because called by macro-generated code that expands at the call site in downstream crates.
-// This is an implementation detail, not part of the user-facing API.
-#[doc(hidden)]
-/// Device loop for Led2d. Called by macro-generated code.
-///
-/// Since embassy tasks cannot be generic, the macros generate a concrete wrapper task
-/// that calls this function. Must be `pub` because macro expansion happens in the calling
-/// crate's context, but hidden from docs as it's not part of the public API.
-#[cfg(not(feature = "host"))]
-pub async fn led2d_device_loop<const N: usize, const MAX_FRAMES: usize, S>(
-    command_signal: &'static Led2dCommandSignal<N, MAX_FRAMES>,
-    led_strip: S,
-) -> Result<Infallible>
-where
-    S: AsRef<LedStrip<N, MAX_FRAMES>>,
-{
-    defmt::info!("led2d_device_loop: task started");
-    let led_strip_ref = led_strip.as_ref();
-    loop {
-        defmt::debug!("led2d_device_loop: waiting for command");
-        let mut command = command_signal.wait().await;
-        command_signal.reset();
-
-        loop {
-            match command {
-                Command::DisplayStatic(frame1d) => {
-                    led_strip_ref.write_frame(frame1d)?;
-                    break;
-                }
-                Command::Animate(frames) => {
-                    defmt::info!(
-                        "led2d_device_loop: received Animate command with {} frames",
-                        frames.len()
-                    );
-                    command = run_animation_loop(frames, command_signal, led_strip_ref).await?;
-                    defmt::info!("led2d_device_loop: animation interrupted");
-                }
-            }
-        }
-    }
-}
-
-#[cfg(not(feature = "host"))]
-async fn run_animation_loop<const N: usize, const MAX_FRAMES: usize>(
-    frames: Vec<(StripFrame<N>, Duration), MAX_FRAMES>,
-    command_signal: &'static Led2dCommandSignal<N, MAX_FRAMES>,
-    led_strip: &LedStrip<N, MAX_FRAMES>,
-) -> Result<Command<N, MAX_FRAMES>> {
-    defmt::info!("run_animation_loop: starting with {} frames", frames.len());
-
-    loop {
-        for (frame_index, (frame1d, duration)) in frames.iter().enumerate() {
-            defmt::trace!("run_animation_loop: displaying frame {}", frame_index);
-            led_strip.write_frame(*frame1d)?;
-
-            match select(command_signal.wait(), Timer::after(*duration)).await {
-                Either::First(new_command) => {
-                    defmt::info!("run_animation_loop: received new command, interrupting");
-                    command_signal.reset();
-                    return Ok(new_command);
-                }
-                Either::Second(()) => continue,
-            }
-        }
-        defmt::debug!("run_animation_loop: completed one loop, restarting");
-    }
-}
-
-#[doc(hidden)]
-#[macro_export]
-#[cfg(not(feature = "host"))]
-macro_rules! led2d_device_task {
-    (
-        $task_name:ident,
-        $strip_ty:ty,
-        $n:expr,
-        $max_frames:expr $(,)?
-    ) => {
-        $crate::led2d::led2d_device_task!(
-            @inner
-            ()
-            $task_name,
-            $strip_ty,
-            $n,
-            $max_frames
-        );
-    };
-    (
-        $vis:vis $task_name:ident,
-        $strip_ty:ty,
-        $n:expr,
-        $max_frames:expr $(,)?
-    ) => {
-        $crate::led2d::led2d_device_task!(
-            @inner
-            ($vis)
-            $task_name,
-            $strip_ty,
-            $n,
-            $max_frames
-        );
-    };
-    (
-        @inner
-        ($($vis:tt)*)
-        $task_name:ident,
-        $strip_ty:ty,
-        $n:expr,
-        $max_frames:expr $(,)?
-    ) => {
-        #[embassy_executor::task]
-        #[allow(non_snake_case)]
-        $($vis)* async fn $task_name(
-            command_signal: &'static $crate::led2d::Led2dCommandSignal<$n, $max_frames>,
-            led_strip: $strip_ty,
-        ) {
-            let err =
-                $crate::led2d::led2d_device_loop(command_signal, led_strip)
-                    .await
-                    .unwrap_err();
-            panic!("{err}");
-        }
-    };
-}
-
-#[doc(hidden)]
-#[cfg(not(feature = "host"))]
-pub use led2d_device_task;
-
-#[doc(hidden)]
-#[macro_export]
-#[cfg(not(feature = "host"))]
-macro_rules! led2d_device {
-    (
-        $vis:vis struct $resources_name:ident,
-        task: $task_vis:vis $task_name:ident,
-        strip: $strip_ty:ty,
-        leds: $n:expr,
-        led_layout: $led_layout:expr,
-        width: $width:expr,
-        max_frames: $max_frames:expr $(,)?
-    ) => {
-        $crate::led2d::led2d_device_task!($task_vis $task_name, $strip_ty, $n, $max_frames);
-
-        $vis struct $resources_name {
-            led2d_static: $crate::led2d::Led2dStatic<$n, $max_frames>,
-        }
-
-        impl $resources_name {
-            /// Create the static resources for this Led2d instance.
-            #[must_use]
-            pub const fn new_static() -> Self {
-                Self {
-                    led2d_static: $crate::led2d::Led2dStatic::new_static(),
-                }
-            }
-
-            /// Construct the `Led2d` handle, spawning the background task automatically.
-            pub fn new(
-                &'static self,
-                led_strip: $strip_ty,
-                spawner: ::embassy_executor::Spawner,
-            ) -> $crate::Result<$crate::led2d::Led2d<$n, $max_frames>> {
-                let token = $task_name(
-                    &self.led2d_static.command_signal,
-                    led_strip,
-                );
-                spawner.spawn(token).map_err($crate::Error::TaskSpawn)?;
-                let height = $n / $width;
-                assert_eq!(
-                    height * $width,
-                    $n,
-                    "width must evenly divide total LED count to derive height"
-                );
-                Ok($crate::led2d::Led2d::new(
-                    &self.led2d_static,
-                    &$led_layout,
-                ))
-            }
-        }
-    };
-}
-
-#[doc(hidden)]
-#[cfg(not(feature = "host"))]
-pub use led2d_device;
 
 /// Macro to generate an LED-panel struct type (includes syntax details). See [`Led2dGenerated`](`crate::led2d::led2d_generated::Led2dGenerated`) for a sample of a generated type.
 ///
@@ -1463,7 +1250,7 @@ macro_rules! __led2d_impl {
                     )?;
 
                     // Create Led2d from strip (uses interior static)
-                    [<$name>]::from_strip(led_strip, spawner)
+                    [<$name>]::from_strip(led_strip)
                 }
             }
         }
@@ -1547,19 +1334,6 @@ macro_rules! led2d_from_strip {
         $max_frames_const:ident
     ) => {
         $crate::led2d::paste::paste! {
-            /// Static resources for the LED matrix device.
-            struct [<$name Static>] {
-                led2d_static: $crate::led2d::Led2dStatic<{ $led_layout_const.len() }, $max_frames_const>,
-            }
-
-            // Generate the task wrapper
-            $crate::led2d::led2d_device_task!(
-                [<$name:snake _device_task>],
-                &'static $strip_type,
-                { $led_layout_const.len() },
-                $max_frames_const
-            );
-
             /// LED matrix device handle generated by [`led2d_from_strip!`](crate::led2d::led2d_from_strip).
             $vis struct [<$name>] {
                 led2d: $crate::led2d::Led2d<{ $led_layout_const.len() }, $max_frames_const>,
@@ -1588,32 +1362,13 @@ macro_rules! led2d_from_strip {
                 /// Maximum number of animation frames supported for this device.
                 pub const MAX_FRAMES: usize = $max_frames_const;
 
-                /// Create static resources.
-                #[must_use]
-                const fn new_static() -> [<$name Static>] {
-                    [<$name Static>] {
-                        led2d_static: $crate::led2d::Led2dStatic::new_static(),
-                    }
-                }
-
                 // Public so led2d_from_strip! expansions in downstream crates can call it.
                 #[doc(hidden)]
                 $vis fn from_strip(
                     led_strip: &'static $strip_type,
-                    spawner: ::embassy_executor::Spawner,
                 ) -> $crate::Result<Self> {
-                    static STATIC: [<$name Static>] = [<$name>]::new_static();
-
-                    defmt::info!("Led2d::new: spawning device task");
-                    let token = [<$name:snake _device_task>](
-                        &STATIC.led2d_static.command_signal,
-                        led_strip,
-                    );
-                    spawner.spawn(token).map_err($crate::Error::TaskSpawn)?;
-                    defmt::info!("Led2d::new: device task spawned");
-
                     let led2d = $crate::led2d::Led2d::new(
-                        &STATIC.led2d_static,
+                        led_strip.as_ref(),
                         &$led_layout_const,
                     );
 

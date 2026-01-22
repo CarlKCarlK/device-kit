@@ -32,7 +32,6 @@ led2d! {
 fn test_led2d_braced_syntax_compilation() {
     // Test that the macro generates the expected types with the new braced syntax
     let _device_size = core::mem::size_of::<TestLed>();
-    let _static_size = core::mem::size_of::<TestLedStatic>();
 
     // This compilation success demonstrates:
     // 1. Braced parameter syntax works (pin: PIN_3, etc.)
@@ -60,7 +59,6 @@ mod public_test {
 
     pub fn use_public_type() {
         let _device_size = core::mem::size_of::<PublicLed>();
-        let _static_size = core::mem::size_of::<PublicLedStatic>();
     }
 }
 
@@ -83,7 +81,6 @@ mod private_test {
 
     pub fn use_private_type() {
         let _device_size = core::mem::size_of::<PrivateLed>();
-        let _static_size = core::mem::size_of::<PrivateLedStatic>();
     }
 }
 

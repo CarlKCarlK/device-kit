@@ -54,22 +54,13 @@ led2d! {
 pub struct Led2dGenerated;
 
 #[cfg(doc)]
-use crate::led2d::{Frame2d, Led2dStatic, Point, Size};
+use crate::led2d::{Frame2d, Point, Size};
 #[cfg(doc)]
 use crate::led_strip::RGB8;
 #[cfg(doc)]
 use crate::Result;
 
 #[cfg(doc)]
-// Must be public for macro expansion in downstream crates, but not user-facing API.
-#[doc(hidden)]
-/// Static resources for `Led2dGenerated`.
-///
-/// See the [`led2d`](mod@crate::led2d) module docs for usage.
-pub struct Led2dGeneratedStatic {
-    led2d_static: Led2dStatic<48, 16>,
-}
-
 #[cfg(doc)]
 // Must be public for macro expansion in downstream crates, but not user-facing API.
 #[doc(hidden)]
@@ -119,17 +110,6 @@ impl Led2dGenerated {
     /// Specified in the [`led2d!`] or [`led_strips!`](crate::led_strips!) macro.
     pub const MAX_FRAMES: usize = 16;
 
-    /// Create static resources.
-    ///
-    /// See the [`led2d`](mod@crate::led2d) module docs for usage.
-    #[must_use]
-    #[doc(hidden)]
-    pub const fn new_static() -> Led2dGeneratedStatic {
-        Led2dGeneratedStatic {
-            led2d_static: Led2dStatic::new_static(),
-        }
-    }
-
     /// Create a new LED panel instance of the struct type
     /// defined by [`led2d!`].
     ///
@@ -161,9 +141,8 @@ impl Led2dGenerated {
     /// See the [`led2d`](mod@crate::led2d) module docs for usage.
     pub(crate) fn from_strip(
         led_strip: &'static Led2dGeneratedLedStrip,
-        spawner: embassy_executor::Spawner,
     ) -> Result<Self> {
-        let _ = (led_strip, spawner);
+        let _ = led_strip;
         Ok(Self)
     }
 

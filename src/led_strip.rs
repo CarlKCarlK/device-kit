@@ -664,6 +664,16 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStrip<N, MAX_FRAMES> {
                 .push((frame, duration))
                 .expect("animation sequence fits within MAX_FRAMES");
         }
+        self.animate_frames(sequence)
+    }
+
+    pub(crate) fn animate_frames(
+        &self,
+        sequence: Vec<(Frame1d<N>, Duration), MAX_FRAMES>,
+    ) -> Result<()> {
+        if MAX_FRAMES == 0 {
+            return Err(crate::Error::AnimationDisabled(MAX_FRAMES));
+        }
         assert!(
             !sequence.is_empty(),
             "animation requires at least one frame"
@@ -1378,7 +1388,7 @@ macro_rules! __led_strips_impl {
                     spawner: ::embassy_executor::Spawner,
                 ) -> $crate::Result<$label> {
                     let strip = Self::new(state_machine, pin, dma, spawner)?;
-                    $label::from_strip(strip, spawner)
+                    $label::from_strip(strip)
                 }
             }
         }
@@ -1416,7 +1426,7 @@ macro_rules! __led_strips_impl {
         paste::paste! {{
             let [<$label:snake _led_strip>] =
                 [<$label:camel LedStrip>]::new($state_machine, $pin, $dma, $spawner)?;
-            $label::from_strip([<$label:snake _led_strip>], $spawner)?
+            $label::from_strip([<$label:snake _led_strip>])?
         }}
     };
 
