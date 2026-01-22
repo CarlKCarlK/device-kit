@@ -4,7 +4,6 @@
 
 use core::{convert::Infallible, future, panic};
 
-use defmt::info;
 use device_kit::{
     Result,
     button::{Button, PressedTo},

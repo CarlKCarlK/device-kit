@@ -759,6 +759,9 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
     /// Each frame is a tuple of `(Frame2d, Duration)`. Accepts arrays, `Vec`s, or any
     /// iterator that produces `(Frame2d, Duration)` tuples. For best efficiency with large
     /// frame sequences, pass an iterator to avoid intermediate allocations.
+    ///
+    /// Returns immediately; the animation runs in the background until interrupted
+    /// by a new `animate` call or `write_frame`.
     pub async fn animate<const W: usize, const H: usize>(
         &self,
         frames: impl IntoIterator<Item = (Frame2d<W, H>, Duration)>,
@@ -783,9 +786,6 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
         );
         defmt::info!("Led2d::animate: sending {} frames", sequence.len());
         self.command_signal.signal(Command::Animate(sequence));
-        defmt::info!("Led2d::animate: waiting for completion");
-        self.completion_signal.wait().await;
-        defmt::info!("Led2d::animate: completed (animation started)");
         Ok(())
     }
 }
@@ -811,53 +811,29 @@ where
     let led_strip_ref = led_strip.as_ref();
     loop {
         defmt::debug!("led2d_device_loop: waiting for command");
-        let command = command_signal.wait().await;
+        let mut current_command = command_signal.wait().await;
         command_signal.reset();
 
-        match command {
-            Command::DisplayStatic(frame) => {
-                led_strip_ref.write_frame(frame).await?;
-                completion_signal.signal(());
-            }
-            Command::Animate(frames) => {
-                defmt::info!(
-                    "led2d_device_loop: received Animate command with {} frames",
-                    frames.len()
-                );
-                let next_command =
-                    run_animation_loop(frames, command_signal, completion_signal, led_strip_ref)
-                        .await?;
-                defmt::info!("led2d_device_loop: animation interrupted");
-                match next_command {
-                    Command::DisplayStatic(frame) => {
-                        defmt::info!(
-                            "led2d_device_loop: processing DisplayStatic from animation interrupt"
-                        );
-                        led_strip_ref.write_frame(frame).await?;
-                        completion_signal.signal(());
-                    }
-                    Command::Animate(new_frames) => {
-                        defmt::info!("led2d_device_loop: restarting with new animation");
-                        // Process the new animation immediately without waiting for next command
-                        let next_command = run_animation_loop(
-                            new_frames,
-                            command_signal,
-                            completion_signal,
-                            led_strip_ref,
-                        )
-                        .await?;
-                        // Handle any command that interrupted this animation
-                        match next_command {
-                            Command::DisplayStatic(frame) => {
-                                led_strip_ref.write_frame(frame).await?;
-                                completion_signal.signal(());
-                            }
-                            Command::Animate(_) => {
-                                // Another animation interrupted; loop back to handle it
-                                continue;
-                            }
-                        }
-                    }
+        loop {
+            match current_command {
+                Command::DisplayStatic(frame) => {
+                    led_strip_ref.write_frame(frame).await?;
+                    completion_signal.signal(());
+                    break;
+                }
+                Command::Animate(frames) => {
+                    defmt::info!(
+                        "led2d_device_loop: received Animate command with {} frames",
+                        frames.len()
+                    );
+                    current_command = run_animation_loop(
+                        frames,
+                        command_signal,
+                        completion_signal,
+                        led_strip_ref,
+                    )
+                    .await?;
+                    defmt::info!("led2d_device_loop: animation interrupted");
                 }
             }
         }
@@ -872,8 +848,6 @@ async fn run_animation_loop<const N: usize, const MAX_FRAMES: usize>(
     led_strip: &LedStrip<N, MAX_FRAMES>,
 ) -> Result<Command<N, MAX_FRAMES>> {
     defmt::info!("run_animation_loop: starting with {} frames", frames.len());
-    completion_signal.signal(());
-    defmt::debug!("run_animation_loop: signaled completion (animation started)");
 
     loop {
         for (frame_index, (strip_frame, duration)) in frames.iter().enumerate() {
@@ -883,7 +857,7 @@ async fn run_animation_loop<const N: usize, const MAX_FRAMES: usize>(
             match select(command_signal.wait(), Timer::after(*duration)).await {
                 Either::First(new_command) => {
                     defmt::info!("run_animation_loop: received new command, interrupting");
-                    command_signal.reset();
+                    completion_signal.signal(());
                     return Ok(new_command);
                 }
                 Either::Second(()) => continue,
