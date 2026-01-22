@@ -385,7 +385,6 @@ use embassy_sync::blocking_mutex::Mutex;
 #[cfg(not(feature = "host"))]
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 #[cfg(not(feature = "host"))]
-use embassy_sync::channel::Channel as EmbassyChannel;
 #[cfg(not(feature = "host"))]
 use embassy_sync::once_lock::OnceLock;
 #[cfg(not(feature = "host"))]
@@ -566,9 +565,6 @@ impl<'d, PIO: Instance> PioBus<'d, PIO> {
 // ============================================================================
 
 #[cfg(not(feature = "host"))]
-#[doc(hidden)] // Required pub for macro expansion in downstream crates
-pub type LedStripCommands<const N: usize> = EmbassyChannel<CriticalSectionRawMutex, Frame1d<N>, 2>;
-
 #[cfg(not(feature = "host"))]
 #[doc(hidden)] // Required pub for macro expansion in downstream crates
 pub type LedStripCommandSignal<const N: usize, const MAX_FRAMES: usize> =
@@ -589,7 +585,6 @@ pub enum Command<const N: usize, const MAX_FRAMES: usize> {
 #[doc(hidden)] // Must be pub for method signatures and macro expansion in downstream crates
 pub struct LedStripStatic<const N: usize, const MAX_FRAMES: usize> {
     command_signal: LedStripCommandSignal<N, MAX_FRAMES>,
-    commands: LedStripCommands<N>,
 }
 
 #[cfg(not(feature = "host"))]
@@ -600,7 +595,6 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
     pub const fn new_static() -> Self {
         Self {
             command_signal: Signal::new(),
-            commands: LedStripCommands::new(),
         }
     }
 
@@ -609,10 +603,6 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
         &self.command_signal
     }
 
-    #[doc(hidden)]
-    pub fn commands(&'static self) -> &'static LedStripCommands<N> {
-        &self.commands
-    }
 }
 
 // Public so macro-generated types can deref to it; hidden from docs.
