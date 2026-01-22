@@ -12,6 +12,8 @@ use crate::led_strip::{Current, Gamma};
 #[cfg(not(feature = "host"))]
 use crate::led2d;
 #[cfg(not(feature = "host"))]
+use crate::led2d::Led2dFont;
+#[cfg(not(feature = "host"))]
 use crate::led2d::layout::LedLayout;
 
 // 12×4 panel wired serpentine column-major (sample configuration)

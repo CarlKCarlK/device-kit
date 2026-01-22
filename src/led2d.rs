@@ -998,7 +998,8 @@ pub use led2d_device;
 ///
 /// - `pin` — GPIO pin for LED data
 /// - `led_layout` — LED strip physical layout (see [`LedLayout`]); this defines the panel size
-/// - `font` — Built-in font variant (see [`Led2dFont`]), e.g. `Led2dFont::Font4x6Trim`
+/// - `font` — Built-in font variant (see [`Led2dFont`]), e.g. `Led2dFont::Font4x6Trim`.
+///   Bring `Led2dFont` into scope or use a full path like `device_kit::led2d::Led2dFont::Font4x6Trim`.
 ///
 /// The `led_layout` value must be a const so its dimensions can be derived at compile time.
 ///
@@ -1324,7 +1325,7 @@ macro_rules! __led2d_impl {
         gamma: $gamma:expr,
         max_frames: $max_frames:expr,
         font: $font_variant:tt,
-        fields: [ font: Led2dFont::$new_font_variant:ident $(, $($rest:tt)* )? ]
+        fields: [ font: $new_font_variant:expr $(, $($rest:tt)* )? ]
     ) => {
         $crate::__led2d_impl! {
             @__fill_defaults
@@ -1383,7 +1384,7 @@ macro_rules! __led2d_impl {
         max_current: $max_current:expr,
         gamma: $gamma:expr,
         max_frames: $max_frames:expr,
-        font: $font_variant:ident,
+        font: $font_variant:expr,
         fields: [ ]
     ) => {
         $crate::__led2d_impl! {
@@ -1412,7 +1413,7 @@ macro_rules! __led2d_impl {
         max_current: $max_current:expr,
         gamma: $gamma:expr,
         max_frames: $max_frames:expr,
-        font: $font_variant:ident
+        font: $font_variant:expr
     ) => {
         $crate::led2d::paste::paste! {
             const [<$name:upper _LAYOUT>]: $crate::led2d::LedLayout<
@@ -1449,7 +1450,7 @@ macro_rules! __led2d_impl {
                 $vis $name,
                 strip_type: [<$name LedStrip>],
                 led_layout_const: [<$name:upper _LAYOUT>],
-                font: Led2dFont::$font_variant,
+                font: $font_variant,
                 max_frames_const: [<$name:upper _MAX_FRAMES>],
             }
 
@@ -1505,7 +1506,7 @@ macro_rules! led2d_from_strip {
         width: $width:expr,
         height: $height:expr,
         led_layout: serpentine_column_major,
-        font: Led2dFont::$font_variant:ident $(,)?
+        font: $font_variant:expr $(,)?
     ) => {
         $crate::led2d::paste::paste! {
             const [<$name:upper _LED_LAYOUT>]: $crate::led2d::LedLayout<{ $width * $height }, { $width }, { $height }> =
@@ -1529,7 +1530,7 @@ macro_rules! led2d_from_strip {
         width: $width:expr,
         height: $height:expr,
         led_layout: $led_layout:expr,
-        font: Led2dFont::$font_variant:ident $(,)?
+        font: $font_variant:expr $(,)?
     ) => {
         $crate::led2d::paste::paste! {
             const [<$name:upper _LED_LAYOUT>]: $crate::led2d::LedLayout<{ $width * $height }, { $width }, { $height }> = $led_layout;
@@ -1551,7 +1552,7 @@ macro_rules! led2d_from_strip {
         $vis:vis $name:ident,
         strip_type: $strip_type:ident,
         led_layout_const: $led_layout_const:ident,
-        font: Led2dFont::$font_variant:ident,
+        font: $font_variant:expr,
         max_frames_const: $max_frames_const:ident $(,)?
     ) => {
         $crate::led2d::led2d_from_strip!(
@@ -1644,10 +1645,10 @@ macro_rules! led2d_from_strip {
                     defmt::info!("Led2d::new: device created successfully");
                     Ok(Self {
                         led2d,
-                        font: $crate::led2d::Led2dFont::$font_variant.to_font(),
-                        font_variant: $crate::led2d::Led2dFont::$font_variant,
-                    })
-                }
+                font: $font_variant.to_font(),
+                font_variant: $font_variant,
+            })
+        }
 
                 /// Render a fully defined frame to the panel.
                 $vis async fn write_frame(

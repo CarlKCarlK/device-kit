@@ -11,6 +11,7 @@ use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::led_strip::led_strips;
 use device_kit::led_strip::{Current, colors};
+use device_kit::led2d::Led2dFont;
 use device_kit::led2d::layout::LedLayout;
 use embassy_executor::Spawner;
 use panic_probe as _;

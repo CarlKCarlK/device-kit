@@ -8,7 +8,7 @@ use defmt_rtt as _;
 use device_kit::{
     Result,
     led_strip::{Current, Frame1d, Gamma, colors, led_strips},
-    led2d::{Frame2d, layout::LedLayout},
+    led2d::{Frame2d, Led2dFont, layout::LedLayout},
 };
 use embassy_executor::Spawner;
 use embassy_time::Duration;

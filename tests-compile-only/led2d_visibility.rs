@@ -10,6 +10,7 @@
 use defmt_rtt as _;
 use device_kit::led_strip::{Current, Gamma};
 use device_kit::led2d;
+use device_kit::led2d::Led2dFont;
 use device_kit::led2d::layout::LedLayout;
 use embassy_executor::Spawner;
 use panic_probe as _;

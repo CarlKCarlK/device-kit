@@ -123,6 +123,7 @@ mod test_led_strips_private_strip {
 mod test_led_strips_public_led2d {
     use device_kit::led_strip::Current;
     use device_kit::led_strips;
+    use device_kit::led2d::Led2dFont;
     use device_kit::led2d::layout::LedLayout;
 
     const LED_LAYOUT_PUBLIC: LedLayout<12, 4, 3> = LedLayout::serpentine_column_major();
@@ -151,6 +152,7 @@ mod test_led_strips_public_led2d {
 mod test_led_strips_private_led2d {
     use device_kit::led_strip::Current;
     use device_kit::led_strips;
+    use device_kit::led2d::Led2dFont;
     use device_kit::led2d::layout::LedLayout;
 
     const LED_LAYOUT_PRIVATE: LedLayout<12, 4, 3> = LedLayout::serpentine_column_major();

@@ -21,6 +21,7 @@ use device_kit::led_strip::Gamma;
 use device_kit::led_strip::colors;
 use device_kit::led2d;
 use device_kit::led2d::Frame2d;
+use device_kit::led2d::Led2dFont;
 use device_kit::led2d::layout::LedLayout;
 use device_kit::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
 use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};

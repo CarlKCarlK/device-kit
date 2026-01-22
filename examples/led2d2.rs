@@ -11,6 +11,7 @@ use device_kit::{
     led_strip::{Current, Gamma, colors},
     led2d,
     led2d::Frame2d,
+    led2d::Led2dFont,
     led2d::layout::LedLayout,
 };
 use embassy_executor::Spawner;

@@ -11,6 +11,7 @@ use device_kit::led_strip::Current;
 use device_kit::led_strip::Gamma;
 use device_kit::led2d;
 use device_kit::led2d::Frame2d;
+use device_kit::led2d::Led2dFont;
 use device_kit::led2d::layout::LedLayout;
 use device_kit::{Error, Result};
 use embassy_executor::Spawner;

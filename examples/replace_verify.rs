@@ -2,36 +2,39 @@
 #![no_main]
 #![allow(clippy::future_not_send, reason = "single-threaded")]
 
-use core::{convert::Infallible, future, panic};
+use core::{convert::Infallible, panic};
+use defmt::info;
 
 use device_kit::{
     Result,
-    led_strip::{Frame1d, RGB8, colors, led_strip},
-    led2d,
+    button::{Button, PressedTo},
+    led_strip::{Current, Frame1d, colors, led_strips},
     led2d::Frame2d,
+    led2d::Led2dFont,
     led2d::layout::LedLayout,
 };
 use {defmt_rtt as _, panic_probe as _};
 
-led_strip! {
-    LedStrip8 {
-        pin: PIN_0,
-        len: 8,
-        pio: PIO1,
-        dma: DMA_CH1,
-    }
-}
-
-// Two 12x4 panels stacked vertically to create a 12x8 display.
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
-const LED_LAYOUT_12X8_ROTATED: LedLayout<96, 8, 12> =
-    LED_LAYOUT_12X4.combine_v(LED_LAYOUT_12X4).rotate_cw();
+const LED_LAYOUT_4X12_ROTATED: LedLayout<48, 4, 12> = LED_LAYOUT_12X4.rotate_cw();
 
-led2d! {
-    Led12x8 {
-        pin: PIN_4,
-        led_layout: LED_LAYOUT_12X8_ROTATED,
-        font: Led2dFont::Font4x6Trim,
+led_strips! {
+    pio: PIO0,
+    LedStripsPio0 {
+        Gpio0LedStrip: {
+            pin: PIN_0,
+            len: 8,
+            max_current: Current::Milliamps(100),
+        },
+        Gpio3Led2d: {
+            pin: PIN_3,
+            len: 48,
+            max_current: Current::Milliamps(300),
+            led2d: {
+                led_layout: LED_LAYOUT_4X12_ROTATED,
+                font: Led2dFont::Font4x6Trim,
+            }
+        }
     }
 }
 
@@ -44,139 +47,65 @@ async fn main(spawner: embassy_executor::Spawner) -> ! {
 async fn inner_main(spawner: embassy_executor::Spawner) -> Result<Infallible> {
     let p = embassy_rp::init(Default::default());
 
-    let led_strip8 = LedStrip8::new(p.PIN_0, p.PIO1, p.DMA_CH1, spawner)?;
-    let led12x8 = Led12x8::new(p.PIN_4, p.PIO0, p.DMA_CH0, spawner)?;
+    let (gpio0_led_strip, gpio3_led2d) =
+        LedStripsPio0::new(p.PIO0, p.PIN_0, p.DMA_CH0, p.PIN_3, p.DMA_CH1, spawner)?;
+    let mut button = Button::new(p.PIN_13, PressedTo::Ground);
 
-    spawner.spawn(strip_task(led_strip8)).unwrap();
-    spawner.spawn(panel_task(led12x8)).unwrap();
-
-    future::pending().await
-}
-
-#[embassy_executor::task]
-async fn strip_task(led_strip8: &'static LedStrip8) {
-    let err = run_strip(led_strip8).await.unwrap_err();
-    panic!("{err}");
-}
-
-#[embassy_executor::task]
-async fn panel_task(led12x8: Led12x8) {
-    let err = run_panel(led12x8).await.unwrap_err();
-    panic!("{err}");
-}
-
-async fn run_strip(led_strip8: &'static LedStrip8) -> Result<Infallible> {
-    let delays = [
-        embassy_time::Duration::from_millis(0),
-        embassy_time::Duration::from_millis(1),
-        embassy_time::Duration::from_millis(10),
-        embassy_time::Duration::from_millis(250),
-    ];
-    let animation_delay = embassy_time::Duration::from_millis(120);
+    const ANIMATION_DELAY: embassy_time::Duration = embassy_time::Duration::from_millis(50);
 
     loop {
-        for delay in delays {
-            let frame1 = strip_dots(1, colors::YELLOW);
-            led_strip8.write_frame(frame1).await?;
-            embassy_time::Timer::after(delay).await;
+        for index in 0..4 {
+            let mut frame1d = Frame1d::new();
+            let mut frame1d_b = Frame1d::new();
+            let mut frame2d = Frame2d::new();
+            let mut frame2d_b = Frame2d::new();
+            let text = match index {
+                0..=3 => &["1", "2", "3", "4"][index],
+                _ => " ",
+            };
+            info!("Demo with text {:?}", text);
 
-            let frame2 = strip_dots(2, colors::YELLOW);
-            led_strip8.write_frame(frame2).await?;
-            embassy_time::Timer::after(delay).await;
+            // write
+            frame1d[index] = colors::YELLOW;
+            gpio0_led_strip.write_frame(frame1d).await?;
+            gpio3_led2d.write_text(text, &[colors::YELLOW]).await?;
+            button.wait_for_press().await;
 
-            let (frame3a, frame3b) =
-                strip_dots_two_colors(3, colors::YELLOW, colors::BLUE);
-            led_strip8
-                .animate([(frame3a, animation_delay), (frame3b, animation_delay)])
+            // write again
+            frame1d[index] = colors::RED;
+            gpio0_led_strip.write_frame(frame1d).await?;
+            gpio3_led2d.write_text(text, &[colors::RED]).await?;
+            button.wait_for_press().await;
+
+            // animate
+            frame1d_b[index] = colors::RED;
+            gpio0_led_strip
+                .animate([(frame1d_b, ANIMATION_DELAY), (frame1d, ANIMATION_DELAY)])
                 .await?;
-            embassy_time::Timer::after(delay).await;
-
-            let (frame4a, frame4b) =
-                strip_dots_two_colors(4, colors::ORANGE, colors::PURPLE);
-            led_strip8
-                .animate([(frame4a, animation_delay), (frame4b, animation_delay)])
+            gpio3_led2d.write_text_to_frame(text, &[colors::YELLOW], &mut frame2d)?;
+            gpio3_led2d.write_text_to_frame(text, &[colors::RED], &mut frame2d_b)?;
+            gpio3_led2d
+                .animate([(frame2d_b, ANIMATION_DELAY), (frame2d, ANIMATION_DELAY)])
                 .await?;
-            embassy_time::Timer::after(delay).await;
+            button.wait_for_press().await;
 
-            let frame5 = strip_dots(5, colors::WHITE);
-            led_strip8.write_frame(frame5).await?;
-            embassy_time::Timer::after(delay).await;
+            // animate again
+            frame1d_b[index] = colors::CYAN;
+            gpio0_led_strip
+                .animate([(frame1d_b, ANIMATION_DELAY), (frame1d, ANIMATION_DELAY)])
+                .await?;
+            gpio3_led2d.write_text_to_frame(text, &[colors::YELLOW], &mut frame2d)?;
+            gpio3_led2d.write_text_to_frame(text, &[colors::CYAN], &mut frame2d_b)?;
+            gpio3_led2d
+                .animate([(frame2d_b, ANIMATION_DELAY), (frame2d, ANIMATION_DELAY)])
+                .await?;
+            button.wait_for_press().await;
+
+            // write again, again
+            frame1d[index] = colors::LIME;
+            gpio0_led_strip.write_frame(frame1d).await?;
+            gpio3_led2d.write_text(text, &[colors::LIME]).await?;
+            button.wait_for_press().await;
         }
     }
-}
-
-fn strip_dots<const N: usize>(count: usize, color: RGB8) -> Frame1d<N> {
-    assert!(count <= N);
-    let mut frame1d = Frame1d::filled(colors::BLACK);
-    for dot_index in 0..count {
-        frame1d[dot_index] = color;
-    }
-    frame1d
-}
-
-fn strip_dots_two_colors<const N: usize>(
-    count: usize,
-    first_color: RGB8,
-    second_color: RGB8,
-) -> (Frame1d<N>, Frame1d<N>) {
-    assert!(count <= N);
-    let mut frame_a = Frame1d::filled(colors::BLACK);
-    let mut frame_b = Frame1d::filled(colors::BLACK);
-    for dot_index in 0..count {
-        let color_a = if dot_index % 2 == 0 { first_color } else { second_color };
-        let color_b = if dot_index % 2 == 0 { second_color } else { first_color };
-        frame_a[dot_index] = color_a;
-        frame_b[dot_index] = color_b;
-    }
-    (frame_a, frame_b)
-}
-
-async fn run_panel(led12x8: Led12x8) -> Result<Infallible> {
-    let delays = [
-        embassy_time::Duration::from_millis(0),
-        embassy_time::Duration::from_millis(1),
-        embassy_time::Duration::from_millis(10),
-        embassy_time::Duration::from_millis(250),
-    ];
-    let animation_delay = embassy_time::Duration::from_millis(120);
-
-    loop {
-        for delay in delays {
-            let frame1 = panel_text_frame(&led12x8, "1", [colors::GREEN, colors::GREEN])?;
-            led12x8.write_frame(frame1).await?;
-            embassy_time::Timer::after(delay).await;
-
-            let frame2 = panel_text_frame(&led12x8, "2", [colors::CYAN, colors::CYAN])?;
-            led12x8.write_frame(frame2).await?;
-            embassy_time::Timer::after(delay).await;
-
-            let frame3a = panel_text_frame(&led12x8, "3", [colors::YELLOW, colors::BLUE])?;
-            let frame3b = panel_text_frame(&led12x8, "3", [colors::BLUE, colors::YELLOW])?;
-            led12x8
-                .animate([(frame3a, animation_delay), (frame3b, animation_delay)])
-                .await?;
-            embassy_time::Timer::after(delay).await;
-
-            let frame4a = panel_text_frame(&led12x8, "4", [colors::ORANGE, colors::PURPLE])?;
-            let frame4b = panel_text_frame(&led12x8, "4", [colors::PURPLE, colors::ORANGE])?;
-            led12x8
-                .animate([(frame4a, animation_delay), (frame4b, animation_delay)])
-                .await?;
-            embassy_time::Timer::after(delay).await;
-
-            let frame5 = panel_text_frame(&led12x8, "5", [colors::WHITE, colors::WHITE])?;
-            led12x8.write_frame(frame5).await?;
-            embassy_time::Timer::after(delay).await;
-        }
-    }
-}
-
-fn panel_text_frame(
-    led12x8: &Led12x8,
-    text: &str,
-    text_colors: [RGB8; 2],
-) -> Result<Frame2d<8, 12>> {
-    let mut frame2d = Frame2d::new();
-    led12x8.write_text_to_frame(text, &text_colors, &mut frame2d)?;
-    Ok(frame2d)
 }

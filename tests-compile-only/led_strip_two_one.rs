@@ -9,6 +9,7 @@ use device_kit::Result;
 use device_kit::led_strip::led_strips;
 use device_kit::led_strip::{Current, Frame1d, RGB8, colors};
 use device_kit::led2d::Frame2d;
+use device_kit::led2d::Led2dFont;
 use device_kit::led2d::layout::LedLayout;
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};

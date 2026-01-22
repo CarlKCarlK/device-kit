@@ -952,6 +952,7 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 /// Required fields:
 /// - `led_layout` — Physical layout mapping (defines the panel size). See [`LedLayout`](crate::led2d::layout::LedLayout) for details.
 /// - `font` — Built-in font for text rendering. See [`Led2dFont`](crate::led2d::Led2dFont) for available fonts.
+///   Bring `Led2dFont` into scope or use a full path like `device_kit::led2d::Led2dFont::Font4x6Trim`.
 ///
 /// The `led_layout` value must be a const so its dimensions can be derived at compile time.
 ///
@@ -1029,7 +1030,7 @@ macro_rules! __led_strips_impl {
                         led2d: {
                             led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                             $(max_frames: $led2d_max_frames:expr,)?
-                            font: Led2dFont::$led2d_font:ident $(,)?
+                            font: $led2d_font:expr $(,)?
                         }
                     )?
                 }
@@ -1088,7 +1089,7 @@ macro_rules! __led_strips_impl {
                     led2d: {
                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                         $(max_frames: $led2d_max_frames,)?
-                        font: Led2dFont::$led2d_font,
+                        font: $led2d_font,
                     }
                 )?
             );
@@ -1114,7 +1115,7 @@ macro_rules! __led_strips_impl {
                             $(,
                                 led2d: {
                                     led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
-                                    font: Led2dFont::$led2d_font,
+                                    font: $led2d_font,
                                 }
                             )?
                         ),
@@ -1158,7 +1159,7 @@ macro_rules! __led_strips_impl {
                                 $(,
                                     led2d: {
                                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
-                                        font: Led2dFont::$led2d_font,
+                                        font: $led2d_font,
                                     }
                                 )?
                             ),
@@ -1303,7 +1304,7 @@ macro_rules! __led_strips_impl {
         led2d: {
             led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
             $(max_frames: $led2d_max_frames:expr,)?
-            font: Led2dFont::$led2d_font:ident $(,)?
+            font: $led2d_font:expr $(,)?
         }
     ) => {
         paste::paste! {
@@ -1411,7 +1412,7 @@ macro_rules! __led_strips_impl {
                 width: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?.width(),
                 height: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?.height(),
                 led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
-                font: Led2dFont::$led2d_font,
+                font: $led2d_font,
             }
 
             #[cfg(not(feature = "host"))]
@@ -1455,7 +1456,7 @@ macro_rules! __led_strips_impl {
         led2d: {
             led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
             $(max_frames: $led2d_max_frames:expr,)?
-            font: Led2dFont::$led2d_font:ident $(,)?
+            font: $led2d_font:expr $(,)?
         }
     ) => {
         paste::paste! {{
@@ -1618,7 +1619,7 @@ macro_rules! __led_strips_impl {
                     led2d: {
                         led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                         $(max_frames: $led2d_max_frames:expr,)?
-                        font: Led2dFont::$led2d_font:ident $(,)?
+                        font: $led2d_font:expr $(,)?
                     }
                 )?
             }
@@ -1644,7 +1645,7 @@ macro_rules! __led_strips_impl {
                     $(,
                         led2d: {
                             led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
-                            font: Led2dFont::$led2d_font,
+                            font: $led2d_font,
                         }
                     )?
                 },
@@ -1672,7 +1673,7 @@ macro_rules! __led_strips_impl {
                 ,
                 led2d: {
                     led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
-                    font: Led2dFont::$led2d_font:ident $(,)?
+                    font: $led2d_font:expr $(,)?
                 }
             }
             $(, $($rest:tt)* )?
@@ -1698,7 +1699,7 @@ macro_rules! __led_strips_impl {
                     led2d: {
                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                         max_frames: $max_frames,
-                        font: Led2dFont::$led2d_font,
+                        font: $led2d_font,
                     }
                 },
             ],
@@ -1725,7 +1726,7 @@ macro_rules! __led_strips_impl {
                 ,
                 led2d: {
                     led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
-                    font: Led2dFont::$led2d_font:ident $(,)?
+                    font: $led2d_font:expr $(,)?
                 }
             }
             $(, $($rest:tt)* )?
@@ -1751,7 +1752,7 @@ macro_rules! __led_strips_impl {
                     led2d: {
                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                         max_frames: $max_frames,
-                        font: Led2dFont::$led2d_font,
+                        font: $led2d_font,
                     }
                 },
             ],
@@ -1779,7 +1780,7 @@ macro_rules! __led_strips_impl {
                     led2d: {
                         led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                         $(max_frames: $led2d_max_frames:expr,)?
-                        font: Led2dFont::$led2d_font:ident $(,)?
+                        font: $led2d_font:expr $(,)?
                     }
                 )?
             }
@@ -1805,7 +1806,7 @@ macro_rules! __led_strips_impl {
                     $(,
                         led2d: {
                             led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
-                            font: Led2dFont::$led2d_font,
+                            font: $led2d_font,
                         }
                     )?
                 },
@@ -1833,7 +1834,7 @@ macro_rules! __led_strips_impl {
                 ,
                 led2d: {
                     led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
-                    font: Led2dFont::$led2d_font:ident $(,)?
+                    font: $led2d_font:expr $(,)?
                 }
             }
             $(, $($rest:tt)* )?
@@ -1859,7 +1860,7 @@ macro_rules! __led_strips_impl {
                     led2d: {
                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                         max_frames: $max_frames,
-                        font: Led2dFont::$led2d_font,
+                        font: $led2d_font,
                     }
                 },
             ],
@@ -1886,7 +1887,7 @@ macro_rules! __led_strips_impl {
                 ,
                 led2d: {
                     led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
-                    font: Led2dFont::$led2d_font:ident $(,)?
+                    font: $led2d_font:expr $(,)?
                 }
             }
             $(, $($rest:tt)* )?
@@ -1912,7 +1913,7 @@ macro_rules! __led_strips_impl {
                     led2d: {
                         led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
                         max_frames: $max_frames,
-                        font: Led2dFont::$led2d_font,
+                        font: $led2d_font,
                     }
                 },
             ],
@@ -1939,7 +1940,7 @@ macro_rules! __led_strips_impl {
                     led2d: {
                         led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                         $(max_frames: $led2d_max_frames:expr,)?
-                        font: Led2dFont::$led2d_font:ident $(,)?
+                        font: $led2d_font:expr $(,)?
                     }
                 )?
             }
@@ -1965,7 +1966,7 @@ macro_rules! __led_strips_impl {
                     $(,
                         led2d: {
                             led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
-                            font: Led2dFont::$led2d_font,
+                            font: $led2d_font,
                         }
                     )?
                 },
@@ -1993,7 +1994,7 @@ macro_rules! __led_strips_impl {
                     led2d: {
                         led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                         $(max_frames: $led2d_max_frames:expr,)?
-                        font: Led2dFont::$led2d_font:ident $(,)?
+                        font: $led2d_font:expr $(,)?
                     }
                 )?
             }
@@ -2019,7 +2020,7 @@ macro_rules! __led_strips_impl {
                     $(,
                         led2d: {
                             led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
-                            font: Led2dFont::$led2d_font,
+                            font: $led2d_font,
                         }
                     )?
                 },
@@ -2047,7 +2048,7 @@ macro_rules! __led_strips_impl {
                     led2d: {
                         led_layout: $led2d_led_layout:ident $( ( $($led2d_led_layout_args:tt)* ) )?,
                         $(max_frames: $led2d_max_frames:expr,)?
-                        font: Led2dFont::$led2d_font:ident $(,)?
+                        font: $led2d_font:expr $(,)?
                     }
                 )?
             }
@@ -2073,7 +2074,7 @@ macro_rules! __led_strips_impl {
                     $(,
                         led2d: {
                             led_layout: $led2d_led_layout $( ( $($led2d_led_layout_args)* ) )?,
-                            font: Led2dFont::$led2d_font,
+                            font: $led2d_font,
                         }
                     )?
                 },
