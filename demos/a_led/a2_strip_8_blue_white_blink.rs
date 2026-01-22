@@ -39,9 +39,9 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     }
 
     loop {
-        led_strip8.write_frame(frame0).await?;
+        led_strip8.write_frame(frame0)?;
         Timer::after(Duration::from_millis(150)).await;
-        led_strip8.write_frame(frame1).await?;
+        led_strip8.write_frame(frame1)?;
         Timer::after(Duration::from_millis(150)).await;
     }
 }

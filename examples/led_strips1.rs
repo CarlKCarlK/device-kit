@@ -49,7 +49,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     for pixel_index in 0..Gpio3LedStrip::LEN {
         frame[pixel_index] = [colors::BLUE, colors::GRAY][pixel_index % 2];
     }
-    gpio3_led_strip.write_frame(frame).await?;
+    gpio3_led_strip.write_frame(frame)?;
 
     let frame_duration = Duration::from_secs(1);
     gpio4_led_strip
@@ -58,7 +58,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             (Frame1d::filled(colors::YELLOW), frame_duration),
             (Frame1d::filled(colors::RED), frame_duration),
         ])
-        .await?;
+        ?;
 
     future::pending::<Result<Infallible>>().await // Run forever
 }

@@ -74,7 +74,7 @@
 //!     }
 //!
 //!     // Display the frame on the LED strip (until replaced).
-//!     led_strip_simple.write_frame(frame).await?;
+//!     led_strip_simple.write_frame(frame)?;
 //!
 //!     core::future::pending().await // run forever
 //! }
@@ -122,13 +122,11 @@
 //!
 //!     // Create a sequence of frames and durations and then animate them (looping, until replaced).
 //!     let frame_duration = embassy_time::Duration::from_millis(300);
-//!     led_strip_animated
-//!         .animate([
-//!             (Frame1d::filled(colors::RED), frame_duration),
-//!             (Frame1d::filled(colors::GREEN), frame_duration),
-//!             (Frame1d::filled(colors::BLUE), frame_duration),
-//!         ])
-//!         .await?;
+//!     led_strip_animated.animate([
+//!         (Frame1d::filled(colors::RED), frame_duration),
+//!         (Frame1d::filled(colors::GREEN), frame_duration),
+//!         (Frame1d::filled(colors::BLUE), frame_duration),
+//!     ])?;
 //!
 //!     core::future::pending().await // run forever
 //! }
@@ -577,9 +575,6 @@ pub type LedStripCommandSignal<const N: usize, const MAX_FRAMES: usize> =
     Signal<CriticalSectionRawMutex, Command<N, MAX_FRAMES>>;
 
 #[cfg(not(feature = "host"))]
-#[doc(hidden)] // Required pub for macro expansion in downstream crates
-pub type LedStripCompletionSignal = Signal<CriticalSectionRawMutex, ()>;
-
 #[cfg(not(feature = "host"))]
 #[doc(hidden)]
 // Command for the LED strip animation loop.
@@ -594,7 +589,6 @@ pub enum Command<const N: usize, const MAX_FRAMES: usize> {
 #[doc(hidden)] // Must be pub for method signatures and macro expansion in downstream crates
 pub struct LedStripStatic<const N: usize, const MAX_FRAMES: usize> {
     command_signal: LedStripCommandSignal<N, MAX_FRAMES>,
-    completion_signal: LedStripCompletionSignal,
     commands: LedStripCommands<N>,
 }
 
@@ -606,7 +600,6 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
     pub const fn new_static() -> Self {
         Self {
             command_signal: Signal::new(),
-            completion_signal: Signal::new(),
             commands: LedStripCommands::new(),
         }
     }
@@ -614,11 +607,6 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
     #[doc(hidden)]
     pub fn command_signal(&'static self) -> &'static LedStripCommandSignal<N, MAX_FRAMES> {
         &self.command_signal
-    }
-
-    #[doc(hidden)]
-    pub fn completion_signal(&'static self) -> &'static LedStripCompletionSignal {
-        &self.completion_signal
     }
 
     #[doc(hidden)]
@@ -636,7 +624,6 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStripStatic<N, MAX_FRAMES> {
 /// See [`led_strip!`] macro documentation for usage.
 pub struct LedStrip<const N: usize, const MAX_FRAMES: usize> {
     command_signal: &'static LedStripCommandSignal<N, MAX_FRAMES>,
-    completion_signal: &'static LedStripCompletionSignal,
 }
 
 #[cfg(not(feature = "host"))]
@@ -652,7 +639,6 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStrip<N, MAX_FRAMES> {
     pub fn new(led_strip_static: &'static LedStripStatic<N, MAX_FRAMES>) -> Result<Self> {
         Ok(Self {
             command_signal: led_strip_static.command_signal(),
-            completion_signal: led_strip_static.completion_signal(),
         })
     }
 
@@ -660,9 +646,8 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStrip<N, MAX_FRAMES> {
     /// replaces it.
     ///
     /// See the [led_strip module documentation](mod@crate::led_strip) for example usage.
-    pub async fn write_frame(&self, frame: Frame1d<N>) -> Result<()> {
+    pub fn write_frame(&self, frame: Frame1d<N>) -> Result<()> {
         self.command_signal.signal(Command::DisplayStatic(frame));
-        self.completion_signal.wait().await;
         Ok(())
     }
 
@@ -676,7 +661,7 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStrip<N, MAX_FRAMES> {
     /// by a new `animate` call or `write_frame`.
     ///
     /// See the [led_strip module documentation](mod@crate::led_strip) for example usage.
-    pub async fn animate(
+    pub fn animate(
         &self,
         frames: impl IntoIterator<Item = (Frame1d<N>, Duration)>,
     ) -> Result<()> {
@@ -713,7 +698,6 @@ pub async fn led_strip_animation_loop<
 >(
     mut driver: PioWs2812<'static, PIO, SM, N, ORDER>,
     command_signal: &'static LedStripCommandSignal<N, MAX_FRAMES>,
-    completion_signal: &'static LedStripCompletionSignal,
     combo_table: &'static [u8; 256],
 ) -> !
 where
@@ -730,7 +714,6 @@ where
                     let mut corrected_frame = frame;
                     apply_correction(&mut corrected_frame, combo_table);
                     driver.write(&corrected_frame).await;
-                    completion_signal.signal(());
                     break;
                 }
                 Command::Animate(frames) => {
@@ -738,7 +721,6 @@ where
                         &mut driver,
                         frames,
                         command_signal,
-                        completion_signal,
                         combo_table,
                     )
                     .await;
@@ -754,7 +736,6 @@ async fn run_frame_animation<PIO, const SM: usize, const N: usize, const MAX_FRA
     driver: &mut PioWs2812<'static, PIO, SM, N, ORDER>,
     frames: Vec<(Frame1d<N>, Duration), MAX_FRAMES>,
     command_signal: &'static LedStripCommandSignal<N, MAX_FRAMES>,
-    completion_signal: &'static LedStripCompletionSignal,
     combo_table: &'static [u8; 256],
 ) -> Command<N, MAX_FRAMES>
 where
@@ -769,7 +750,6 @@ where
 
             match select(command_signal.wait(), Timer::after(*duration)).await {
                 Either::First(new_command) => {
-                    completion_signal.signal(());
                     return new_command;
                 }
                 Either::Second(()) => continue,
@@ -888,14 +868,14 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///
 ///     // Turn on all-white on GPIO0 strip.
 ///     let frame_gpio0 = Frame1d::filled(colors::WHITE);
-///     gpio0_led_strip.write_frame(frame_gpio0).await?; // Display the frame (until replaced)
+///     gpio0_led_strip.write_frame(frame_gpio0)?; // Display the frame (until replaced)
 ///
 ///     // Alternate blue/gray on GPIO3 strip.
 ///     let mut frame_gpio3 = Frame1d::new();
 ///     for pixel_index in 0..Gpio3LedStrip::LEN {
 ///         frame_gpio3[pixel_index] = [colors::BLUE, colors::GRAY][pixel_index % 2];
 ///     }
-///     gpio3_led_strip.write_frame(frame_gpio3).await?;  // Display the frame (until replaced)
+///     gpio3_led_strip.write_frame(frame_gpio3)?;  // Display the frame (until replaced)
 ///
 ///     // Animate "Go Go" text on GPIO4 2D panel.
 ///     let mut frame_go_top = Frame2d::new();
@@ -913,8 +893,7 @@ fn apply_correction<const N: usize>(frame: &mut Frame1d<N>, combo_table: &[u8; 2
 ///         .animate([
 ///             (frame_go_top, frame_duration),
 ///             (frame_go_bottom, frame_duration),
-///         ])
-///         .await?; // Loop animation (until replaced)
+///         ])?; // Loop animation (until replaced)
 ///
 ///     future::pending::<Result<Infallible>>().await // Run forever
 /// }
@@ -1236,7 +1215,6 @@ macro_rules! __led_strips_impl {
                         dma,
                         pin,
                         STRIP_STATIC.command_signal(),
-                        STRIP_STATIC.completion_signal(),
                     );
                     spawner.spawn(token).map_err($crate::Error::TaskSpawn)?;
                     let strip = $crate::led_strip::LedStrip::new(&STRIP_STATIC)?;
@@ -1267,7 +1245,6 @@ macro_rules! __led_strips_impl {
                 dma: ::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$dma>,
                 pin: ::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$pin>,
                 command_signal: &'static $crate::led_strip::LedStripCommandSignal<{ $len }, { $max_frames }>,
-                completion_signal: &'static $crate::led_strip::LedStripCompletionSignal,
             ) -> ! {
                 let program = bus.get_program();
                 let driver = bus.with_common(|common| {
@@ -1284,7 +1261,7 @@ macro_rules! __led_strips_impl {
                     { $len },
                     { $max_frames },
                     _
-                >(driver, command_signal, completion_signal, &$label::COMBO_TABLE).await
+                >(driver, command_signal, &$label::COMBO_TABLE).await
             }
         }
     };
@@ -1354,7 +1331,6 @@ macro_rules! __led_strips_impl {
                         dma,
                         pin,
                         STRIP_STATIC.command_signal(),
-                        STRIP_STATIC.completion_signal(),
                     );
                     spawner.spawn(token).map_err($crate::Error::TaskSpawn)?;
                     let strip = $crate::led_strip::LedStrip::new(&STRIP_STATIC)?;
@@ -1385,7 +1361,6 @@ macro_rules! __led_strips_impl {
                 dma: ::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$dma>,
                 pin: ::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$pin>,
                 command_signal: &'static $crate::led_strip::LedStripCommandSignal<{ $len }, { $max_frames }>,
-                completion_signal: &'static $crate::led_strip::LedStripCompletionSignal,
             ) -> ! {
                 let program = bus.get_program();
                 let driver = bus.with_common(|common| {
@@ -1402,7 +1377,7 @@ macro_rules! __led_strips_impl {
                     { $len },
                     { $max_frames },
                     _
-                >(driver, command_signal, completion_signal, &[<$label:camel LedStrip>]::COMBO_TABLE).await
+                >(driver, command_signal, &[<$label:camel LedStrip>]::COMBO_TABLE).await
             }
 
             #[cfg(not(feature = "host"))]
@@ -3084,7 +3059,6 @@ macro_rules! __led_strip_impl {
                         dma,
                         pin,
                         STRIP_STATIC.command_signal(),
-                        STRIP_STATIC.completion_signal(),
                     );
                     spawner.spawn(token).map_err($crate::Error::TaskSpawn)?;
 
@@ -3116,7 +3090,6 @@ macro_rules! __led_strip_impl {
                 dma: ::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$dma>,
                 pin: ::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$pin>,
                 command_signal: &'static $crate::led_strip::LedStripCommandSignal<{ $len }, { $max_frames }>,
-                completion_signal: &'static $crate::led_strip::LedStripCompletionSignal,
             ) -> ! {
                 let program = bus.get_program();
                 let driver = bus.with_common(|common| {
@@ -3133,7 +3106,7 @@ macro_rules! __led_strip_impl {
                     { $len },
                     { $max_frames },
                     _
-                >(driver, command_signal, completion_signal, &$name::COMBO_TABLE).await
+                >(driver, command_signal, &$name::COMBO_TABLE).await
             }
         }
     };

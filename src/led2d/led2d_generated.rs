@@ -166,7 +166,7 @@ impl Led2dGenerated {
     /// Write a frame to the LED panel.
     ///
     /// See the [`led2d`](mod@crate::led2d) module docs for usage.
-    pub async fn write_frame(
+    pub fn write_frame(
         &self,
         frame: Frame2d<{ Self::WIDTH }, { Self::HEIGHT }>,
     ) -> Result<()> {
@@ -198,7 +198,7 @@ impl Led2dGenerated {
     /// Animate frames on the LED panel.
     ///
     /// See the [`led2d`](mod@crate::led2d) module docs for usage.
-    pub async fn animate<const N: usize>(
+    pub fn animate<const N: usize>(
         &self,
         frames: [(Frame2d<{ Self::WIDTH }, { Self::HEIGHT }>, embassy_time::Duration); N],
     ) -> Result<()> {

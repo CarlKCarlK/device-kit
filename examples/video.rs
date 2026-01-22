@@ -192,7 +192,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
         match mode {
             Mode::TestPattern => {
                 let test_pattern = create_test_pattern();
-                led_12x8.write_frame(test_pattern).await?;
+                led_12x8.write_frame(test_pattern)?;
 
                 button.wait_for_press().await;
                 mode = mode.next();
@@ -204,7 +204,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
                     &[colors::CYAN, colors::MAGENTA],
                     &mut frame,
                 )?;
-                led_12x8.write_frame(frame).await?;
+                led_12x8.write_frame(frame)?;
 
                 button.wait_for_press().await;
                 mode = mode.next();
@@ -213,7 +213,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
                 let frames_with_duration = SANTA_FRAMES
                     .iter()
                     .map(|&(frame, duration)| (frame.into(), duration));
-                led_12x8.animate(frames_with_duration).await?;
+                led_12x8.animate(frames_with_duration)?;
                 button.wait_for_press().await;
                 mode = mode.next();
             }
@@ -221,7 +221,7 @@ async fn inner_main(spawner: Spawner) -> Result<()> {
                 let frames_with_duration = CLOCK_FRAMES
                     .iter()
                     .map(|&(frame, duration)| (frame.into(), duration));
-                led_12x8.animate(frames_with_duration).await?;
+                led_12x8.animate(frames_with_duration)?;
                 button.wait_for_press().await;
                 mode = mode.next();
             }

@@ -55,7 +55,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             (rainbow_frame, FRAME_DURATION),
             (black_frame, FRAME_DURATION),
         ])
-        .await?;
+        ?;
 
     future::pending().await // run forever
 }

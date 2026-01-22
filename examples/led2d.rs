@@ -104,7 +104,6 @@ async fn demo_blink_text(led4x12: &Led4x12) -> Result<()> {
             ]
             .into_iter(),
         )
-        .await
 }
 
 /// Display colored corners to demonstrate coordinate mapping.
@@ -116,7 +115,7 @@ async fn demo_colored_corners(led4x12: &Led4x12) -> Result<()> {
     frame[(0, Led4x12::HEIGHT - 1)] = colors::BLUE; // Bottom-left
     frame[(Led4x12::WIDTH - 1, Led4x12::HEIGHT - 1)] = colors::YELLOW; // Bottom-right
 
-    led4x12.write_frame(frame).await?;
+    led4x12.write_frame(frame)?;
     Ok(())
 }
 
@@ -140,7 +139,6 @@ async fn demo_blink_pattern(led4x12: &Led4x12) -> Result<()> {
             ]
             .into_iter(),
         )
-        .await
 }
 
 /// Create a red rectangle border with blue diagonals using embedded-graphics.
@@ -176,7 +174,7 @@ async fn demo_rectangle_diagonals_embedded_graphics(led4x12: &Led4x12) -> Result
         .into_styled(PrimitiveStyle::with_stroke(colors::BLUE.to_rgb888(), 1))
         .draw(&mut frame)?;
 
-    led4x12.write_frame(frame).await
+    led4x12.write_frame(frame)
 }
 
 struct BouncingDot {
@@ -242,7 +240,7 @@ impl BouncingDot {
             assert!(x_position < Led4x12::WIDTH);
             assert!(y_position < Led4x12::HEIGHT);
             frame[(x_position, y_position)] = self.current_color();
-            led4x12.write_frame(frame).await?;
+            led4x12.write_frame(frame)?;
 
             if self.advance() {
                 self.advance_color();
@@ -295,5 +293,5 @@ async fn demo_bouncing_dot_animation(led4x12: &Led4x12) -> Result<()> {
         }
     }
 
-    led4x12.animate(frames).await
+    led4x12.animate(frames)
 }

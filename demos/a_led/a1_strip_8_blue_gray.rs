@@ -40,7 +40,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     }
 
     // Write the frame to the LED strip. Will stay until replaced.
-    led_strip8.write_frame(frame1d).await?;
+    led_strip8.write_frame(frame1d)?;
 
     future::pending().await // run forever
 }

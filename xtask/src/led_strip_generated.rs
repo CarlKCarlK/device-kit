@@ -105,7 +105,7 @@ impl LedStripGenerated {
     /// Write a frame to the LED strip.
     ///
     /// See the [`led_strip`](mod@crate::led_strip) module docs for usage.
-    pub async fn write_frame(
+    pub fn write_frame(
         &self,
         frame: Frame1d<{ Self::LEN }>,
     ) -> Result<()> {
@@ -116,7 +116,7 @@ impl LedStripGenerated {
     /// Animate frames on the LED strip.
     ///
     /// See the [`led_strip`](mod@crate::led_strip) module docs for usage.
-    pub async fn animate<const N: usize>(
+    pub fn animate<const N: usize>(
         &self,
         frames: [(Frame1d<{ Self::LEN }>, embassy_time::Duration); N],
     ) -> Result<()> {

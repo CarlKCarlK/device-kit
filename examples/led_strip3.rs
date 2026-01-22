@@ -66,14 +66,14 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     // Turn on all-white on GPIO0 strip.
     let frame_gpio0 = Frame1d::filled(colors::WHITE);
-    gpio0_led_strip.write_frame(frame_gpio0).await?;
+    gpio0_led_strip.write_frame(frame_gpio0)?;
 
     // Alternate blue/gray on GPIO3 strip.
     let mut frame_gpio3 = Frame1d::new();
     for pixel_index in 0..Gpio3LedStrip::LEN {
         frame_gpio3[pixel_index] = [colors::BLUE, colors::GRAY][pixel_index % 2];
     }
-    gpio3_led_strip.write_frame(frame_gpio3).await?;
+    gpio3_led_strip.write_frame(frame_gpio3)?;
 
     // Animate "Go Go" text on GPIO4 2D panel.
     let mut frame_go_top = Frame2d::new();
@@ -92,7 +92,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             (frame_go_top, frame_duration),
             (frame_go_bottom, frame_duration),
         ])
-        .await?;
+        ?;
 
     future::pending::<Result<Infallible>>().await // Run forever
 }

@@ -41,7 +41,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             (Frame1d::filled(colors::YELLOW), frame_duration),
             (Frame1d::filled(colors::RED), frame_duration),
         ])
-        .await?;
+        ?;
 
     future::pending::<Result<Infallible>>().await // Run forever
 }

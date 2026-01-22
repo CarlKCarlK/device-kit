@@ -43,7 +43,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     const FRAME_DURATION: Duration = Duration::from_millis(150);
     led_strip8
         .animate([(frame0, FRAME_DURATION), (frame1, FRAME_DURATION)])
-        .await?;
+        ?;
 
     // Could do more things here. The animation runs in the background.
 

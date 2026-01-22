@@ -128,7 +128,6 @@ async fn conway_task(
         let frame = board.to_frame(colors::LIME);
         led16x16
             .write_frame(frame)
-            .await
             .expect("write_frame failed");
 
         // Calculate frame duration based on speed mode

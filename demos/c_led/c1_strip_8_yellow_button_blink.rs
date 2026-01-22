@@ -53,7 +53,7 @@ async fn demo_c1(led_strip8: &LedStrip8, button: &mut Button<'_>) -> Result<()> 
                     (solid_frame, BLINK_DELAY),
                     (solid_and_blink_frame, BLINK_DELAY),
                 ])
-                .await?;
+                ?;
             button.wait_for_press().await;
 
             // Add the next solid LED

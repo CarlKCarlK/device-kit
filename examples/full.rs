@@ -309,7 +309,7 @@ async fn initialize_led_strip(
     for idx in 0..Gpio2LedStrip::LEN {
         pixels[idx] = if idx == 0 { RED } else { BLACK };
     }
-    strip.write_frame(*pixels).await?;
+    strip.write_frame(*pixels)?;
     Ok(())
 }
 
@@ -320,7 +320,7 @@ async fn advance_led_progress(
 ) -> Result<()> {
     info!("Turning {} to green", *current_red);
     pixels[*current_red] = GREEN;
-    strip.write_frame(*pixels).await?;
+    strip.write_frame(*pixels)?;
     let next = (*current_red + 1) % Gpio2LedStrip::LEN;
     if next == 0 {
         initialize_led_strip(strip, pixels).await?;
@@ -328,7 +328,7 @@ async fn advance_led_progress(
     } else {
         info!("Turning {} to red", next);
         pixels[next] = RED;
-        strip.write_frame(*pixels).await?;
+        strip.write_frame(*pixels)?;
         *current_red = next;
     }
     Ok(())

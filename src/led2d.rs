@@ -132,8 +132,7 @@
 //!     // Animate between the two frames indefinitely.
 //!     let frame_duration = Duration::from_secs(1);
 //!     led_12x8_animated
-//!         .animate([(frame_0, frame_duration), (frame_1, frame_duration)])
-//!         .await?;
+//!         .animate([(frame_0, frame_duration), (frame_1, frame_duration)])?;
 //!
 //!     future::pending().await // run forever
 //! }
@@ -638,10 +637,6 @@ impl<const W: usize, const H: usize> DrawTarget for Frame2d<W, H> {
 pub type Led2dCommandSignal<const N: usize, const MAX_FRAMES: usize> =
     Signal<CriticalSectionRawMutex, Command<N, MAX_FRAMES>>;
 #[doc(hidden)]
-// Public so macro expansions in downstream crates can observe completion signals.
-pub type Led2dCompletionSignal = Signal<CriticalSectionRawMutex, ()>;
-
-#[doc(hidden)]
 // Public so macro-generated tasks can share the command channel type.
 /// Command for the LED device loop.
 #[derive(Clone)]
@@ -659,7 +654,6 @@ pub enum Command<const N: usize, const MAX_FRAMES: usize> {
 /// a higher-level wrapper.
 pub struct Led2dStatic<const N: usize, const MAX_FRAMES: usize> {
     pub command_signal: Led2dCommandSignal<N, MAX_FRAMES>,
-    pub completion_signal: Led2dCompletionSignal,
 }
 
 impl<const N: usize, const MAX_FRAMES: usize> Led2dStatic<N, MAX_FRAMES> {
@@ -667,7 +661,6 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2dStatic<N, MAX_FRAMES> {
     pub const fn new_static() -> Self {
         Self {
             command_signal: Signal::new(),
-            completion_signal: Signal::new(),
         }
     }
 }
@@ -688,7 +681,6 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2dStatic<N, MAX_FRAMES> {
 /// a higher-level wrapper. See the [led2d](mod@crate::led2d) module docs for examples.
 pub struct Led2d<const N: usize, const MAX_FRAMES: usize> {
     command_signal: &'static Led2dCommandSignal<N, MAX_FRAMES>,
-    completion_signal: &'static Led2dCompletionSignal,
     mapping_by_xy: [u16; N],
     width: usize,
 }
@@ -713,7 +705,6 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
         );
         Self {
             command_signal: &led2d_static.command_signal,
-            completion_signal: &led2d_static.completion_signal,
             mapping_by_xy: led_layout.xy_to_index(),
             width: W,
         }
@@ -743,14 +734,13 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
     /// Render a fully defined frame to the panel.
     ///
     /// Frame2d is a 2D array in row-major order where `frame[(col, row)]` is the pixel at (col, row).
-    pub async fn write_frame<const W: usize, const H: usize>(
+    pub fn write_frame<const W: usize, const H: usize>(
         &self,
         frame: Frame2d<W, H>,
     ) -> Result<()> {
         let strip_frame = self.convert_frame(frame);
         self.command_signal
             .signal(Command::DisplayStatic(strip_frame));
-        self.completion_signal.wait().await;
         Ok(())
     }
 
@@ -762,7 +752,7 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
     ///
     /// Returns immediately; the animation runs in the background until interrupted
     /// by a new `animate` call or `write_frame`.
-    pub async fn animate<const W: usize, const H: usize>(
+    pub fn animate<const W: usize, const H: usize>(
         &self,
         frames: impl IntoIterator<Item = (Frame2d<W, H>, Duration)>,
     ) -> Result<()> {
@@ -801,7 +791,6 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
 #[cfg(not(feature = "host"))]
 pub async fn led2d_device_loop<const N: usize, const MAX_FRAMES: usize, S>(
     command_signal: &'static Led2dCommandSignal<N, MAX_FRAMES>,
-    completion_signal: &'static Led2dCompletionSignal,
     led_strip: S,
 ) -> Result<Infallible>
 where
@@ -817,8 +806,7 @@ where
         loop {
             match current_command {
                 Command::DisplayStatic(frame) => {
-                    led_strip_ref.write_frame(frame).await?;
-                    completion_signal.signal(());
+                    led_strip_ref.write_frame(frame)?;
                     break;
                 }
                 Command::Animate(frames) => {
@@ -829,7 +817,6 @@ where
                     current_command = run_animation_loop(
                         frames,
                         command_signal,
-                        completion_signal,
                         led_strip_ref,
                     )
                     .await?;
@@ -844,7 +831,6 @@ where
 async fn run_animation_loop<const N: usize, const MAX_FRAMES: usize>(
     frames: Vec<(StripFrame<N>, Duration), MAX_FRAMES>,
     command_signal: &'static Led2dCommandSignal<N, MAX_FRAMES>,
-    completion_signal: &'static Led2dCompletionSignal,
     led_strip: &LedStrip<N, MAX_FRAMES>,
 ) -> Result<Command<N, MAX_FRAMES>> {
     defmt::info!("run_animation_loop: starting with {} frames", frames.len());
@@ -852,12 +838,11 @@ async fn run_animation_loop<const N: usize, const MAX_FRAMES: usize>(
     loop {
         for (frame_index, (strip_frame, duration)) in frames.iter().enumerate() {
             defmt::trace!("run_animation_loop: displaying frame {}", frame_index);
-            led_strip.write_frame(*strip_frame).await?;
+            led_strip.write_frame(*strip_frame)?;
 
             match select(command_signal.wait(), Timer::after(*duration)).await {
                 Either::First(new_command) => {
                     defmt::info!("run_animation_loop: received new command, interrupting");
-                    completion_signal.signal(());
                     return Ok(new_command);
                 }
                 Either::Second(()) => continue,
@@ -913,11 +898,10 @@ macro_rules! led2d_device_task {
         #[allow(non_snake_case)]
         $($vis)* async fn $task_name(
             command_signal: &'static $crate::led2d::Led2dCommandSignal<$n, $max_frames>,
-            completion_signal: &'static $crate::led2d::Led2dCompletionSignal,
             led_strip: $strip_ty,
         ) {
             let err =
-                $crate::led2d::led2d_device_loop(command_signal, completion_signal, led_strip)
+                $crate::led2d::led2d_device_loop(command_signal, led_strip)
                     .await
                     .unwrap_err();
             panic!("{err}");
@@ -965,7 +949,6 @@ macro_rules! led2d_device {
             ) -> $crate::Result<$crate::led2d::Led2d<$n, $max_frames>> {
                 let token = $task_name(
                     &self.led2d_static.command_signal,
-                    &self.led2d_static.completion_signal,
                     led_strip,
                 );
                 spawner.spawn(token).map_err($crate::Error::TaskSpawn)?;
@@ -1631,7 +1614,6 @@ macro_rules! led2d_from_strip {
                     defmt::info!("Led2d::new: spawning device task");
                     let token = [<$name:snake _device_task>](
                         &STATIC.led2d_static.command_signal,
-                        &STATIC.led2d_static.completion_signal,
                         led_strip,
                     );
                     spawner.spawn(token).map_err($crate::Error::TaskSpawn)?;
@@ -1651,15 +1633,15 @@ macro_rules! led2d_from_strip {
         }
 
                 /// Render a fully defined frame to the panel.
-                $vis async fn write_frame(
+                $vis fn write_frame(
                     &self,
                     frame: $crate::led2d::Frame2d<{ $led_layout_const.width() }, { $led_layout_const.height() }>,
                 ) -> $crate::Result<()> {
-                    self.led2d.write_frame(frame).await
+                    self.led2d.write_frame(frame)
                 }
 
                 /// Loop through a sequence of animation frames. Pass arrays by value or Vecs/iters.
-                $vis async fn animate(
+                $vis fn animate(
                     &self,
                     frames: impl IntoIterator<
                         Item = (
@@ -1668,7 +1650,7 @@ macro_rules! led2d_from_strip {
                         ),
                     >,
                 ) -> $crate::Result<()> {
-                    self.led2d.animate(frames).await
+                    self.led2d.animate(frames)
                 }
 
                 /// Render text into a frame using the configured font and spacing.
@@ -1685,7 +1667,7 @@ macro_rules! led2d_from_strip {
                 pub async fn write_text(&self, text: &str, colors: &[smart_leds::RGB8]) -> $crate::Result<()> {
                     let mut frame = $crate::led2d::Frame2d::<{ $led_layout_const.width() }, { $led_layout_const.height() }>::new();
                     self.write_text_to_frame(text, colors, &mut frame)?;
-                    self.write_frame(frame).await
+                    self.write_frame(frame)
                 }
             }
         }
