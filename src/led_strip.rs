@@ -740,6 +740,7 @@ where
 
             match select(command_signal.wait(), Timer::after(*duration)).await {
                 Either::First(new_command) => {
+                    command_signal.reset();
                     return new_command;
                 }
                 Either::Second(()) => continue,

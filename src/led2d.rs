@@ -843,6 +843,7 @@ async fn run_animation_loop<const N: usize, const MAX_FRAMES: usize>(
             match select(command_signal.wait(), Timer::after(*duration)).await {
                 Either::First(new_command) => {
                     defmt::info!("run_animation_loop: received new command, interrupting");
+                    command_signal.reset();
                     return Ok(new_command);
                 }
                 Either::Second(()) => continue,
