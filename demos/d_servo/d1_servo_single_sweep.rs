@@ -5,7 +5,7 @@
 use core::{convert::Infallible, future, panic};
 use device_kit::{
     Result,
-    button::{Button, PressedTo},
+    button::{Button, PressDuration, PressedTo},
     servo,
 };
 use embassy_executor::Spawner;
@@ -21,12 +21,14 @@ async fn main(spawner: Spawner) -> ! {
 async fn inner_main(_spawner: Spawner) -> Result<Infallible> {
     let p = embassy_rp::init(Default::default());
 
-    info!("Starting servo demo (GPIO 11)");
+    // Create a servo on GPIO 11
     let mut servo = servo! {
         pin: p.PIN_11,
         slice: p.PWM_SLICE5, // 11 → (11/2) % 8 = 5
     };
     let mut button = Button::new(p.PIN_13, PressedTo::Ground);
+
+    
     servo.set_degrees(0);
     Timer::after_millis(400).await;
     servo.set_degrees(180);
@@ -35,9 +37,15 @@ async fn inner_main(_spawner: Spawner) -> Result<Infallible> {
 
     // Loop by 10 degrees. Include 180 degrees.
     for degree in (0..=180).step_by(10).cycle() {
-        button.wait_for_press().await;
-        servo.set_degrees(degree);
+        match button.wait_for_press_duration().await {
+            PressDuration::Short => {
+                servo.set_degrees(degree);
+            }
+            PressDuration::Long => {
+                servo.disable();
+            }
+        }
     }
 
-    future::pending().await // Needed because compiler can't see that loop is infinite
+    future::pending().await
 }

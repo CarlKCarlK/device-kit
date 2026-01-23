@@ -590,12 +590,19 @@ pub struct Servo<'d> {
     min_us: u16,
     max_us: u16,
     channel: ServoChannel, // Track which channel (A or B) this servo uses
+    state: ServoState,
 }
 
 #[derive(Debug, Clone, Copy)]
 enum ServoChannel {
     A,
     B,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+enum ServoState {
+    Disabled,
+    Enabled,
 }
 
 impl<'d> Servo<'d> {
@@ -657,6 +664,7 @@ impl<'d> Servo<'d> {
             min_us,
             max_us,
             channel,
+            state: ServoState::Enabled,
         };
         servo.center();
         servo
@@ -664,16 +672,22 @@ impl<'d> Servo<'d> {
 
     /// Center (~midpoint of min/max).
     ///
+    /// Automatically enables the servo if it was disabled.
+    ///
     /// See the [struct-level example](Self) for usage.
     pub fn center(&mut self) {
+        self.ensure_enabled();
         self.set_pulse_us(self.min_us + (self.max_us - self.min_us) / 2);
     }
 
     /// Set position in degrees 0..=180 mapped into [min_us, max_us].
     ///
+    /// Automatically enables the servo if it was disabled.
+    ///
     /// See the [struct-level example](Self) for usage.
     pub fn set_degrees(&mut self, degrees: u16) {
         assert!((0..=180).contains(&degrees));
+        self.ensure_enabled();
         let us = self.min_us as u32
             + (u32::from(degrees)) * (u32::from(self.max_us) - u32::from(self.min_us)) / 180;
         info!("Servo set_degrees({}) -> {}µs", degrees, us);
@@ -697,6 +711,16 @@ impl<'d> Servo<'d> {
         self.pwm.set_config(&self.cfg);
     }
 
+    fn ensure_enabled(&mut self) {
+        if self.state == ServoState::Enabled {
+            return;
+        }
+
+        self.cfg.enable = true;
+        self.pwm.set_config(&self.cfg);
+        self.state = ServoState::Enabled;
+    }
+
     /// Stop sending control signals to the servo.
     ///
     /// This allows the servo to relax and move freely, reducing power consumption
@@ -704,8 +728,13 @@ impl<'d> Servo<'d> {
     ///
     /// See the [struct-level example](Self) for usage.
     pub fn disable(&mut self) {
+        if self.state == ServoState::Disabled {
+            return;
+        }
+
         self.cfg.enable = false;
         self.pwm.set_config(&self.cfg);
+        self.state = ServoState::Disabled;
     }
 
     /// Resume sending control signals to the servo.
@@ -714,7 +743,12 @@ impl<'d> Servo<'d> {
     ///
     /// See the [struct-level example](Self) for usage.
     pub fn enable(&mut self) {
+        if self.state == ServoState::Enabled {
+            return;
+        }
+
         self.cfg.enable = true;
         self.pwm.set_config(&self.cfg);
+        self.state = ServoState::Enabled;
     }
 }
