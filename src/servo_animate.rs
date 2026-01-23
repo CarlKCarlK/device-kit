@@ -78,7 +78,7 @@ pub fn concat_steps<const CAP: usize>(sequences: &[&[Step]]) -> Vec<Step, CAP> {
     }
     out
 }
-pub use crate::servo::{servo_even, servo_odd};
+pub use crate::servo::servo;
 
 /// Static resources for [`ServoAnimate`].
 pub struct ServoAnimateStatic {
@@ -106,16 +106,22 @@ impl ServoAnimateStatic {
 /// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
-/// use device_kit::servo_animate::{concat_steps, linear, ServoAnimate, ServoAnimateStatic, Step, servo_even};
+/// use device_kit::{servo, servo_animate::{concat_steps, linear, ServoAnimate, ServoAnimateStatic, Step}};
 /// use embassy_time::Duration;
+/// # use core::panic::PanicInfo;
 /// # #[panic_handler]
-/// # fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
+/// # fn panic(_info: &PanicInfo) -> ! { loop {} }
 ///
 /// async fn demo(p: embassy_rp::Peripherals, spawner: embassy_executor::Spawner) {
 ///     static SERVO_ANIMATE_STATIC: ServoAnimateStatic = ServoAnimate::new_static();
 ///     let servo = ServoAnimate::new(
 ///         &SERVO_ANIMATE_STATIC,
-///         servo_even!(p.PIN_0, p.PWM_SLICE0, 500, 2500),
+///         servo! {
+///             pin: p.PIN_0,
+///             slice: p.PWM_SLICE0,
+///             min_us: 500,
+///             max_us: 2500,
+///         },
 ///         spawner,
 ///     )
 ///     .unwrap();

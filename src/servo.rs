@@ -1,11 +1,9 @@
 //! A device abstraction for SG90 servo motors.
 //!
 //! This module provides a simple interface for controlling hobby positional servo motors
-//! like the SG90.
+//! like the SG90. See [`Servo`] for usage examples.
 //!
-//! Use the [`servo_even!`] or [`servo_odd!`] macros for even or odd GPIO pins respectively.
-//!
-//! See [`Servo`] for usage examples.
+//! Use the [`servo!`] macro for a keyword-driven constructor with defaults.
 
 use defmt::info;
 use embassy_rp::clocks::clk_sys_freq;
@@ -13,41 +11,556 @@ use embassy_rp::pwm::{Config, Pwm};
 
 const SERVO_PERIOD_US: u16 = 20_000; // 20 ms
 
-/// Create a servo on an even-numbered GPIO pin (0, 2, 4, 6...).
-///
-/// See [`Servo`] for details and examples.
-#[doc(hidden)]
-#[macro_export]
-macro_rules! servo_even {
-    ($pin:expr, $slice:expr, $min_us:expr, $max_us:expr) => {
-        $crate::servo::Servo::new(
-            embassy_rp::pwm::Pwm::new_output_a($slice, $pin, embassy_rp::pwm::Config::default()),
-            $crate::servo::ServoChannel::A,
-            $min_us,
-            $max_us,
-        )
-    };
-}
-#[doc(inline)]
-pub use servo_even;
+/// Default minimum pulse width for hobby servos (microseconds).
+pub const SERVO_MIN_US_DEFAULT: u16 = 500;
 
-/// Create a servo on an odd-numbered GPIO pin (1, 3, 5, 7...).
+/// Default maximum pulse width for hobby servos (microseconds).
+pub const SERVO_MAX_US_DEFAULT: u16 = 2_500;
+
+/// Create a servo with keyword arguments and default pulse widths.
+///
+/// Required fields: `pin`, `slice`.
+///
+/// Optional fields: `min_us`, `max_us` (defaults to [`SERVO_MIN_US_DEFAULT`]/[`SERVO_MAX_US_DEFAULT`]),
+/// plus `channel: A/B` or `odd`/`even` to override the inferred channel.
 ///
 /// See [`Servo`] for details and examples.
+#[macro_export]
+macro_rules! servo {
+    ($($tt:tt)*) => { $crate::__servo_impl! { $($tt)* } };
+}
+#[doc(inline)]
+pub use servo;
+
+// Public for macro expansion in downstream crates.
 #[doc(hidden)]
 #[macro_export]
-macro_rules! servo_odd {
-    ($pin:expr, $slice:expr, $min_us:expr, $max_us:expr) => {
-        $crate::servo::Servo::new(
-            embassy_rp::pwm::Pwm::new_output_b($slice, $pin, embassy_rp::pwm::Config::default()),
-            $crate::servo::ServoChannel::B,
+macro_rules! __servo_impl {
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ ]
+    ) => {
+        $crate::__servo_impl! {
+            @__build
+            pin: $pin,
+            slice: $slice,
+            channel: $channel,
+            min_us: $min_us,
+            max_us: $max_us
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ pin: $pin_value:expr, $($rest:tt)* ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin_value,
+            slice: $slice,
+            channel: $channel,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ $($rest)* ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ pin: $pin_value:expr ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin_value,
+            slice: $slice,
+            channel: $channel,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ slice: $slice_value:expr, $($rest:tt)* ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice_value,
+            channel: $channel,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ $($rest)* ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ slice: $slice_value:expr ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice_value,
+            channel: $channel,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ min_us: $min_us_value:expr, $($rest:tt)* ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: $channel,
+            min_us: $min_us_value,
+            max_us: $max_us,
+            fields: [ $($rest)* ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ min_us: $min_us_value:expr ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: $channel,
+            min_us: $min_us_value,
+            max_us: $max_us,
+            fields: [ ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ max_us: $max_us_value:expr, $($rest:tt)* ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: $channel,
+            min_us: $min_us,
+            max_us: $max_us_value,
+            fields: [ $($rest)* ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ max_us: $max_us_value:expr ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: $channel,
+            min_us: $min_us,
+            max_us: $max_us_value,
+            fields: [ ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ channel: A, $($rest:tt)* ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: A,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ $($rest)* ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ channel: A ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: A,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ channel: B, $($rest:tt)* ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: B,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ $($rest)* ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ channel: B ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: B,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ even, $($rest:tt)* ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: A,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ $($rest)* ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ even ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: A,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ odd, $($rest:tt)* ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: B,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ $($rest)* ]
+        }
+    };
+
+    (@__fill_defaults
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        fields: [ odd ]
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: $pin,
+            slice: $slice,
+            channel: B,
+            min_us: $min_us,
+            max_us: $max_us,
+            fields: [ ]
+        }
+    };
+
+    (@__build
+        pin: _UNSET_,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr
+    ) => {
+        compile_error!("servo! requires `pin: ...`");
+    };
+
+    (@__build
+        pin: $pin:expr,
+        slice: _UNSET_,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr
+    ) => {
+        compile_error!("servo! requires `slice: ...`");
+    };
+
+    (@__build
+        pin: $pin:expr,
+        slice: $slice:expr,
+        channel: _UNSET_,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr
+    ) => {
+        $crate::servo::servo_from_pin_slice($pin, $slice, $min_us, $max_us)
+    };
+
+    (@__build
+        pin: $pin:expr,
+        slice: $slice:expr,
+        channel: A,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr
+    ) => {
+        $crate::servo::Servo::new_output_a(
+            embassy_rp::pwm::Pwm::new_output_a(
+                $slice,
+                $pin,
+                embassy_rp::pwm::Config::default(),
+            ),
             $min_us,
             $max_us,
         )
     };
+
+    (@__build
+        pin: $pin:expr,
+        slice: $slice:expr,
+        channel: B,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr
+    ) => {
+        $crate::servo::Servo::new_output_b(
+            embassy_rp::pwm::Pwm::new_output_b(
+                $slice,
+                $pin,
+                embassy_rp::pwm::Config::default(),
+            ),
+            $min_us,
+            $max_us,
+        )
+    };
+
+    (
+        $($fields:tt)*
+    ) => {
+        $crate::__servo_impl! {
+            @__fill_defaults
+            pin: _UNSET_,
+            slice: _UNSET_,
+            channel: _UNSET_,
+            min_us: $crate::servo::SERVO_MIN_US_DEFAULT,
+            max_us: $crate::servo::SERVO_MAX_US_DEFAULT,
+            fields: [ $($fields)* ]
+        }
+    };
 }
-#[doc(inline)]
-pub use servo_odd;
+
+// Public for macro expansion in downstream crates.
+#[doc(hidden)]
+pub trait ServoPwmPin<S: embassy_rp::PeripheralType>: embassy_rp::PeripheralType {
+    const IS_CHANNEL_A: bool;
+    fn new_pwm<'d>(
+        slice: embassy_rp::Peri<'d, S>,
+        pin: embassy_rp::Peri<'d, Self>,
+    ) -> Pwm<'d>;
+}
+
+// Public for macro expansion in downstream crates.
+#[doc(hidden)]
+pub fn servo_from_pin_slice<'d, P, S>(
+    pin: embassy_rp::Peri<'d, P>,
+    slice: embassy_rp::Peri<'d, S>,
+    min_us: u16,
+    max_us: u16,
+) -> Servo<'d>
+where
+    P: ServoPwmPin<S>,
+    S: embassy_rp::PeripheralType,
+{
+    let pwm = P::new_pwm(slice, pin);
+    if P::IS_CHANNEL_A {
+        Servo::new_output_a(pwm, min_us, max_us)
+    } else {
+        Servo::new_output_b(pwm, min_us, max_us)
+    }
+}
+
+macro_rules! servo_pin_map {
+    ($pin:ident, $slice:ident, A) => {
+        impl ServoPwmPin<embassy_rp::peripherals::$slice> for embassy_rp::peripherals::$pin {
+            const IS_CHANNEL_A: bool = true;
+            fn new_pwm<'d>(
+                slice: embassy_rp::Peri<'d, embassy_rp::peripherals::$slice>,
+                pin: embassy_rp::Peri<'d, Self>,
+            ) -> Pwm<'d> {
+                embassy_rp::pwm::Pwm::new_output_a(slice, pin, Config::default())
+            }
+        }
+    };
+    ($pin:ident, $slice:ident, B) => {
+        impl ServoPwmPin<embassy_rp::peripherals::$slice> for embassy_rp::peripherals::$pin {
+            const IS_CHANNEL_A: bool = false;
+            fn new_pwm<'d>(
+                slice: embassy_rp::Peri<'d, embassy_rp::peripherals::$slice>,
+                pin: embassy_rp::Peri<'d, Self>,
+            ) -> Pwm<'d> {
+                embassy_rp::pwm::Pwm::new_output_b(slice, pin, Config::default())
+            }
+        }
+    };
+}
+
+servo_pin_map!(PIN_0, PWM_SLICE0, A);
+servo_pin_map!(PIN_1, PWM_SLICE0, B);
+servo_pin_map!(PIN_2, PWM_SLICE1, A);
+servo_pin_map!(PIN_3, PWM_SLICE1, B);
+servo_pin_map!(PIN_4, PWM_SLICE2, A);
+servo_pin_map!(PIN_5, PWM_SLICE2, B);
+servo_pin_map!(PIN_6, PWM_SLICE3, A);
+servo_pin_map!(PIN_7, PWM_SLICE3, B);
+servo_pin_map!(PIN_8, PWM_SLICE4, A);
+servo_pin_map!(PIN_9, PWM_SLICE4, B);
+servo_pin_map!(PIN_10, PWM_SLICE5, A);
+servo_pin_map!(PIN_11, PWM_SLICE5, B);
+servo_pin_map!(PIN_12, PWM_SLICE6, A);
+servo_pin_map!(PIN_13, PWM_SLICE6, B);
+servo_pin_map!(PIN_14, PWM_SLICE7, A);
+servo_pin_map!(PIN_15, PWM_SLICE7, B);
+servo_pin_map!(PIN_16, PWM_SLICE0, A);
+servo_pin_map!(PIN_17, PWM_SLICE0, B);
+servo_pin_map!(PIN_18, PWM_SLICE1, A);
+servo_pin_map!(PIN_19, PWM_SLICE1, B);
+servo_pin_map!(PIN_20, PWM_SLICE2, A);
+servo_pin_map!(PIN_21, PWM_SLICE2, B);
+servo_pin_map!(PIN_22, PWM_SLICE3, A);
+servo_pin_map!(PIN_23, PWM_SLICE3, B);
+servo_pin_map!(PIN_24, PWM_SLICE4, A);
+servo_pin_map!(PIN_25, PWM_SLICE4, B);
+servo_pin_map!(PIN_26, PWM_SLICE5, A);
+servo_pin_map!(PIN_27, PWM_SLICE5, B);
+servo_pin_map!(PIN_28, PWM_SLICE6, A);
+servo_pin_map!(PIN_29, PWM_SLICE6, B);
+
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_30, PWM_SLICE7, A);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_31, PWM_SLICE7, B);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_32, PWM_SLICE8, A);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_33, PWM_SLICE8, B);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_34, PWM_SLICE9, A);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_35, PWM_SLICE9, B);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_36, PWM_SLICE10, A);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_37, PWM_SLICE10, B);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_38, PWM_SLICE11, A);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_39, PWM_SLICE11, B);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_40, PWM_SLICE8, A);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_41, PWM_SLICE8, B);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_42, PWM_SLICE9, A);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_43, PWM_SLICE9, B);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_44, PWM_SLICE10, A);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_45, PWM_SLICE10, B);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_46, PWM_SLICE11, A);
+#[cfg(feature = "pico2")]
+servo_pin_map!(PIN_47, PWM_SLICE11, B);
 
 /// A device abstraction for SG90 servo motors.
 ///
@@ -55,17 +568,21 @@ pub use servo_odd;
 /// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
-/// use device_kit::servo::servo_odd;
+/// use device_kit::{servo, servo::Servo};
+/// # use core::panic::PanicInfo;
 /// # #[panic_handler]
-/// # fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
+/// # fn panic(_info: &PanicInfo) -> ! { loop {} }
 /// async fn example(p: embassy_rp::Peripherals) {
-///     // Create a servo on GPIO 15 with pulse range 500-2500 microseconds
-///     // (500µs = 0°, 2500µs = 180° for typical SG90)
-///     // GPIO 15 is odd. Calculate slice: (15 / 2) % 8 = 7 % 8 = 7 → PWM_SLICE7
-///     let mut servo = servo_odd!(p.PIN_15, p.PWM_SLICE7, 500, 2500);
+///     // Create a servo on GPIO 15 (odd pin maps to PWM slice 7).
+///     let mut servo = servo! {
+///         pin: p.PIN_15,
+///         slice: p.PWM_SLICE7,
+///     };
 ///
 ///     servo.set_degrees(45);  // Move to 45 degrees
 ///     servo.center();          // Move to center position
+///     servo.disable();         // Let the servo relax
+///     servo.enable();          // Resume control signals
 /// }
 /// ```
 pub struct Servo<'d> {
@@ -77,41 +594,30 @@ pub struct Servo<'d> {
     channel: ServoChannel, // Track which channel (A or B) this servo uses
 }
 
-/// Which PWM channel the servo is on.
-///
-/// See [`Servo`] for usage examples.
 #[derive(Debug, Clone, Copy)]
-pub enum ServoChannel {
-    /// PWM channel A. See [`Servo`] for usage.
+enum ServoChannel {
     A,
-    /// PWM channel B. See [`Servo`] for usage.
     B,
 }
 
 impl<'d> Servo<'d> {
-    /// Create a servo on a PWM output channel.
+    /// Create a servo on a PWM output A channel.
     ///
-    /// Consider using the [`servo_even!`] or [`servo_odd!`] macros instead for simpler usage.
+    /// See the [struct-level example](Self) for usage.
+    pub fn new_output_a(pwm: Pwm<'d>, min_us: u16, max_us: u16) -> Self {
+        Self::init(pwm, ServoChannel::A, min_us, max_us)
+    }
+
+    /// Create a servo on a PWM output B channel.
     ///
-    /// # Examples
-    /// ```rust,no_run
-    /// # #![no_std]
-    /// # #![no_main]
-    /// use device_kit::servo::{Servo, ServoChannel};
-    /// # #[panic_handler]
-    /// # fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
-    /// async fn example(p: embassy_rp::Peripherals) {
-    ///     // GPIO 15 is odd, uses channel B. Calculate slice: (15 / 2) % 8 = 7
-    ///     let pwm = embassy_rp::pwm::Pwm::new_output_b(p.PWM_SLICE7, p.PIN_15, embassy_rp::pwm::Config::default());
-    ///     let mut servo = Servo::new(pwm, ServoChannel::B, 500, 2500);
-    /// }
-    /// ```
-    pub fn new(pwm: Pwm<'d>, channel: ServoChannel, min_us: u16, max_us: u16) -> Self {
-        Self::init(pwm, channel, min_us, max_us)
+    /// See the [struct-level example](Self) for usage.
+    pub fn new_output_b(pwm: Pwm<'d>, min_us: u16, max_us: u16) -> Self {
+        Self::init(pwm, ServoChannel::B, min_us, max_us)
     }
 
     /// Configure PWM and initialize servo. Internal shared logic.
     fn init(mut pwm: Pwm<'d>, channel: ServoChannel, min_us: u16, max_us: u16) -> Self {
+        assert!(min_us < max_us, "min_us must be less than max_us");
         let clk = clk_sys_freq() as u64; // Hz
         // Aim for tick ≈ 1 µs: divider = clk_sys / 1_000_000 (with /16 fractional)
         let mut div_int = (clk / 1_000_000).clamp(1, 255) as u16;
@@ -123,6 +629,8 @@ impl<'d> Servo<'d> {
         }
 
         let top = SERVO_PERIOD_US - 1; // 19999 -> 20_000 ticks/frame
+        assert!(min_us <= top, "min_us must fit in the PWM frame");
+        assert!(max_us <= top, "max_us must fit in the PWM frame");
 
         let mut cfg = Config::default();
         cfg.top = top;
@@ -144,7 +652,7 @@ impl<'d> Servo<'d> {
             clk, div_int, div_frac, top
         );
 
-        let mut s = Self {
+        let mut servo = Self {
             pwm,
             cfg, // Store config to avoid losing divider on reconfiguration
             top,
@@ -152,16 +660,20 @@ impl<'d> Servo<'d> {
             max_us,
             channel,
         };
-        s.center();
-        s
+        servo.center();
+        servo
     }
 
     /// Center (~midpoint of min/max).
+    ///
+    /// See the [struct-level example](Self) for usage.
     pub fn center(&mut self) {
         self.set_pulse_us(self.min_us + (self.max_us - self.min_us) / 2);
     }
 
     /// Set position in degrees 0..=180 mapped into [min_us, max_us].
+    ///
+    /// See the [struct-level example](Self) for usage.
     pub fn set_degrees(&mut self, degrees: u16) {
         assert!((0..=180).contains(&degrees));
         let us = self.min_us as u32
@@ -170,13 +682,13 @@ impl<'d> Servo<'d> {
         self.set_pulse_us(us as u16);
     }
 
-    /// Set raw pulse width in microseconds (clamped to frame).
+    /// Set raw pulse width in microseconds.
+    ///
+    /// See the [struct-level example](Self) for usage.
     /// NOTE: only update the *compare* register; do not reconfigure the slice.
     #[doc(hidden)]
-    pub fn set_pulse_us(&mut self, mut us: u16) {
-        if us > self.top {
-            us = self.top;
-        }
+    pub fn set_pulse_us(&mut self, us: u16) {
+        assert!(us <= self.top, "pulse width must fit in the PWM frame");
         // One tick ≈ 1 µs, so compare = us.
         // CRITICAL: Update our stored config and reapply it WITH the divider intact.
         // This prevents the divider from being reset to default.
@@ -191,6 +703,8 @@ impl<'d> Servo<'d> {
     ///
     /// This allows the servo to relax and move freely, reducing power consumption
     /// and mechanical stress.
+    ///
+    /// See the [struct-level example](Self) for usage.
     pub fn disable(&mut self) {
         self.cfg.enable = false;
         self.pwm.set_config(&self.cfg);
@@ -199,10 +713,10 @@ impl<'d> Servo<'d> {
     /// Resume sending control signals to the servo.
     ///
     /// The servo will move back to its last commanded position.
+    ///
+    /// See the [struct-level example](Self) for usage.
     pub fn enable(&mut self) {
         self.cfg.enable = true;
         self.pwm.set_config(&self.cfg);
     }
 }
-
-pub use crate::servo;

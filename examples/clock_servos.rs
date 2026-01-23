@@ -18,8 +18,9 @@ use defmt_rtt as _;
 use device_kit::button::{Button, PressDuration, PressedTo};
 use device_kit::clock::{Clock, ClockStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s};
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
+use device_kit::servo;
 use device_kit::servo_animate::{
-    ServoAnimate, ServoAnimateStatic, Step, concat_steps, linear, servo_even,
+    ServoAnimate, ServoAnimateStatic, Step, concat_steps, linear,
 };
 use device_kit::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
 use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};
@@ -73,12 +74,18 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let servo_display = ServoClockDisplay::new(
         ServoAnimate::new(
             &LEFT_SERVO_ANIMATE_STATIC,
-            servo_even!(p.PIN_0, p.PWM_SLICE0, 500, 2500),
+            servo! {
+                pin: p.PIN_0,
+                slice: p.PWM_SLICE0,
+            },
             spawner,
         )?,
         ServoAnimate::new(
             &RIGHT_SERVO_ANIMATE_STATIC,
-            servo_even!(p.PIN_2, p.PWM_SLICE1, 500, 2500),
+            servo! {
+                pin: p.PIN_2,
+                slice: p.PWM_SLICE1,
+            },
             spawner,
         )?,
     );
