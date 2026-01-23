@@ -107,27 +107,30 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     const BLINK_DELAY: Duration = Duration::from_millis(150);
     const COLORS: [RGB8; 4] = [colors::YELLOW, colors::ORANGE, colors::GREEN, colors::BLUE];
-    let mut color_iter = COLORS.iter().cycle();
-    let mut color = *color_iter.next().unwrap();
+    let mut colors = COLORS.iter().cycle();
+    let mut color = *colors.next().unwrap();
 
     loop {
         let mut short_frame = Frame1d::new();
-        let mut long_frame = Frame1d::new();
         for led_index in 0..LedStrip8::LEN {
             loop {
+                let mut long_frame = short_frame;
                 long_frame[led_index] = color;
                 led_strip8.animate([(short_frame, BLINK_DELAY), (long_frame, BLINK_DELAY)])?;
 
+                // Tells if a long or short press. Returns from a long press before button release.
                 match button.wait_for_press_duration().await {
+                    // On a short press, do as before: set the short frame LED and move on.
                     PressDuration::Short => {
+                        short_frame[led_index] = color;
                         break;
                     }
+                    // On a long press, change color for subsequent LEDs.
                     PressDuration::Long => {
-                        color = *color_iter.next().unwrap();
+                        color = *colors.next().unwrap();
                     }
                 }
             }
-            short_frame[led_index] = color;
         }
     }
 }
