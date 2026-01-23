@@ -219,8 +219,8 @@ video = "run --example video --release --target thumbv6m-none-eabi --features pi
 video-check = "check --example video --release --target thumbv6m-none-eabi --features pico1,arm"
 
 # Documentation alias - builds docs and opens in browser via script on WSL
-docdoc = "doc --target thumbv8m.main-none-eabihf --no-deps --features pico2,arm,wifi,doc-images --no-default-features"
-docdoc-check = "check --target thumbv8m.main-none-eabihf --no-deps --features pico2,arm,wifi --no-default-features"
+update-docs = "doc --target thumbv8m.main-none-eabihf --no-deps --features pico2,arm,wifi,doc-images --no-default-features"
+update-docs-check = "check --target thumbv8m.main-none-eabihf --no-deps --features pico2,arm,wifi --no-default-features"
 
 [target.thumbv6m-none-eabi]
 runner = "probe-rs run --chip=RP2040"

@@ -6,7 +6,7 @@ DOC_PATH="$DOC_PARENT/device_kit/index.html"
 
 if [ ! -f "$DOC_PATH" ]; then
   echo "Error: Documentation not found at $DOC_PATH"
-  echo "Run 'cargo docdoc' first to build the docs"
+  echo "Run 'cargo update-docs' first to build the docs"
   exit 1
 fi
 

@@ -2,17 +2,17 @@ open-docs:
 	./scripts/open-docs.sh
 
 show-docs:
-	just docdoc
+	just update-docs
 	./scripts/open-docs.sh
 
-docdoc:
+update-docs:
 	./scripts/docdoc.sh
 
 gather:
 	./scripts/gather.sh
 
 gather-docs:
-	just docdoc
+	just update-docs
 	./scripts/gather-docs.sh
 
 attach-probe:
@@ -31,7 +31,7 @@ pngs-update-all:
 
 # Full validation (docs + embedded + host PNGs)
 verify-all:
-	just docdoc
+	just update-docs
 	cargo check-all
 	just pngs-check-all
 

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 cargo xtask check-docs
-cargo docdoc --features doc-images
+cargo update-docs --features doc-images
 
 DOCS_DIR="target/thumbv8m.main-none-eabihf/doc/device_kit/docs/assets"
 mkdir -p "${DOCS_DIR}"
