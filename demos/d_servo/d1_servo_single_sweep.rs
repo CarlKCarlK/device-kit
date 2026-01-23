@@ -2,7 +2,7 @@
 #![no_main]
 #![cfg(not(feature = "host"))]
 
-use core::{convert::Infallible, panic};
+use core::{convert::Infallible, future, panic};
 use device_kit::{
     Result,
     button::{Button, PressedTo},
@@ -29,24 +29,15 @@ async fn inner_main(_spawner: Spawner) -> Result<Infallible> {
     let mut button = Button::new(p.PIN_13, PressedTo::Ground);
     servo.set_degrees(0);
     Timer::after_millis(400).await;
-    servo.set_degrees(90);
-    Timer::after_millis(400).await;
     servo.set_degrees(180);
     Timer::after_millis(400).await;
-    servo.center();
-    Timer::after_millis(400).await;
+    servo.center(); // cmk000 need "center"
 
-    const STEP_DEGREES: u16 = 10;
-    const MAX_DEGREES: u16 = 180;
-    let mut degrees: u16 = 0;
-
-    loop {
+    // Loop by 10 degrees. Include 180 degrees.
+    for degree in (0..=180).step_by(10).cycle() {
         button.wait_for_press().await;
-        degrees = if degrees + STEP_DEGREES > MAX_DEGREES {
-            0
-        } else {
-            degrees + STEP_DEGREES
-        };
-        servo.set_degrees(degrees);
+        servo.set_degrees(degree);
     }
+
+    future::pending().await // Needed because compiler can't see that loop is infinite
 }
