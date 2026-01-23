@@ -115,6 +115,12 @@ path = "demos/c_button/c2_button_8_color_button_blink.rs"
 test = false
 required-features = ["arm"]
 
+[[bin]]
+name = "demo_d1_servo_single_sweep"
+path = "demos/d_servo/d1_servo_single_sweep.rs"
+test = false
+required-features = ["arm"]
+
 [features]
 default = ["defmt", "pico1", "arm"]
 defmt = []

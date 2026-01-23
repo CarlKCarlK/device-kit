@@ -71,3 +71,13 @@ Run/flash (Pico 1 ARM):
 ```bash
 cargo run --release --bin demo_c1_button_8_yellow_button_blink --target thumbv6m-none-eabi --features pico1,arm
 ```
+
+## D1 – Servo single sweep
+
+Moves one servo on GPIO 11 through a short sequence, then sweeps between 0° and 180°.
+
+Run/flash (Pico 1 ARM):
+
+```bash
+cargo run --release --bin demo_d1_servo_single_sweep --target thumbv6m-none-eabi --features pico1,arm
+```
