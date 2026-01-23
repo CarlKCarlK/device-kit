@@ -61,17 +61,18 @@ pub enum PressDuration {
 /// - [`PressedTo::Voltage`]: Button connects pin to 3.3V when pressed (uses pull-down)
 /// - [`PressedTo::Ground`]: Button connects pin to GND when pressed (uses pull-up)
 ///
-/// **Important**: Pico 2 (RP2350) has a known silicon bug with pull-down resistors.
-/// Use [`PressedTo::Ground`] for Pico 2.
+/// **Important**: Pico 2 (RP2350) has a known silicon bug (erratum E9) with pull-down
+/// resistors that can leave the pin reading HIGH after release. Wire buttons to GND and
+/// use [`PressedTo::Ground`] on Pico 2.
 ///
 /// # Usage
 ///
-/// The [`wait_for_press_duration()`](Self::wait_for_press_duration) method returns as soon as it determines
-/// whether the press is short or long, without waiting for the button to be released.
-/// This allows for responsive UI feedback.
+/// Use [`wait_for_press()`](Self::wait_for_press) when you only need a debounced
+/// press event. It returns on the down edge and does not wait for release.
 ///
-/// If you only need to detect when the button is pressed without measuring duration,
-/// use [`wait_for_press()`](Self::wait_for_press) instead.
+/// Use [`wait_for_press_duration()`](Self::wait_for_press_duration) when you need to
+/// distinguish short vs. long presses. It returns as soon as it can decide, so long
+/// presses are reported before the button is released.
 ///
 /// # Example
 ///
@@ -182,10 +183,18 @@ impl<'a> Button<'a> {
     }
     /// Waits for the next press (button goes down, debounced).
     /// Does not wait for release.
+    ///
+    /// See [`Button`] for usage example
     pub async fn wait_for_press(&mut self) {
         self.wait_for_stable_up().await; // ensure edge-triggered
         self.wait_for_stable_down().await; // return on down
     }
+
+    /// Waits for the next press and returns whether it was short or long (debounced).
+    ///
+    /// Returns as soon as it can decide, so long presses are reported before release.
+    ///
+    /// See [`Button`] for usage example
     pub async fn wait_for_press_duration(&mut self) -> PressDuration {
         self.wait_for_stable_up().await;
         self.wait_for_stable_down().await;
