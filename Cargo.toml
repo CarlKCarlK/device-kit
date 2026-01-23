@@ -69,49 +69,49 @@ required-features = ["pico1"]
 
 [[bin]]
 name = "demo_a1_strip_8_blue_gray"
-path = "demos/a_led/a1_strip_8_blue_gray.rs"
+path = "demos/a_strip/a1_strip_8_blue_gray.rs"
 test = false
 required-features = ["arm"]
 
 [[bin]]
 name = "demo_a2_strip_8_blue_white_blink"
-path = "demos/a_led/a2_strip_8_blue_white_blink.rs"
+path = "demos/a_strip/a2_strip_8_blue_white_blink.rs"
 test = false
 required-features = ["arm"]
 
 [[bin]]
 name = "demo_a3_strip_8_blue_white_blink_animate"
-path = "demos/a_led/a3_strip_8_blue_white_blink_animate.rs"
+path = "demos/a_strip/a3_strip_8_blue_white_blink_animate.rs"
 test = false
 required-features = ["arm"]
 
 [[bin]]
 name = "demo_a4_strip_96_blue_white_dot"
-path = "demos/a_led/a4_strip_96_blue_white_dot.rs"
+path = "demos/a_strip/a4_strip_96_blue_white_dot.rs"
 test = false
 required-features = ["arm"]
 
 [[bin]]
 name = "demo_b1_panel_12x8_rust_cursor"
-path = "demos/b_led/b1_panel_12x8_rust_cursor.rs"
+path = "demos/b_panel/b1_panel_12x8_rust_cursor.rs"
 test = false
 required-features = ["arm"]
 
 [[bin]]
 name = "demo_b2_panel_12x8_text_graphics"
-path = "demos/b_led/b2_panel_12x8_text_graphics.rs"
+path = "demos/b_panel/b2_panel_12x8_text_graphics.rs"
 test = false
 required-features = ["arm"]
 
 [[bin]]
-name = "demo_c1_strip_8_yellow_button_blink"
-path = "demos/c_led/c1_strip_8_yellow_button_blink.rs"
+name = "demo_c1_button_8_yellow_button_blink"
+path = "demos/c_button/c1_button_8_yellow_button_blink.rs"
 test = false
 required-features = ["arm"]
 
 [[bin]]
-name = "demo_c2_strip_8_color_button_blink"
-path = "demos/c_led/c2_strip_8_color_button_blink.rs"
+name = "demo_c2_button_8_color_button_blink"
+path = "demos/c_button/c2_button_8_color_button_blink.rs"
 test = false
 required-features = ["arm"]
 

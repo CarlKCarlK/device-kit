@@ -69,5 +69,5 @@ Blinks a single yellow pixel that advances on each button press, leaving solid y
 Run/flash (Pico 1 ARM):
 
 ```bash
-cargo run --release --bin demo_c1_strip_8_yellow_button_blink --target thumbv6m-none-eabi --features pico1,arm
+cargo run --release --bin demo_c1_button_8_yellow_button_blink --target thumbv6m-none-eabi --features pico1,arm
 ```
