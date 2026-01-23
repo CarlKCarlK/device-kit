@@ -34,24 +34,20 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // (Pico 2 erratum E9 is avoided by wiring buttons to GND.)
     let mut button = Button::new(p.PIN_13, PressedTo::Ground);
 
-    // We also create a LED strip on GPIO0 with length 8.
     let led_strip8 = LedStrip8::new(p.PIN_0, p.PIO0, p.DMA_CH0, spawner)?;
 
-    const BLINK_DELAY: Duration = Duration::from_millis(150);
-
-    // Fill with initial color, YELLOW.
     let steady_frame = Frame1d::filled(colors::YELLOW);
-    let mut blink_frame = Frame1d::filled(colors::YELLOW);
+    let mut blink_frame = steady_frame; // copy
+
     for led_index in (0..LedStrip8::LEN).cycle() {
-        // Make the current LED blink.
-        blink_frame[led_index] = colors::BLACK;
+        blink_frame[led_index] = colors::BLACK; // add hole
+        const BLINK_DELAY: Duration = Duration::from_millis(150);
         led_strip8.animate([(steady_frame, BLINK_DELAY), (blink_frame, BLINK_DELAY)])?;
 
         // Wait for a press. (If down already, waits for release, first.)
         // Do debouncing internally. When pressed, don't wait for release.
         button.wait_for_press().await;
 
-        // Fill in the "hole".
         blink_frame[led_index] = colors::YELLOW;
     }
     future::pending().await // run forever

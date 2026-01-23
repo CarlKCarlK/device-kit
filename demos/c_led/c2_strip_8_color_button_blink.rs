@@ -30,25 +30,26 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let p = embassy_rp::init(Default::default());
 
     let mut button = Button::new(p.PIN_13, PressedTo::Ground);
+
     let led_strip8 = LedStrip8::new(p.PIN_0, p.PIO0, p.DMA_CH0, spawner)?;
 
-    const BLINK_DELAY: Duration = Duration::from_millis(150);
     const COLORS: [RGB8; 4] = [colors::YELLOW, colors::ORANGE, colors::GREEN, colors::BLUE];
-    let mut colors = COLORS.iter().cycle();
-    let mut color = *colors.next().unwrap();
+    let mut colors_iter = COLORS.iter().cycle();
+    let mut color = *colors_iter.next().unwrap();
 
-    // Fill with initial color, YELLOW.
     let mut steady_frame = Frame1d::filled(color);
     let mut blink_frame = steady_frame; // copy
 
     let mut led_index_iter = (0..LedStrip8::LEN).cycle();
     let mut led_index = led_index_iter.next().unwrap();
+
     loop {
-        // Make the current LED blink with the current color.
         blink_frame[led_index] = colors::BLACK;
         steady_frame[led_index] = color;
+        const BLINK_DELAY: Duration = Duration::from_millis(150);
         led_strip8.animate([(blink_frame, BLINK_DELAY), (steady_frame, BLINK_DELAY)])?;
 
+        // Wait for a button press.
         // Tells if a long or short press. Returns from a long press before button release.
         match button.wait_for_press_duration().await {
             // If short, fill "hole" with current color and move to next LED.
@@ -57,10 +58,9 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                 led_index = led_index_iter.next().unwrap()
             }
 
-            // On a long press, change color for subsequent LEDs.
-            // Loop up to continue work on this pixel.
+            // On a long, changes color for subsequent LEDs.
             PressDuration::Long => {
-                color = *colors.next().unwrap();
+                color = *colors_iter.next().unwrap();
             }
         }
     }
