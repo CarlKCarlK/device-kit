@@ -10,14 +10,24 @@ use device_kit::{
 };
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
-use {defmt::info, defmt_rtt as _, panic_probe as _};
+use {defmt_rtt as _, panic_probe as _};
 
 servo_player! {
-    // cmk000 good name?
-    DemoServo {
+    ServoPlayer11 {
         pin: PIN_11,
-        max_steps: 64,
-        // cmk000 what's optional here?
+        max_steps: 40,
+    }
+}
+
+servo_player! {
+    ServoPlayer12 {
+        pin: PIN_12,
+        max_steps: 40,
+
+        // Optional servo parameters; these are the defaults.
+        min_us: 500,
+        max_us: 2500,
+        max_degrees: 180,
     }
 }
 
@@ -31,40 +41,35 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let p = embassy_rp::init(Default::default());
 
     // Create a servo player on GPIO 11
-    info!("Starting servo player demo (GPIO 11)");
-    // cmk000 give the formuala agan here
-    // cmk000 good name?
-    let demo_servo = DemoServo::new(p.PIN_11, p.PWM_SLICE5, spawner)?;
+    // GPIO 11 → (11/2) % 8 = 5 → PWM_SLICE5
+    let servo_player_11 = ServoPlayer11::new(p.PIN_11, p.PWM_SLICE5, spawner)?;
+    // GPIO 12 → (12/2) % 8 = 6 → PWM_SLICE6
+    let servo_player_12 = ServoPlayer12::new(p.PIN_12, p.PWM_SLICE6, spawner)?;
     let mut button = Button::new(p.PIN_13, PressedTo::Ground);
 
-    // It's set here and set_degree in servero
-    demo_servo.set(0);
+    servo_player_11.set_degrees(0);
+    servo_player_12.set_degrees(180);
     Timer::after_millis(400).await;
-    demo_servo.set(180);
-    Timer::after_millis(400).await;
-    demo_servo.set(90);
+    servo_player_11.set_degrees(90);
+    servo_player_12.set_degrees(90);
 
-    // cmk0000 this seems overly complex
     // Create a sweep animation: 0→180 (2s), hold (400ms), 180→0 (2s), hold (400ms)
-    const SWEEP_DURATION: Duration = Duration::from_secs(2);
-    const HOLD_DURATION: Duration = Duration::from_millis(400);
+    // An array, list, slice, or iterator of (degrees, duration) pairs can be used.
+    let steps = linear(0, 180, 19, Duration::from_secs(2))
+        .chain([(180, Duration::from_millis(400))])
+        .chain(linear(180, 0, 19, Duration::from_secs(2)))
+        .chain([(0, Duration::from_millis(400))]);
 
     loop {
         match button.wait_for_press_duration().await {
             PressDuration::Short => {
-                // Start the sweep animation (repeats until interrupted).
-                info!("Servo animate sweep");
-                // cmk000 understand the enum better
-                let steps = linear(0, 180, SWEEP_DURATION, 19)
-                    .chain([(180, HOLD_DURATION)])
-                    .chain(linear(180, 0, SWEEP_DURATION, 19))
-                    .chain([(0, HOLD_DURATION)]);
-                demo_servo.animate(steps, AtEnd::Loop);
+                servo_player_11.animate(steps.clone(), AtEnd::Relax);
+                servo_player_12.animate(steps.clone(), AtEnd::Loop);
             }
             PressDuration::Long => {
                 // Interrupt animation and move to 90 degrees.
-                info!("Servo set to 90 degrees");
-                demo_servo.set(90);
+                servo_player_11.set_degrees(90);
+                servo_player_12.set_degrees(90);
             }
         }
     }

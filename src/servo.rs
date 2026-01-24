@@ -665,8 +665,7 @@ servo_pin_map!(PIN_47, PWM_SLICE11, B);
 ///
 ///     servo.set_degrees(45);  // Move to 45 degrees
 ///     servo.set_degrees(90);  // Move to 90 degrees
-///     servo.disable();        // Let the servo relax
-///     servo.enable();         // Resume control signals
+///     servo.disable();        // Let the servo relax, will re-enable on next set_degrees()
 /// }
 /// ```
 pub struct Servo<'d> {

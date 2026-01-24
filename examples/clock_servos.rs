@@ -330,21 +330,21 @@ impl ServoClockDisplay {
     }
 
     async fn show_portal_ready(&self) {
-        self.bottom.set(90);
-        self.top.set(90);
+        self.bottom.set_degrees(90);
+        self.top.set_degrees(90);
     }
 
     async fn show_connecting(&self) {
         // Keep bottom servo fixed; animate top servo through a two-phase sweep.
-        self.bottom.set(0);
+        self.bottom.set_degrees(0);
         // cmk understand if we really want this to have 11 steps and a sleep after each.
         const FIVE_SECONDS: Duration = Duration::from_secs(5);
         self.top.animate(
-            linear(180 - 18, 0, FIVE_SECONDS, 10).chain(linear(0, 180, FIVE_SECONDS, 2)),
+            linear(180 - 18, 0, 10, FIVE_SECONDS).chain(linear(0, 180, 2, FIVE_SECONDS)),
             AtEnd::Loop,
         );
         self.bottom.animate(
-            linear(0, 180, FIVE_SECONDS, 2).chain(linear(180 - 18, 0, FIVE_SECONDS, 10)),
+            linear(0, 180, 2, FIVE_SECONDS).chain(linear(180 - 18, 0, 10, FIVE_SECONDS)),
             AtEnd::Loop,
         );
     }
@@ -375,8 +375,8 @@ impl ServoClockDisplay {
             u16::try_from(physical_left).expect("servo angles must be between 0 and 180 degrees");
         let right_angle =
             u16::try_from(physical_right).expect("servo angles must be between 0 and 180 degrees");
-        self.bottom.set(left_angle);
-        self.top.set(right_angle);
+        self.bottom.set_degrees(left_angle);
+        self.top.set_degrees(right_angle);
     }
 }
 

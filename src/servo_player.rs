@@ -80,8 +80,8 @@ impl Iterator for Linear {
 
 impl ExactSizeIterator for Linear {}
 
-/// Build a linear sequence of animation steps from `start_degrees` to `end_degrees` over
-/// `total_duration` split into `steps` (inclusive of endpoints).
+/// Build a linear sequence of animation steps from `start_degrees` to `end_degrees`
+/// split into `steps` (inclusive of endpoints) over `total_duration`.
 ///
 /// Returns a [`Linear`] iterator that yields `(degrees, duration)` tuples.
 ///
@@ -90,8 +90,8 @@ impl ExactSizeIterator for Linear {}
 pub fn linear(
     start_degrees: u16,
     end_degrees: u16,
-    total_duration: Duration,
     steps: usize,
+    total_duration: Duration,
 ) -> Linear {
     assert!(steps > 0, "at least one step required");
     assert!(
@@ -197,7 +197,7 @@ impl<const MAX_STEPS: usize> ServoPlayerStatic<MAX_STEPS> {
 ///     let servo_sweep = ServoSweep::new(p.PIN_11, p.PWM_SLICE5, spawner).unwrap();
 ///
 ///     const SWEEP_SECONDS: Duration = Duration::from_secs(2);
-///     servo_sweep.animate(linear(0, 180, SWEEP_SECONDS, 11), AtEnd::Loop);
+///     servo_sweep.animate(linear(0, 180, 11, SWEEP_SECONDS), AtEnd::Loop);
 /// }
 /// ```
 pub struct ServoPlayer<const MAX_STEPS: usize> {
@@ -225,7 +225,7 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
     /// Set the target angle. The most recent command always wins.
     ///
     /// See the [struct-level example](Self) for usage.
-    pub fn set(&self, degrees: u16) {
+    pub fn set_degrees(&self, degrees: u16) {
         self.servo_player_static
             .signal(PlayerCommand::Set { degrees });
     }
@@ -236,7 +236,7 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
     /// references to collections.
     ///
     /// See the [struct-level example](Self) for usage.
-    pub fn animate<I>(&self, steps: I, mode: AtEnd)
+    pub fn animate<I>(&self, steps: I, at_end: AtEnd)
     where
         I: IntoIterator,
         I::Item: Borrow<(u16, Duration)>,
@@ -257,7 +257,7 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
 
         self.servo_player_static.signal(PlayerCommand::Animate {
             steps: sequence,
-            mode,
+            mode: at_end,
         });
     }
 }
