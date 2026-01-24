@@ -20,6 +20,7 @@ use embassy_rp::init;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::signal::Signal;
 use embassy_time::{Duration, Timer};
+use heapless::Vec;
 use panic_probe as _;
 use smart_leds::colors;
 
@@ -114,6 +115,45 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     }
 }
 
+/// Generate N intermediate frames by linearly interpolating between two frames.
+/// Returns frames excluding the start and end frames themselves.
+fn fade<const W: usize, const H: usize, const N: usize>(
+    start_frame: Frame2d<W, H>,
+    end_frame: Frame2d<W, H>,
+) -> Vec<Frame2d<W, H>, N> {
+    let mut frames = Vec::new();
+
+    for step_index in 1..=N {
+        let mut interpolated_frame = Frame2d::<W, H>::new();
+
+        for y_index in 0..H {
+            for x_index in 0..W {
+                let start_color = start_frame[(x_index, y_index)];
+                let end_color = end_frame[(x_index, y_index)];
+
+                // Linear interpolation: start + (end - start) * t, where t = step_index / (N + 1)
+                let t = step_index as u16;
+                let divisor = (N + 1) as u16;
+
+                let interpolated_color = RGB8 {
+                    r: ((start_color.r as u16 * (divisor - t) + end_color.r as u16 * t) / divisor)
+                        as u8,
+                    g: ((start_color.g as u16 * (divisor - t) + end_color.g as u16 * t) / divisor)
+                        as u8,
+                    b: ((start_color.b as u16 * (divisor - t) + end_color.b as u16 * t) / divisor)
+                        as u8,
+                };
+
+                interpolated_frame[(x_index, y_index)] = interpolated_color;
+            }
+        }
+
+        frames.push(interpolated_frame).ok();
+    }
+
+    frames
+}
+
 #[embassy_executor::task]
 async fn conway_task(
     led16x16: Led16x16,
@@ -160,8 +200,50 @@ async fn conway_task(
                                 "Stasis detected ({} live cells for 15 generations), restarting with new random pattern",
                                 live_count
                             );
-                            board = Board::<{ Led16x16::HEIGHT }, { Led16x16::WIDTH }>::new();
-                            board.add_pattern(Pattern::Random);
+
+                            // Capture old pattern before creating new one
+                            let old_board = board;
+                            let mut new_board =
+                                Board::<{ Led16x16::HEIGHT }, { Led16x16::WIDTH }>::new();
+                            new_board.add_pattern(Pattern::Random);
+
+                            // Generate fade animation frames (5 seconds total)
+                            const FADE_FRAMES: usize = 40;
+                            const FRAME_DURATION_MS: u64 = 125; // 40 frames * 125ms = 5000ms
+
+                            let start_frame = old_board.to_frame(colors::LIME);
+                            let black_frame =
+                                Frame2d::<{ Led16x16::WIDTH }, { Led16x16::HEIGHT }>::new();
+                            let end_frame = new_board.to_frame(colors::LIME);
+
+                            // Fade out: old pattern to black
+                            let fade_out_frames =
+                                fade::<{ Led16x16::WIDTH }, { Led16x16::HEIGHT }, FADE_FRAMES>(
+                                    start_frame,
+                                    black_frame,
+                                );
+
+                            // Fade in: black to new pattern
+                            let fade_in_frames =
+                                fade::<{ Led16x16::WIDTH }, { Led16x16::HEIGHT }, FADE_FRAMES>(
+                                    black_frame,
+                                    end_frame,
+                                );
+
+                            // Play fade-out animation
+                            for frame in fade_out_frames.iter() {
+                                led16x16.write_frame(*frame).expect("write_frame failed");
+                                Timer::after(Duration::from_millis(FRAME_DURATION_MS)).await;
+                            }
+
+                            // Play fade-in animation
+                            for frame in fade_in_frames.iter() {
+                                led16x16.write_frame(*frame).expect("write_frame failed");
+                                Timer::after(Duration::from_millis(FRAME_DURATION_MS)).await;
+                            }
+
+                            // Update to new board
+                            board = new_board;
                             stasis_tracker = (0, 0);
                         }
                     } else {
@@ -197,6 +279,7 @@ async fn conway_task(
 }
 
 /// Conway's Game of Life board with toroidal wrapping.
+#[derive(Copy, Clone)]
 struct Board<const H: usize, const W: usize> {
     cells: [[bool; W]; H],
 }

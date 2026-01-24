@@ -390,8 +390,6 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
 ///
 /// ## Optional Fields
 ///
-/// - `slice` — PWM slice (default: automatically determined from pin via type system)
-/// - `channel` — PWM channel: `A`, `B`, `even`, or `odd` (default: automatically determined from pin)
 /// - `min_us` — Minimum pulse width in microseconds for 0° (default: 500)
 /// - `max_us` — Maximum pulse width in microseconds for max_degrees (default: 2500)
 /// - `max_degrees` — Maximum servo angle in degrees (default: 270)
