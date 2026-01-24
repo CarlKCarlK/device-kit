@@ -33,7 +33,7 @@ led2d! {
         pin: PIN_6,
         led_layout: LED_LAYOUT_16X16,
         max_current: Current::Milliamps(500),
-        max_frames: 1,
+        max_frames: 10,
         font: Led2dFont::Font4x6Trim,
     }
 }
@@ -168,8 +168,10 @@ async fn conway_task(
     let mut stasis_tracker = (0u8, 0u16);
 
     loop {
-        let frame = board.to_frame(colors::LIME);
-        led16x16.write_frame(frame).expect("write_frame failed");
+        let current_frame = board.to_frame(colors::LIME);
+        led16x16
+            .write_frame(current_frame)
+            .expect("write_frame failed");
 
         // Calculate frame duration based on speed mode
         let frame_duration = match speed_mode {
@@ -178,10 +180,34 @@ async fn conway_task(
             SpeedMode::Faster => Duration::from_millis(5),
         };
 
-        // Race between timer and incoming message
+        // Race between timer and incoming message during steady frame display
         match select(Timer::after(frame_duration), signal.wait()).await {
             Either::First(_) => {
-                // Timer fired, advance generation
+                // Timer fired, now fade to next generation
+                let mut next_board = board;
+                next_board.step();
+                let next_frame = next_board.to_frame(colors::LIME);
+
+                // Generate and play fade animation (duration / 2)
+                const FADE_FRAMES: usize = 10;
+                let fade_frames = fade::<{ Led16x16::WIDTH }, { Led16x16::HEIGHT }, FADE_FRAMES>(
+                    current_frame,
+                    next_frame,
+                );
+
+                // Start animation and let it play for exactly one loop
+                let frame_duration = frame_duration / (2 * FADE_FRAMES as u32);
+                let frames_with_duration: Vec<_, FADE_FRAMES> = fade_frames
+                    .iter()
+                    .map(|frame| (*frame, frame_duration))
+                    .collect();
+                led16x16
+                    .animate(frames_with_duration)
+                    .expect("animate failed");
+                let total_fade_duration = frame_duration * FADE_FRAMES as u32;
+                Timer::after(total_fade_duration).await;
+
+                // Advance to next generation
                 board.step();
 
                 // Check for stasis in random mode
