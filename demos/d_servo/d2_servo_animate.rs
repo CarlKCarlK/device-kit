@@ -60,28 +60,27 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         [(0, Duration::from_millis(400))]             // hold
     );
 
-    // Put the two servos in a "ready" position.
-    // Start move to 90 degrees, wait, and then quiet the servos.
-    servo_player_11.set_degrees(90);
-    servo_player_12.set_degrees(90);
-    Timer::after_millis(500).await;
-    servo_player_11.relax();
-    servo_player_12.relax();
-
     loop {
-        match button.wait_for_press_duration().await {
-            PressDuration::Short => {
-                // Play the sweep animation with two endings.
-                servo_player_11.animate(STEPS, AtEnd::Relax);
-                servo_player_12.animate(STEPS, AtEnd::Loop);
-            }
-            PressDuration::Long => {
-                // Start move to 90 degrees, wait, and then quiet the servos.
-                servo_player_11.set_degrees(90);
-                servo_player_12.set_degrees(90);
-                Timer::after_millis(500).await;
-                servo_player_11.relax();
-                servo_player_12.relax();
+        // Put the two servos in a "ready" position.
+        servo_player_11.set_degrees(0);
+        servo_player_12.set_degrees(180);
+        Timer::after_millis(500).await;
+        servo_player_11.set_degrees(90);
+        servo_player_12.set_degrees(90);
+        Timer::after_millis(500).await;
+        servo_player_11.relax(); // make the servos quiet.
+        servo_player_12.relax();
+
+        loop {
+            // On short press, (re)start the sweep animation on both servos.
+            match button.wait_for_press_duration().await {
+                PressDuration::Short => {
+                    // Play the sweep animation with two endings.
+                    servo_player_11.animate(STEPS, AtEnd::Relax);
+                    servo_player_12.animate(STEPS, AtEnd::Loop);
+                }
+                // On long press, exit inner loop and go back to "ready" position.
+                PressDuration::Long => break,
             }
         }
     }
