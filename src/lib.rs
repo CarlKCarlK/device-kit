@@ -66,8 +66,6 @@ pub mod rfid;
 #[cfg(not(feature = "host"))]
 pub mod servo;
 #[cfg(not(feature = "host"))]
-pub mod servo_animate;
-#[cfg(not(feature = "host"))]
 pub mod servo_player;
 #[cfg(not(feature = "host"))]
 pub mod time_sync;

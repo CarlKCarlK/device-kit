@@ -120,7 +120,6 @@ impl ServoPlayerStatic {
 /// servo_player! {
 ///     ServoSweep {
 ///         pin: PIN_11,
-///         slice: PWM_SLICE5,
 ///     }
 /// }
 ///
@@ -130,7 +129,7 @@ impl ServoPlayerStatic {
 ///     const SWEEP_SECONDS: Duration = Duration::from_secs(2);
 ///     let sweep = linear::<11>(0, 180, SWEEP_SECONDS);
 ///     let sequence = concat_steps::<16>(&[&sweep]);
-///     servo_sweep.animate(&sequence).await;
+///     servo_sweep.animate(&sequence);
 /// }
 /// ```
 pub struct ServoPlayer {
@@ -710,6 +709,31 @@ macro_rules! __servo_player_impl {
         }
     };
 
+    // Fill defaults: terminate and build
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        max_degrees: $max_degrees:expr,
+        fields: [ ]
+    ) => {
+        $crate::__servo_player_impl! {
+            @__build
+            vis: $vis,
+            name: $name,
+            pin: $pin,
+            slice: $slice,
+            channel: $channel,
+            min_us: $min_us,
+            max_us: $max_us,
+            max_degrees: $max_degrees
+        }
+    };
+
     // Build errors for missing fields
     (@__build
         vis: $vis:vis,
@@ -724,17 +748,74 @@ macro_rules! __servo_player_impl {
         compile_error!("servo_player! requires `pin: ...`");
     };
 
+    // Build with all fields set (slice can be _UNSET_ - it's in the new() signature)
     (@__build
         vis: $vis:vis,
         name: $name:ident,
-        pin: $pin:tt,
+        pin: $pin:ident,
         slice: _UNSET_,
         channel: $channel:tt,
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr
     ) => {
-        compile_error!("servo_player! requires `slice: ...`");
+        $crate::servo_player::paste::paste! {
+            static [<$name:upper _SERVO_PLAYER_STATIC>]: $crate::servo_player::ServoPlayerStatic =
+                $crate::servo_player::ServoPlayer::new_static();
+            static [<$name:upper _SERVO_PLAYER_CELL>]: ::static_cell::StaticCell<$name> =
+                ::static_cell::StaticCell::new();
+
+            $vis struct $name {
+                player: $crate::servo_player::ServoPlayer,
+            }
+
+            impl $name {
+                /// Create the servo player and spawn its background task.
+                ///
+                /// The slice is automatically determined from the pin via the type system.
+                ///
+                /// See the [struct-level example](Self) for usage.
+                pub fn new<S: 'static>(
+                    pin: impl Into<::embassy_rp::Peri<'static, ::embassy_rp::peripherals::$pin>>,
+                    slice: impl Into<::embassy_rp::Peri<'static, S>>,
+                    spawner: ::embassy_executor::Spawner,
+                ) -> $crate::Result<&'static Self>
+                where
+                    ::embassy_rp::peripherals::$pin: $crate::servo::ServoPwmPin<S>,
+                    S: ::embassy_rp::PeripheralType,
+                {
+                    let pin = pin.into();
+                    let slice = slice.into();
+                    let servo = $crate::servo::servo_from_pin_slice(
+                        pin,
+                        slice,
+                        $min_us,
+                        $max_us,
+                        $max_degrees
+                    );
+                    let token = [<$name:snake _servo_player_task>](&[<$name:upper _SERVO_PLAYER_STATIC>], servo);
+                    spawner.spawn(token)?;
+                    let player = $crate::servo_player::ServoPlayer::new(&[<$name:upper _SERVO_PLAYER_STATIC>]);
+                    Ok([<$name:upper _SERVO_PLAYER_CELL>].init(Self { player }))
+                }
+            }
+
+            impl ::core::ops::Deref for $name {
+                type Target = $crate::servo_player::ServoPlayer;
+
+                fn deref(&self) -> &Self::Target {
+                    &self.player
+                }
+            }
+
+            #[::embassy_executor::task]
+            async fn [<$name:snake _servo_player_task>](
+                servo_player_static: &'static $crate::servo_player::ServoPlayerStatic,
+                servo: $crate::servo::Servo<'static>,
+            ) -> ! {
+                $crate::servo_player::device_loop(servo_player_static, servo).await
+            }
+        }
     };
 
     (@__build

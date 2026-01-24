@@ -6,12 +6,17 @@ use core::{convert::Infallible, panic};
 use device_kit::{
     Result,
     button::{Button, PressDuration, PressedTo},
-    servo,
-    servo_animate::{concat_steps, linear, ServoAnimate, ServoAnimateStatic, Step},
+    servo_player::{Step, concat_steps, linear, servo_player},
 };
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 use {defmt::info, defmt_rtt as _, panic_probe as _};
+
+servo_player! {
+    DemoServo {
+        pin: PIN_11,
+    }
+}
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
@@ -22,24 +27,16 @@ async fn main(spawner: Spawner) -> ! {
 async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let p = embassy_rp::init(Default::default());
 
-    // Create a servo animator on GPIO 11
-    info!("Starting servo animate demo (GPIO 11)");
-    static SERVO_ANIMATE_STATIC: ServoAnimateStatic = ServoAnimate::new_static();
-    let servo_animate = ServoAnimate::new(
-        &SERVO_ANIMATE_STATIC,
-        servo! {
-            pin: p.PIN_11,
-            slice: p.PWM_SLICE5,  // rule: slice = (gpio/2) % 8; GPIO11 -> 5
-        },
-        spawner,
-    )?;
+    // Create a servo player on GPIO 11
+    info!("Starting servo player demo (GPIO 11)");
+    let servo = DemoServo::new(p.PIN_11, p.PWM_SLICE5, spawner)?;
     let mut button = Button::new(p.PIN_13, PressedTo::Ground);
 
-    servo_animate.set(0).await;
+    servo.set(0);
     Timer::after_millis(400).await;
-    servo_animate.set(180).await;
+    servo.set(180);
     Timer::after_millis(400).await;
-    servo_animate.set(90).await;
+    servo.set(90);
 
     const SWEEP_SECONDS: Duration = Duration::from_secs(2);
     const HOLD_MILLIS: Duration = Duration::from_millis(400);
@@ -60,12 +57,12 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             PressDuration::Short => {
                 // Start the sweep animation (repeats until interrupted).
                 info!("Servo animate sweep");
-                servo_animate.animate(&animate_sequence).await;
+                servo.animate(&animate_sequence);
             }
             PressDuration::Long => {
                 // Interrupt animation and move to 90 degrees.
                 info!("Servo set to 90 degrees");
-                servo_animate.set(90).await;
+                servo.set(90);
             }
         }
     }
