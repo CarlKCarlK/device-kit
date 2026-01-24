@@ -46,7 +46,7 @@ async fn inner_main(_spawner: Spawner) -> Result<Infallible> {
             PressDuration::Long => {
                 // Disable can make the servo quiet.
                 // Calling set_degrees() later will re-enable it.
-                servo.disable();
+                servo.relax();
             }
         }
     }

@@ -13,7 +13,7 @@ use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 use {defmt_rtt as _, panic_probe as _};
 
-// Define a struct `ServoPlayer11` to servo player on PIN_11
+// Define a struct `ServoPlayer11` to control a servo player on PIN_11.
 servo_player! {
     ServoPlayer11 {
         pin: PIN_11,
@@ -21,7 +21,8 @@ servo_player! {
     }
 }
 
-// Can control up to 8 servos.
+// Define a struct `ServoPlayer12` to control a servo player on PIN_12.
+// Can control up to 8 servos. This demo controls 2.
 servo_player! {
     ServoPlayer12 {
         pin: PIN_12,
@@ -50,35 +51,37 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let servo_player_12 = ServoPlayer12::new(p.PIN_12, p.PWM_SLICE6, spawner)?;
     let mut button = Button::new(p.PIN_13, PressedTo::Ground);
 
-    // But the two servos in the center position to start.
-    servo_player_11.set_degrees(0);
-    servo_player_12.set_degrees(180);
-    Timer::after_millis(400).await;
+    // Create a const array of (degrees, duration) steps for sweeping the servo.
+    // Compiler will catch size mismatches.
+    const STEPS: [(u16, Duration); 40] = combine!(
+        linear::<19>(0, 180, Duration::from_secs(2)), // sweep up
+        [(180, Duration::from_millis(400))],          // hold
+        linear::<19>(180, 0, Duration::from_secs(2)), // sweep down
+        [(0, Duration::from_millis(400))]             // hold
+    );
+
+    // Put the two servos in a "ready" position.
+    // Start move to 90 degrees, wait, and then quiet the servos.
     servo_player_11.set_degrees(90);
     servo_player_12.set_degrees(90);
-
-    // Create a sweep animation: 0→180 (2s), hold (400ms), 180→0 (2s), hold (400ms)
-    // Build animation using const arrays that concatenate at compile time.
-    const SWEEP_UP: [(u16, Duration); 19] = linear(0, 180, Duration::from_secs(2));
-    const SWEEP_DN: [(u16, Duration); 19] = linear(180, 0, Duration::from_secs(2));
-    const STEPS: [(u16, Duration); 40] = combine!(
-        SWEEP_UP,
-        [(180, Duration::from_millis(400))],
-        SWEEP_DN,
-        [(0, Duration::from_millis(400))]
-    );
+    Timer::after_millis(500).await;
+    servo_player_11.relax();
+    servo_player_12.relax();
 
     loop {
         match button.wait_for_press_duration().await {
             PressDuration::Short => {
-                //Play the sweep animation.
+                // Play the sweep animation with two endings.
                 servo_player_11.animate(STEPS, AtEnd::Relax);
                 servo_player_12.animate(STEPS, AtEnd::Loop);
             }
             PressDuration::Long => {
-                // Interrupt animation and move to 90 degrees.
-                servo_player_11.animate([(90, Duration::from_millis(500))], AtEnd::Relax);
-                servo_player_12.animate([(90, Duration::from_millis(500))], AtEnd::Relax);
+                // Start move to 90 degrees, wait, and then quiet the servos.
+                servo_player_11.set_degrees(90);
+                servo_player_12.set_degrees(90);
+                Timer::after_millis(500).await;
+                servo_player_11.relax();
+                servo_player_12.relax();
             }
         }
     }

@@ -665,7 +665,7 @@ servo_pin_map!(PIN_47, PWM_SLICE11, B);
 ///
 ///     servo.set_degrees(45);  // Move to 45 degrees
 ///     servo.set_degrees(90);  // Move to 90 degrees
-///     servo.disable();        // Let the servo relax, will re-enable on next set_degrees()
+///     servo.relax();          // Let the servo relax, will re-enable on next set_degrees()
 /// }
 /// ```
 pub struct Servo<'d> {
@@ -816,7 +816,7 @@ impl<'d> Servo<'d> {
     /// and mechanical stress.
     ///
     /// See the [struct-level example](Self) for usage.
-    pub fn disable(&mut self) {
+    pub fn relax(&mut self) {
         if self.state == ServoState::Disabled {
             return;
         }
@@ -831,7 +831,7 @@ impl<'d> Servo<'d> {
     /// The servo will move back to its last commanded position.
     ///
     /// See the [struct-level example](Self) for usage.
-    pub fn enable(&mut self) {
+    pub fn hold(&mut self) {
         if self.state == ServoState::Enabled {
             return;
         }

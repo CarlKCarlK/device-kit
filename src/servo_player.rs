@@ -26,6 +26,8 @@ enum PlayerCommand<const MAX_STEPS: usize> {
         steps: Vec<(u16, Duration), MAX_STEPS>,
         mode: AtEnd,
     },
+    Hold,
+    Relax,
 }
 
 /// Animation end behavior.
@@ -234,6 +236,20 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
     pub fn set_degrees(&self, degrees: u16) {
         self.servo_player_static
             .signal(PlayerCommand::Set { degrees });
+    }
+
+    /// Hold the servo at its current position (turn on PWM).
+    ///
+    /// See the [struct-level example](Self) for usage.
+    pub fn hold(&self) {
+        self.servo_player_static.signal(PlayerCommand::Hold);
+    }
+
+    /// Relax the servo (turn off PWM, servo can move freely).
+    ///
+    /// See the [struct-level example](Self) for usage.
+    pub fn relax(&self) {
+        self.servo_player_static.signal(PlayerCommand::Relax);
     }
 
     /// Animate the servo through a sequence of angles with per-step hold durations.
@@ -1138,6 +1154,14 @@ pub async fn device_loop<const MAX_STEPS: usize>(
                 servo.set_degrees(current_degrees);
                 command = servo_player_static.wait().await;
             }
+            PlayerCommand::Hold => {
+                servo.hold();
+                command = servo_player_static.wait().await;
+            }
+            PlayerCommand::Relax => {
+                servo.relax();
+                command = servo_player_static.wait().await;
+            }
             PlayerCommand::Animate { steps, mode } => {
                 command = run_animation(
                     &steps,
@@ -1182,7 +1206,7 @@ async fn run_animation<const MAX_STEPS: usize>(
             }
             AtEnd::Relax => {
                 // Disable PWM (servo relaxes) and wait for next command
-                servo.disable();
+                servo.relax();
                 return servo_player_static.wait().await;
             }
         }
