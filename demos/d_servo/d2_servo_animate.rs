@@ -15,6 +15,7 @@ use {defmt::info, defmt_rtt as _, panic_probe as _};
 servo_player! {
     DemoServo {
         pin: PIN_11,
+        max_steps: 64,
     }
 }
 

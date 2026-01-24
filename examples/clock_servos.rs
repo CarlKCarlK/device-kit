@@ -34,14 +34,14 @@ const FAST_MODE_SPEED: f32 = 720.0;
 servo_player! {
     BottomServoPlayer {
         pin: PIN_11,
-        slice: PWM_SLICE5,
+        max_steps: 30,
     }
 }
 
 servo_player! {
     TopServoPlayer {
         pin: PIN_12,
-        slice: PWM_SLICE6,
+        max_steps: 30,
     }
 }
 

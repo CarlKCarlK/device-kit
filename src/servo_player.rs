@@ -17,9 +17,9 @@ pub use crate::servo::servo;
 pub use paste;
 
 /// Commands sent to the servo player device.
-enum PlayerCommand {
+enum PlayerCommand<const MAX_STEPS: usize> {
     Set { degrees: u16 },
-    Animate { steps: AnimateSequence },
+    Animate { steps: Vec<Step, MAX_STEPS> },
 }
 
 /// A single animation step: hold `degrees` for `duration`.
@@ -63,8 +63,6 @@ pub fn linear<const N: usize>(
     })
 }
 
-type AnimateSequence = Vec<Step, 16>;
-
 /// Concatenate arrays of animation [`Step`] values into a single sequence.
 ///
 /// See the [struct-level example](ServoPlayer) for usage.
@@ -80,11 +78,11 @@ pub fn concat_steps<const CAP: usize>(sequences: &[&[Step]]) -> Vec<Step, CAP> {
 }
 
 /// Static resources for [`ServoPlayer`].
-pub struct ServoPlayerStatic {
-    command: Signal<CriticalSectionRawMutex, PlayerCommand>,
+pub struct ServoPlayerStatic<const MAX_STEPS: usize> {
+    command: Signal<CriticalSectionRawMutex, PlayerCommand<MAX_STEPS>>,
 }
 
-impl ServoPlayerStatic {
+impl<const MAX_STEPS: usize> ServoPlayerStatic<MAX_STEPS> {
     /// Create static resources for the servo player device.
     #[must_use]
     pub const fn new_static() -> Self {
@@ -93,11 +91,11 @@ impl ServoPlayerStatic {
         }
     }
 
-    fn signal(&self, command: PlayerCommand) {
+    fn signal(&self, command: PlayerCommand<MAX_STEPS>) {
         self.command.signal(command);
     }
 
-    async fn wait(&self) -> PlayerCommand {
+    async fn wait(&self) -> PlayerCommand<MAX_STEPS> {
         self.command.wait().await
     }
 }
@@ -132,14 +130,14 @@ impl ServoPlayerStatic {
 ///     servo_sweep.animate(&sequence);
 /// }
 /// ```
-pub struct ServoPlayer {
-    servo_player_static: &'static ServoPlayerStatic,
+pub struct ServoPlayer<const MAX_STEPS: usize> {
+    servo_player_static: &'static ServoPlayerStatic<MAX_STEPS>,
 }
 
-impl ServoPlayer {
+impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
     /// Create static resources for a servo player.
     #[must_use]
-    pub const fn new_static() -> ServoPlayerStatic {
+    pub const fn new_static() -> ServoPlayerStatic<MAX_STEPS> {
         ServoPlayerStatic::new_static()
     }
 
@@ -147,7 +145,7 @@ impl ServoPlayer {
     ///
     /// See the [struct-level example](Self) for usage.
     #[must_use]
-    pub const fn new(servo_player_static: &'static ServoPlayerStatic) -> Self {
+    pub const fn new(servo_player_static: &'static ServoPlayerStatic<MAX_STEPS>) -> Self {
         Self {
             servo_player_static,
         }
@@ -167,9 +165,12 @@ impl ServoPlayer {
     /// See the [struct-level example](Self) for usage.
     pub fn animate(&self, steps: &[Step]) {
         assert!(!steps.is_empty(), "animate requires at least one step");
-        let mut sequence: AnimateSequence = Vec::new();
+        assert!(MAX_STEPS > 0, "animate disabled: max_steps is 0");
+        let mut sequence: Vec<Step, MAX_STEPS> = Vec::new();
         for step in steps {
-            sequence.push(*step).expect("animate sequence fits");
+            sequence
+                .push(*step)
+                .expect("animate sequence fits within max_steps");
         }
 
         self.servo_player_static
@@ -205,6 +206,7 @@ macro_rules! __servo_player_impl {
             min_us: $crate::servo::SERVO_MIN_US_DEFAULT,
             max_us: $crate::servo::SERVO_MAX_US_DEFAULT,
             max_degrees: $crate::servo::Servo::DEFAULT_MAX_DEGREES,
+            max_steps: 16,
             fields: [ $($fields)* ]
         }
     };
@@ -225,6 +227,7 @@ macro_rules! __servo_player_impl {
             min_us: $crate::servo::SERVO_MIN_US_DEFAULT,
             max_us: $crate::servo::SERVO_MAX_US_DEFAULT,
             max_degrees: $crate::servo::Servo::DEFAULT_MAX_DEGREES,
+            max_steps: 16,
             fields: [ $($fields)* ]
         }
     };
@@ -239,6 +242,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ pin: $pin_value:ident $(, $($rest:tt)* )? ]
     ) => {
         $crate::__servo_player_impl! {
@@ -251,6 +255,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ $($($rest)*)? ]
         }
     };
@@ -264,6 +269,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ pin: $pin_value:ident ]
     ) => {
         $crate::__servo_player_impl! {
@@ -276,6 +282,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ ]
         }
     };
@@ -290,6 +297,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ slice: $slice_value:ident $(, $($rest:tt)* )? ]
     ) => {
         $crate::__servo_player_impl! {
@@ -302,6 +310,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ $($($rest)*)? ]
         }
     };
@@ -315,6 +324,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ slice: $slice_value:ident ]
     ) => {
         $crate::__servo_player_impl! {
@@ -327,6 +337,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ ]
         }
     };
@@ -341,6 +352,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ min_us: $min_us_value:expr $(, $($rest:tt)* )? ]
     ) => {
         $crate::__servo_player_impl! {
@@ -353,6 +365,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us_value,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ $($($rest)*)? ]
         }
     };
@@ -366,6 +379,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ min_us: $min_us_value:expr ]
     ) => {
         $crate::__servo_player_impl! {
@@ -378,6 +392,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us_value,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ ]
         }
     };
@@ -392,6 +407,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ max_us: $max_us_value:expr $(, $($rest:tt)* )? ]
     ) => {
         $crate::__servo_player_impl! {
@@ -404,6 +420,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us_value,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ $($($rest)*)? ]
         }
     };
@@ -417,6 +434,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ max_us: $max_us_value:expr ]
     ) => {
         $crate::__servo_player_impl! {
@@ -429,6 +447,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us_value,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ ]
         }
     };
@@ -443,6 +462,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ max_degrees: $max_degrees_value:expr $(, $($rest:tt)* )? ]
     ) => {
         $crate::__servo_player_impl! {
@@ -455,6 +475,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees_value,
+            max_steps: $max_steps,
             fields: [ $($($rest)*)? ]
         }
     };
@@ -468,6 +489,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ max_degrees: $max_degrees_value:expr ]
     ) => {
         $crate::__servo_player_impl! {
@@ -480,6 +502,62 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees_value,
+            max_steps: $max_steps,
+            fields: [ ]
+        }
+    };
+
+    // Fill defaults: max_steps
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
+        fields: [ max_steps: $max_steps_value:expr $(, $($rest:tt)* )? ]
+    ) => {
+        $crate::__servo_player_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pin: $pin,
+            slice: $slice,
+            channel: $channel,
+            min_us: $min_us,
+            max_us: $max_us,
+            max_degrees: $max_degrees,
+            max_steps: $max_steps_value,
+            fields: [ $($($rest)*)? ]
+        }
+    };
+
+    (@__fill_defaults
+        vis: $vis:vis,
+        name: $name:ident,
+        pin: $pin:tt,
+        slice: $slice:tt,
+        channel: $channel:tt,
+        min_us: $min_us:expr,
+        max_us: $max_us:expr,
+        max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
+        fields: [ max_steps: $max_steps_value:expr ]
+    ) => {
+        $crate::__servo_player_impl! {
+            @__fill_defaults
+            vis: $vis,
+            name: $name,
+            pin: $pin,
+            slice: $slice,
+            channel: $channel,
+            min_us: $min_us,
+            max_us: $max_us,
+            max_degrees: $max_degrees,
+            max_steps: $max_steps_value,
             fields: [ ]
         }
     };
@@ -494,6 +572,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ channel: A $(, $($rest:tt)* )? ]
     ) => {
         $crate::__servo_player_impl! {
@@ -506,6 +585,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ $($($rest)*)? ]
         }
     };
@@ -519,6 +599,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ channel: A ]
     ) => {
         $crate::__servo_player_impl! {
@@ -531,6 +612,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ ]
         }
     };
@@ -544,6 +626,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ channel: B $(, $($rest:tt)* )? ]
     ) => {
         $crate::__servo_player_impl! {
@@ -556,6 +639,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ $($($rest)*)? ]
         }
     };
@@ -569,6 +653,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ channel: B ]
     ) => {
         $crate::__servo_player_impl! {
@@ -581,6 +666,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ ]
         }
     };
@@ -594,6 +680,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ even $(, $($rest:tt)* )? ]
     ) => {
         $crate::__servo_player_impl! {
@@ -606,6 +693,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ $($($rest)*)? ]
         }
     };
@@ -619,6 +707,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ even ]
     ) => {
         $crate::__servo_player_impl! {
@@ -631,6 +720,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ ]
         }
     };
@@ -644,6 +734,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ odd $(, $($rest:tt)* )? ]
     ) => {
         $crate::__servo_player_impl! {
@@ -656,6 +747,7 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ $($($rest)*)? ]
         }
     };
@@ -669,6 +761,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ odd ]
     ) => {
         $crate::__servo_player_impl! {
@@ -681,31 +774,8 @@ macro_rules! __servo_player_impl {
             min_us: $min_us,
             max_us: $max_us,
             max_degrees: $max_degrees,
+            max_steps: $max_steps,
             fields: [ ]
-        }
-    };
-
-    (@__fill_defaults
-        vis: $vis:vis,
-        name: $name:ident,
-        pin: $pin:tt,
-        slice: $slice:tt,
-        channel: $channel:tt,
-        min_us: $min_us:expr,
-        max_us: $max_us:expr,
-        max_degrees: $max_degrees:expr,
-        fields: [ ]
-    ) => {
-        $crate::__servo_player_impl! {
-            @__build
-            vis: $vis,
-            name: $name,
-            pin: $pin,
-            slice: $slice,
-            channel: $channel,
-            min_us: $min_us,
-            max_us: $max_us,
-            max_degrees: $max_degrees
         }
     };
 
@@ -719,6 +789,7 @@ macro_rules! __servo_player_impl {
         min_us: $min_us:expr,
         max_us: $max_us:expr,
         max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr,
         fields: [ ]
     ) => {
         $crate::__servo_player_impl! {
@@ -730,7 +801,8 @@ macro_rules! __servo_player_impl {
             channel: $channel,
             min_us: $min_us,
             max_us: $max_us,
-            max_degrees: $max_degrees
+            max_degrees: $max_degrees,
+            max_steps: $max_steps
         }
     };
 
@@ -743,7 +815,8 @@ macro_rules! __servo_player_impl {
         channel: $channel:tt,
         min_us: $min_us:expr,
         max_us: $max_us:expr,
-        max_degrees: $max_degrees:expr
+        max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr
     ) => {
         compile_error!("servo_player! requires `pin: ...`");
     };
@@ -757,16 +830,17 @@ macro_rules! __servo_player_impl {
         channel: $channel:tt,
         min_us: $min_us:expr,
         max_us: $max_us:expr,
-        max_degrees: $max_degrees:expr
+        max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr
     ) => {
         $crate::servo_player::paste::paste! {
-            static [<$name:upper _SERVO_PLAYER_STATIC>]: $crate::servo_player::ServoPlayerStatic =
-                $crate::servo_player::ServoPlayer::new_static();
+            static [<$name:upper _SERVO_PLAYER_STATIC>]: $crate::servo_player::ServoPlayerStatic<$max_steps> =
+                $crate::servo_player::ServoPlayer::<$max_steps>::new_static();
             static [<$name:upper _SERVO_PLAYER_CELL>]: ::static_cell::StaticCell<$name> =
                 ::static_cell::StaticCell::new();
 
             $vis struct $name {
-                player: $crate::servo_player::ServoPlayer,
+                player: $crate::servo_player::ServoPlayer<$max_steps>,
             }
 
             impl $name {
@@ -801,7 +875,7 @@ macro_rules! __servo_player_impl {
             }
 
             impl ::core::ops::Deref for $name {
-                type Target = $crate::servo_player::ServoPlayer;
+                type Target = $crate::servo_player::ServoPlayer<$max_steps>;
 
                 fn deref(&self) -> &Self::Target {
                     &self.player
@@ -810,7 +884,7 @@ macro_rules! __servo_player_impl {
 
             #[::embassy_executor::task]
             async fn [<$name:snake _servo_player_task>](
-                servo_player_static: &'static $crate::servo_player::ServoPlayerStatic,
+                servo_player_static: &'static $crate::servo_player::ServoPlayerStatic<$max_steps>,
                 servo: $crate::servo::Servo<'static>,
             ) -> ! {
                 $crate::servo_player::device_loop(servo_player_static, servo).await
@@ -826,16 +900,17 @@ macro_rules! __servo_player_impl {
         channel: $channel:tt,
         min_us: $min_us:expr,
         max_us: $max_us:expr,
-        max_degrees: $max_degrees:expr
+        max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr
     ) => {
         $crate::servo_player::paste::paste! {
-            static [<$name:upper _SERVO_PLAYER_STATIC>]: $crate::servo_player::ServoPlayerStatic =
-                $crate::servo_player::ServoPlayer::new_static();
+            static [<$name:upper _SERVO_PLAYER_STATIC>]: $crate::servo_player::ServoPlayerStatic<$max_steps> =
+                $crate::servo_player::ServoPlayer::<$max_steps>::new_static();
             static [<$name:upper _SERVO_PLAYER_CELL>]: ::static_cell::StaticCell<$name> =
                 ::static_cell::StaticCell::new();
 
             $vis struct $name {
-                player: $crate::servo_player::ServoPlayer,
+                player: $crate::servo_player::ServoPlayer<$max_steps>,
             }
 
             impl $name {
@@ -866,7 +941,7 @@ macro_rules! __servo_player_impl {
             }
 
             impl ::core::ops::Deref for $name {
-                type Target = $crate::servo_player::ServoPlayer;
+                type Target = $crate::servo_player::ServoPlayer<$max_steps>;
 
                 fn deref(&self) -> &Self::Target {
                     &self.player
@@ -875,7 +950,7 @@ macro_rules! __servo_player_impl {
 
             #[::embassy_executor::task]
             async fn [<$name:snake _servo_player_task>](
-                servo_player_static: &'static $crate::servo_player::ServoPlayerStatic,
+                servo_player_static: &'static $crate::servo_player::ServoPlayerStatic<$max_steps>,
                 servo: $crate::servo::Servo<'static>,
             ) -> ! {
                 $crate::servo_player::device_loop(servo_player_static, servo).await
@@ -889,7 +964,8 @@ macro_rules! __servo_player_impl {
         channel: _UNSET_,
         min_us: $min_us:expr,
         max_us: $max_us:expr,
-        max_degrees: $max_degrees:expr
+        max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr
     ) => {
         $crate::servo::servo_from_pin_slice($pin, $slice, $min_us, $max_us, $max_degrees)
     };
@@ -900,7 +976,8 @@ macro_rules! __servo_player_impl {
         channel: A,
         min_us: $min_us:expr,
         max_us: $max_us:expr,
-        max_degrees: $max_degrees:expr
+        max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr
     ) => {
         $crate::servo::Servo::new_output_a(
             embassy_rp::pwm::Pwm::new_output_a(
@@ -920,7 +997,8 @@ macro_rules! __servo_player_impl {
         channel: B,
         min_us: $min_us:expr,
         max_us: $max_us:expr,
-        max_degrees: $max_degrees:expr
+        max_degrees: $max_degrees:expr,
+        max_steps: $max_steps:expr
     ) => {
         $crate::servo::Servo::new_output_b(
             embassy_rp::pwm::Pwm::new_output_b(
@@ -947,6 +1025,7 @@ macro_rules! __servo_player_impl {
             min_us: $crate::servo::SERVO_MIN_US_DEFAULT,
             max_us: $crate::servo::SERVO_MAX_US_DEFAULT,
             max_degrees: $crate::servo::Servo::DEFAULT_MAX_DEGREES,
+            max_steps: 16,
             fields: [ $($fields)* ]
         }
     };
@@ -954,8 +1033,8 @@ macro_rules! __servo_player_impl {
 
 // Called by macro-generated code in downstream crates; must be public.
 #[doc(hidden)]
-pub async fn device_loop(
-    servo_player_static: &'static ServoPlayerStatic,
+pub async fn device_loop<const MAX_STEPS: usize>(
+    servo_player_static: &'static ServoPlayerStatic<MAX_STEPS>,
     mut servo: Servo<'static>,
 ) -> ! {
     let mut current_degrees: u16 = 0;
@@ -982,12 +1061,12 @@ pub async fn device_loop(
     }
 }
 
-async fn run_animation(
-    steps: &AnimateSequence,
+async fn run_animation<const MAX_STEPS: usize>(
+    steps: &[Step],
     servo: &mut Servo<'static>,
-    servo_player_static: &'static ServoPlayerStatic,
+    servo_player_static: &'static ServoPlayerStatic<MAX_STEPS>,
     current_degrees: &mut u16,
-) -> PlayerCommand {
+) -> PlayerCommand<MAX_STEPS> {
     loop {
         for step in steps {
             if *current_degrees != step.degrees {
