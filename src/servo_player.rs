@@ -1,6 +1,100 @@
-//! A device abstraction for playing servo motion sequences.
+//! A device abstraction for a servo that can play motion sequences.
 //!
-//! See [`ServoPlayer`] for usage and examples.
+//! This page provides the primary documentation and examples for controlling servos.
+//! The device abstraction supports setting angles, holding/relaxing position, and sequenced animation.
+//!
+//! **After reading the examples below, see also:**
+//!
+//! - [`servo_player!`](macro@crate::servo_player) — Macro to generate a servo player struct type (includes syntax details). See [`ServoPlayerGenerated`](servo_player_generated::ServoPlayerGenerated) for a sample of a generated type.
+//! - [`ServoPlayerGenerated`](servo_player_generated::ServoPlayerGenerated) — Sample struct type showing all methods and associated constants.
+//! - [`combine!`](macro@crate::combine) & [`linear`] — Macro and function for creating complex motion sequences.
+//! - [`servo`](mod@crate::servo) module — Direct servo control without animation support.
+//!
+//! # Example: Animate a Servo Sweep
+//!
+//! This example creates a servo that sweeps from 0° to 180° over 2 seconds, then loops forever.
+//! Here, the generated struct type is named `ServoSweep`.
+//!
+//! ```rust,no_run
+//! # #![no_std]
+//! # #![no_main]
+//! # use panic_probe as _;
+//! # use core::convert::Infallible;
+//! # use core::default::Default;
+//! # use core::result::Result::Ok;
+//! use device_kit::{Result, servo_player::{AtEnd, linear, servo_player}};
+//! use embassy_time::Duration;
+//!
+//! // Define ServoSweep, a struct type for a servo on PIN_11.
+//! servo_player! {
+//!     ServoSweep {
+//!         pin: PIN_11,  // GPIO pin for servo PWM signal
+//!         // other inputs set to their defaults
+//!     }
+//! }
+//!
+//! # #[embassy_executor::main]
+//! # async fn main(spawner: embassy_executor::Spawner) -> ! {
+//! #     let err = example(spawner).await.unwrap_err();
+//! #     core::panic!("{err}");
+//! # }
+//! async fn example(spawner: embassy_executor::Spawner) -> Result<Infallible> {
+//!     let p = embassy_rp::init(Default::default());
+//!     // Create a ServoSweep instance.
+//!     let servo_sweep = ServoSweep::new(p.PIN_11, p.PWM_SLICE5, spawner)?;
+//!
+//!     // Create a linear sweep from 0° to 180° over 2 seconds and loop it.
+//!     const SWEEP: [(u16, Duration); 11] = linear(0, 180, Duration::from_secs(2));
+//!     servo_sweep.animate(SWEEP, AtEnd::Loop);
+//!
+//!     core::future::pending().await // run forever
+//! }
+//! ```
+//!
+//! # Example: Multi-Segment Animation
+//!
+//! This example combines multiple animation segments using the `combine!` macro to create
+//! a sweep up, hold, sweep down, hold pattern. Here, the generated struct type is named `ServoWave`.
+//!
+//! ```rust,no_run
+//! # #![no_std]
+//! # #![no_main]
+//! # use panic_probe as _;
+//! # use core::convert::Infallible;
+//! # use core::default::Default;
+//! # use core::result::Result::Ok;
+//! use device_kit::{Result, combine, servo_player::{AtEnd, linear, servo_player}};
+//! use embassy_time::Duration;
+//!
+//! // Define ServoWave, a struct type for a servo on PIN_12.
+//! servo_player! {
+//!     ServoWave {
+//!         pin: PIN_12,
+//!         max_steps: 40,  // Increase from default to hold all segments
+//!     }
+//! }
+//!
+//! # #[embassy_executor::main]
+//! # async fn main(spawner: embassy_executor::Spawner) -> ! {
+//! #     let err = example(spawner).await.unwrap_err();
+//! #     core::panic!("{err}");
+//! # }
+//! async fn example(spawner: embassy_executor::Spawner) -> Result<Infallible> {
+//!     let p = embassy_rp::init(Default::default());
+//!     let servo_wave = ServoWave::new(p.PIN_12, p.PWM_SLICE6, spawner)?;
+//!
+//!     // Combine animation segments into one sequence.
+//!     const SWEEP_UP: [(u16, Duration); 19] = linear(0, 180, Duration::from_secs(2));
+//!     const HOLD_180: [(u16, Duration); 1] = [(180, Duration::from_millis(400))];
+//!     const SWEEP_DOWN: [(u16, Duration); 19] = linear(180, 0, Duration::from_secs(2));
+//!     const HOLD_0: [(u16, Duration); 1] = [(0, Duration::from_millis(400))];
+//!     const STEPS: [(u16, Duration); 40] = combine!(SWEEP_UP, HOLD_180, SWEEP_DOWN, HOLD_0);
+//!
+//!     servo_wave.animate(STEPS, AtEnd::Loop);
+//!
+//!     core::future::pending().await // run forever
+//! }
+//! ```
 
 use embassy_futures::select::{Either, select};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
@@ -13,9 +107,18 @@ use core::borrow::Borrow;
 
 use crate::servo::Servo;
 
+/// Re-exported [`servo!`](macro@crate::servo) macro from the [`servo`](mod@crate::servo) module for convenience.
+///
+/// See the [`servo`](mod@crate::servo) module for direct servo control without animation.
 pub use crate::servo::servo;
 #[doc(hidden)]
 pub use paste;
+
+// ============================================================================
+// Submodules
+// ============================================================================
+
+pub mod servo_player_generated;
 
 /// Commands sent to the servo player device.
 enum PlayerCommand<const MAX_STEPS: usize> {
@@ -98,6 +201,7 @@ pub const fn linear<const N: usize>(
 /// const COMBINED: [(u16, Duration); 20] = combine(SWEEP_UP, HOLD);
 /// ```
 #[must_use]
+#[doc(hidden)]
 pub const fn combine<const N1: usize, const N2: usize, const OUT_N: usize>(
     first: [(u16, Duration); N1],
     second: [(u16, Duration); N2],
@@ -157,6 +261,8 @@ macro_rules! combine {
     }};
 }
 
+// Public so macro-generated types can reference it; hidden from docs.
+#[doc(hidden)]
 /// Static resources for [`ServoPlayer`].
 pub struct ServoPlayerStatic<const MAX_STEPS: usize> {
     command: Signal<CriticalSectionRawMutex, PlayerCommand<MAX_STEPS>>,
@@ -180,34 +286,12 @@ impl<const MAX_STEPS: usize> ServoPlayerStatic<MAX_STEPS> {
     }
 }
 
-/// A device abstraction that drives a single servo with scripted animation sequences.
+// Public so macro-generated types can deref to it; hidden from docs.
+#[doc(hidden)]
+/// Internal deref target for generated servo player types.
 ///
-/// See [`Servo`] for servo setup guidance.
-///
-/// # Example
-///
-/// ```rust,no_run
-/// # #![no_std]
-/// # #![no_main]
-/// use device_kit::servo_player::{AtEnd, linear, servo_player};
-/// use embassy_time::Duration;
-/// # use core::panic::PanicInfo;
-/// # #[panic_handler]
-/// # fn panic(_info: &PanicInfo) -> ! { loop {} }
-///
-/// servo_player! {
-///     ServoSweep {
-///         pin: PIN_11,
-///     }
-/// }
-///
-/// async fn demo(p: embassy_rp::Peripherals, spawner: embassy_executor::Spawner) {
-///     let servo_sweep = ServoSweep::new(p.PIN_11, p.PWM_SLICE5, spawner).unwrap();
-///
-///     const SWEEP: [(u16, Duration); 11] = linear(0, 180, Duration::from_secs(2));
-///     servo_sweep.animate(SWEEP, AtEnd::Loop);
-/// }
-/// ```
+/// All servo player methods are available through macro-generated types.
+/// See [`servo_player!`] macro documentation for usage.
 pub struct ServoPlayer<const MAX_STEPS: usize> {
     servo_player_static: &'static ServoPlayerStatic<MAX_STEPS>,
 }
@@ -221,7 +305,7 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
 
     /// Create a servo player handle. The device loop must already be running.
     ///
-    /// See the [struct-level example](Self) for usage.
+    /// See the [servo_player module documentation](mod@crate::servo_player) for usage.
     #[must_use]
     pub const fn new(servo_player_static: &'static ServoPlayerStatic<MAX_STEPS>) -> Self {
         Self {
@@ -232,7 +316,7 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
     // cmk0000 must be consistent with servo
     /// Set the target angle. The most recent command always wins.
     ///
-    /// See the [struct-level example](Self) for usage.
+    /// See the [servo_player module documentation](mod@crate::servo_player) for usage.
     pub fn set_degrees(&self, degrees: u16) {
         self.servo_player_static
             .signal(PlayerCommand::Set { degrees });
@@ -240,14 +324,14 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
 
     /// Hold the servo at its current position (turn on PWM).
     ///
-    /// See the [struct-level example](Self) for usage.
+    /// See the [servo_player module documentation](mod@crate::servo_player) for usage.
     pub fn hold(&self) {
         self.servo_player_static.signal(PlayerCommand::Hold);
     }
 
     /// Relax the servo (turn off PWM, servo can move freely).
     ///
-    /// See the [struct-level example](Self) for usage.
+    /// See the [servo_player module documentation](mod@crate::servo_player) for usage.
     pub fn relax(&self) {
         self.servo_player_static.signal(PlayerCommand::Relax);
     }
@@ -257,7 +341,7 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
     /// Each step is a tuple `(degrees, duration)`. Accepts both owned iterators and
     /// references to collections.
     ///
-    /// See the [struct-level example](Self) for usage.
+    /// See the [servo_player module documentation](mod@crate::servo_player) for usage.
     pub fn animate<I>(&self, steps: I, at_end: AtEnd)
     where
         I: IntoIterator,
@@ -284,6 +368,76 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
     }
 }
 
+/// Macro to generate a servo player struct type (includes syntax details).
+///
+/// This page provides the primary documentation for configuring individual servo players.
+///
+/// **After reading the configuration details below, see also:**
+///
+/// - [`ServoPlayerGenerated`](servo_player_generated::ServoPlayerGenerated) — Sample servo player type showing all methods and associated constants
+/// - [`servo_player`](mod@crate::servo_player) module — Complete examples and usage patterns
+/// - [`ServoPlayer`] — Core player type used by macro-generated types
+///
+/// Use this macro when your project has a servo that needs scripted animation control.
+/// The macro generates a struct type that wraps [`ServoPlayer`] and spawns a background
+/// task to execute animation sequences.
+///
+/// # Configuration
+///
+/// ## Required Fields
+///
+/// - `pin` — GPIO pin for servo PWM signal
+///
+/// ## Optional Fields
+///
+/// - `slice` — PWM slice (default: automatically determined from pin via type system)
+/// - `channel` — PWM channel: `A`, `B`, `even`, or `odd` (default: automatically determined from pin)
+/// - `min_us` — Minimum pulse width in microseconds for 0° (default: 500)
+/// - `max_us` — Maximum pulse width in microseconds for max_degrees (default: 2500)
+/// - `max_degrees` — Maximum servo angle in degrees (default: 270)
+/// - `max_steps` — Maximum number of animation steps (default: 16)
+///
+/// `max_steps = 0` disables animation and allocates no step storage; `set_degrees()`, `hold()`, and `relax()` are still supported.
+///
+/// # Example
+///
+/// See the [servo_player module documentation](mod@crate::servo_player) for complete examples.
+///
+/// Basic usage:
+///
+/// ```rust,no_run
+/// # #![no_std]
+/// # #![no_main]
+/// # use panic_probe as _;
+/// use device_kit::servo_player::servo_player;
+///
+/// servo_player! {
+///     ServoSweep {
+///         pin: PIN_11,  // Required: GPIO pin for servo PWM
+///     }
+/// }
+/// # fn main() {}
+/// ```
+///
+/// With custom configuration:
+///
+/// ```rust,no_run
+/// # #![no_std]
+/// # #![no_main]
+/// # use panic_probe as _;
+/// use device_kit::servo_player::servo_player;
+///
+/// servo_player! {
+///     pub(self) ServoCustom {     // Can provide a visibility modifier
+///         pin: PIN_12,            // GPIO pin for servo PWM
+///         min_us: 544,            // Minimum pulse width (µs)
+///         max_us: 2400,           // Maximum pulse width (µs)
+///         max_degrees: 180,       // Maximum angle (degrees)
+///         max_steps: 40,          // Maximum animation steps
+///     }
+/// }
+/// # fn main() {}
+/// ```
 #[cfg(not(feature = "host"))]
 #[macro_export]
 macro_rules! servo_player {
