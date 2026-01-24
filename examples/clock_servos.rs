@@ -18,10 +18,7 @@ use defmt_rtt as _;
 use device_kit::button::{Button, PressDuration, PressedTo};
 use device_kit::clock::{Clock, ClockStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s};
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
-use device_kit::servo;
-use device_kit::servo_animate::{
-    ServoAnimate, ServoAnimateStatic, Step, concat_steps, linear,
-};
+use device_kit::servo_player::{Step, concat_steps, linear, servo_player};
 use device_kit::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
 use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};
 use device_kit::wifi_auto::{WifiAuto, WifiAutoEvent};
@@ -32,6 +29,21 @@ use embassy_time::Duration;
 use panic_probe as _;
 
 const FAST_MODE_SPEED: f32 = 720.0;
+
+// Define two typed servo players at module scope
+servo_player! {
+    BottomServoPlayer {
+        pin: PIN_11,
+        slice: PWM_SLICE5,
+    }
+}
+
+servo_player! {
+    TopServoPlayer {
+        pin: PIN_12,
+        slice: PWM_SLICE6,
+    }
+}
 
 #[embassy_executor::main]
 pub async fn main(spawner: Spawner) -> ! {
@@ -69,26 +81,9 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     )?;
 
     // Configure two servos for the display.
-    static LEFT_SERVO_ANIMATE_STATIC: ServoAnimateStatic = ServoAnimate::new_static();
-    static RIGHT_SERVO_ANIMATE_STATIC: ServoAnimateStatic = ServoAnimate::new_static();
-    let servo_display = ServoClockDisplay::new(
-        ServoAnimate::new(
-            &LEFT_SERVO_ANIMATE_STATIC,
-            servo! {
-                pin: p.PIN_11,
-                slice: p.PWM_SLICE5,
-            },
-            spawner,
-        )?,
-        ServoAnimate::new(
-            &RIGHT_SERVO_ANIMATE_STATIC,
-            servo! {
-                pin: p.PIN_12,
-                slice: p.PWM_SLICE6,
-            },
-            spawner,
-        )?,
-    );
+    let bottom_servo = BottomServoPlayer::new(p.PIN_11, p.PWM_SLICE5, spawner)?;
+    let top_servo = TopServoPlayer::new(p.PIN_12, p.PWM_SLICE6, spawner)?;
+    let servo_display = ServoClockDisplay::new(bottom_servo, top_servo);
 
     // Connect Wi-Fi, using the servos for status indications.
     let servo_display_ref = &servo_display;
@@ -286,7 +281,7 @@ impl State {
                 duration: Duration::from_millis(250),
             },
         ];
-        servo_display.bottom.animate(&WIGGLE).await;
+        servo_display.bottom.animate(&WIGGLE);
 
         // Get the current offset minutes from clock (source of truth)
         let mut offset_minutes = clock.offset_minutes();
@@ -316,7 +311,7 @@ impl State {
                     servo_display
                         .show_hours_minutes_indicator(hours, minutes)
                         .await;
-                    servo_display.bottom.animate(&WIGGLE).await;
+                    servo_display.bottom.animate(&WIGGLE);
                 }
                 PressDuration::Long => {
                     info!("Long press detected - saving and exiting edit mode");
@@ -331,31 +326,31 @@ impl State {
 }
 
 struct ServoClockDisplay {
-    bottom: ServoAnimate,
-    top: ServoAnimate,
+    bottom: &'static BottomServoPlayer,
+    top: &'static TopServoPlayer,
 }
 
 impl ServoClockDisplay {
-    fn new(bottom: ServoAnimate, top: ServoAnimate) -> Self {
+    fn new(bottom: &'static BottomServoPlayer, top: &'static TopServoPlayer) -> Self {
         Self { bottom, top }
     }
 
     async fn show_portal_ready(&self) {
-        self.bottom.set(90).await;
-        self.top.set(90).await;
+        self.bottom.set(90);
+        self.top.set(90);
     }
 
     async fn show_connecting(&self) {
         // Keep bottom servo fixed; animate top servo through a two-phase sweep.
-        self.bottom.set(0).await;
+        self.bottom.set(0);
         // cmk understand if we really want this to have 11 steps and a sleep after each.
         const FIVE_SECONDS: Duration = Duration::from_secs(5);
         let clockwise = linear::<10>(180 - 18, 0, FIVE_SECONDS);
         let and_back = linear::<2>(0, 180, FIVE_SECONDS);
         let top_sequence = concat_steps::<16>(&[&clockwise, &and_back]);
-        self.top.animate(&top_sequence).await;
+        self.top.animate(&top_sequence);
         let bottom_sequence = concat_steps::<16>(&[&and_back, &clockwise]);
-        self.bottom.animate(&bottom_sequence).await;
+        self.bottom.animate(&bottom_sequence);
     }
 
     async fn show_hours_minutes(&self, hours: u8, minutes: u8) {
@@ -384,8 +379,8 @@ impl ServoClockDisplay {
             u16::try_from(physical_left).expect("servo angles must be between 0 and 180 degrees");
         let right_angle =
             u16::try_from(physical_right).expect("servo angles must be between 0 and 180 degrees");
-        self.bottom.set(left_angle).await;
-        self.top.set(right_angle).await;
+        self.bottom.set(left_angle);
+        self.top.set(right_angle);
     }
 }
 
