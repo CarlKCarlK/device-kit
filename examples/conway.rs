@@ -29,7 +29,7 @@ const LED_LAYOUT_16X16: LedLayout<256, 16, 16> = LedLayout::serpentine_column_ma
 // cmk000 add default
 led2d! {
     Led16x16 {
-        pin: PIN_5,
+        pin: PIN_6,
         led_layout: LED_LAYOUT_16X16,
         max_current: Current::Milliamps(500),
         max_frames: 1,
@@ -85,7 +85,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     info!("Conway's Game of Life on 16x16 LED panel");
     let p = init(Default::default());
 
-    let led16x16 = Led16x16::new(p.PIN_5, p.PIO0, p.DMA_CH0, spawner)?;
+    let led16x16 = Led16x16::new(p.PIN_6, p.PIO0, p.DMA_CH0, spawner)?;
     let mut button = Button::new(p.PIN_13, PressedTo::Ground);
 
     // Create Conway device with static resources and spawn background task
@@ -124,11 +124,12 @@ async fn conway_task(
     let mut speed_mode = SpeedMode::Slower;
     board.add_pattern(PATTERNS[pattern_index]);
 
+    // Track stasis for random mode: (generations without change, last live count)
+    let mut stasis_tracker = (0u8, 0u16);
+
     loop {
         let frame = board.to_frame(colors::LIME);
-        led16x16
-            .write_frame(frame)
-            .expect("write_frame failed");
+        led16x16.write_frame(frame).expect("write_frame failed");
 
         // Calculate frame duration based on speed mode
         let frame_duration = match speed_mode {
@@ -142,6 +143,32 @@ async fn conway_task(
             Either::First(_) => {
                 // Timer fired, advance generation
                 board.step();
+
+                // Check for stasis in random mode
+                let current_pattern = PATTERNS[pattern_index];
+                if matches!(current_pattern, Pattern::Random) {
+                    let live_count = board.count_live_cells();
+                    let (unchanged_count, last_count) = stasis_tracker;
+
+                    if live_count == last_count {
+                        // Same count, increment counter
+                        let new_unchanged_count = unchanged_count + 1;
+                        stasis_tracker = (new_unchanged_count, live_count);
+
+                        if new_unchanged_count >= 15 {
+                            info!(
+                                "Stasis detected ({} live cells for 15 generations), restarting with new random pattern",
+                                live_count
+                            );
+                            board = Board::<{ Led16x16::HEIGHT }, { Led16x16::WIDTH }>::new();
+                            board.add_pattern(Pattern::Random);
+                            stasis_tracker = (0, 0);
+                        }
+                    } else {
+                        // Count changed, reset tracker
+                        stasis_tracker = (1, live_count);
+                    }
+                }
             }
             Either::Second(msg) => {
                 // Message received
@@ -155,6 +182,9 @@ async fn conway_task(
                         // Reset board with new pattern
                         board = Board::<{ Led16x16::HEIGHT }, { Led16x16::WIDTH }>::new();
                         board.add_pattern(pattern);
+
+                        // Reset stasis detection
+                        stasis_tracker = (0, 0);
                     }
                     ConwayMessage::SetSpeed(new_speed) => {
                         // Speed change requested
@@ -317,6 +347,19 @@ impl<const H: usize, const W: usize> Board<H, W> {
             }
         }
 
+        count
+    }
+
+    /// Count the total number of live cells on the board.
+    fn count_live_cells(&self) -> u16 {
+        let mut count = 0u16;
+        for row in &self.cells {
+            for &cell in row {
+                if cell {
+                    count += 1;
+                }
+            }
+        }
         count
     }
 
