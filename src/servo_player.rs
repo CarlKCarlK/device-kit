@@ -71,7 +71,7 @@
 //! # Example: Multi-Segment Animation
 //!
 //! This example combines multiple animation segments using the `combine!` macro to create
-//! a sweep up, hold, sweep down, hold pattern. Here, the generated struct type is named `ServoWave`.
+//! a sweep up, hold, sweep down, hold pattern. Here, the generated struct type is named `ServoSweep`.
 //!
 //! ```rust,no_run
 //! # #![no_std]
@@ -83,11 +83,16 @@
 //! use device_kit::{Result, combine, servo_player::{AtEnd, linear, servo_player}};
 //! use embassy_time::Duration;
 //!
-//! // Define ServoWave, a struct type for a servo on PIN_12.
+//! // Define ServoSweep, a struct type for a servo on PIN_12.
 //! servo_player! {
-//!     ServoWave {
+//!     ServoSweep {
 //!         pin: PIN_12,
-//!         max_steps: 40,  // Increase from default to hold all segments
+//!         max_steps: 40,          // Increase from default (16) to hold all segments
+//!
+//!        // Optional
+//!         min_us: 500,            // Minimum pulse width (µs) for 0° (default)
+//!         max_us: 2500,           // Maximum pulse width (µs) for max_degrees (default)
+//!         max_degrees: 180,       // Maximum servo angle (degrees) (default)
 //!     }
 //! }
 //!
@@ -98,7 +103,7 @@
 //! # }
 //! async fn example(spawner: embassy_executor::Spawner) -> Result<Infallible> {
 //!     let p = embassy_rp::init(Default::default());
-//!     let servo_wave = ServoWave::new(p.PIN_12, p.PWM_SLICE6, spawner)?;
+//!     let servo_sweep = ServoSweep::new(p.PIN_12, p.PWM_SLICE6, spawner)?;
 //!
 //!     // Combine animation segments into one sequence.
 //!     const SWEEP_UP: [(u16, Duration); 19] = linear(0, 180, Duration::from_secs(2));
@@ -107,7 +112,7 @@
 //!     const HOLD_0: [(u16, Duration); 1] = [(0, Duration::from_millis(400))];
 //!     const STEPS: [(u16, Duration); 40] = combine!(SWEEP_UP, HOLD_180, SWEEP_DOWN, HOLD_0);
 //!
-//!     servo_wave.animate(STEPS, AtEnd::Loop);
+//!     servo_sweep.animate(STEPS, AtEnd::Loop);
 //!
 //!     core::future::pending().await // run forever
 //! }
