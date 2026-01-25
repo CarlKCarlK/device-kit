@@ -1140,8 +1140,8 @@ macro_rules! __servo_player_impl {
                 /// # PWM Slice Calculation
                 ///
                 /// Calculate which [PWM slice](crate#glossary) a pin uses:
-                /// `slice = pin / 2 % 8`. For example, PIN_11 uses PWM_SLICE5
-                /// (11 / 2 % 8 = 5).
+                /// `slice = (pin / 2) % 8`. For example, PIN_11 uses PWM_SLICE5
+                /// ((11 / 2) % 8 = 5).
                 ///
                 /// # Parameters
                 ///
