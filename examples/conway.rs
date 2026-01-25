@@ -33,7 +33,7 @@ led2d! {
         pin: PIN_6,
         led_layout: LED_LAYOUT_16X16,
         max_current: Current::Milliamps(500),
-        max_frames: 10,
+        max_frames: 30,
         font: Led2dFont::Font4x6Trim,
     }
 }
@@ -188,7 +188,7 @@ async fn conway_task(
                 let next_frame = next_board.to_frame(colors::LIME);
 
                 // Generate and play fade animation (duration / 2)
-                const FADE_FRAMES: usize = 3;
+                const FADE_FRAMES: usize = 10;
                 let fade_duration = frame_duration / 2;
                 let frames_with_duration =
                     fade::<_, _, FADE_FRAMES>(current_frame, next_frame, fade_duration);
@@ -221,7 +221,7 @@ async fn conway_task(
                             new_board.add_pattern(Pattern::Random);
 
                             // Generate fade animation frames (5 seconds total)
-                            const FADE_FRAMES: usize = 10;
+                            const FADE_FRAMES: usize = 30;
                             const FADE_DURATION: Duration = Duration::from_millis(2500); // 2500ms per fade
 
                             let start_frame = old_board.to_frame(colors::LIME);
