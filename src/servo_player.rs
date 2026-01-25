@@ -7,8 +7,8 @@
 //! # Controlling Multiple Servos
 //!
 //! Supports up to eight servos, one per [PWM slice](crate#glossary) resource. Each servo must use a
-//! different PWM slice. Calculate which PWM slice a pin uses: `PWM slice = pin / 2 % 8`. For example, PIN_10
-//! and PIN_11 both use PWM_SLICE5 (10 / 2 % 8 = 5, 11 / 2 % 8 = 5), so
+//! different PWM slice. Calculate which PWM slice a pin uses: `PWM slice = (pin / 2) % 8`. For example, PIN_10
+//! and PIN_11 both use PWM_SLICE5 ((10 / 2) % 8 = 5, (11 / 2) % 8 = 5), so
 //! only one of those pins can have a servo.
 //!
 //!
@@ -1220,8 +1220,8 @@ macro_rules! __servo_player_impl {
                 /// # PWM Slice Calculation
                 ///
                 /// Calculate which [PWM slice](crate#glossary) a pin uses:
-                /// `slice = pin / 2 % 8`. For example, PIN_11 uses PWM_SLICE5
-                /// (11 / 2 % 8 = 5).
+                /// `slice = (pin / 2) % 8`. For example, PIN_11 uses PWM_SLICE5
+                /// ((11 / 2) % 8 = 5).
                 ///
                 /// # Parameters
                 ///
