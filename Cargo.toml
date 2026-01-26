@@ -133,6 +133,12 @@ path = "demos/e_flash/e1_power_counter.rs"
 test = false
 required-features = ["arm"]
 
+[[bin]]
+name = "demo_f1_time_logger"
+path = "demos/f_wifi_auto/f1_time_logger.rs"
+test = false
+required-features = ["arm", "wifi"]
+
 [features]
 default = ["defmt", "pico1", "arm"]
 defmt = []
