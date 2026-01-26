@@ -1,16 +1,8 @@
-//! A device abstraction for a servo that can animate motion sequences.
+//! A device abstraction for hobby servos that can animate motion sequences.
 //!
 //! This page provides the primary documentation and examples for controlling servos that can
 //! animate motion sequences. The device abstraction supports moving to angles,
 //! holding/relaxing position, and sequenced animation.
-//!
-//! # Controlling Multiple Servos
-//!
-//! Supports up to eight servos, one per [PWM slice](crate#glossary) resource. Each servo must use a
-//! different PWM slice. Calculate which PWM slice a pin uses: `PWM slice = (pin / 2) % 8`. For example, PIN_10
-//! and PIN_11 both use PWM_SLICE5 ((10 / 2) % 8 = 5, (11 / 2) % 8 = 5), so
-//! only one of those pins can have a servo.
-//!
 //!
 //! **After reading the examples below, see also:**
 //!
@@ -23,11 +15,24 @@
 //!   complex motion sequences.
 //! - [`Servo`] — Direct servo control without animation support. Use `Servo` for direct,
 //!   immediate control; use `servo_player` when you want motion to continue in the background.
+
+#![doc = include_str!("../docs/how_servos_work.md")]
+
+//!
+//! This device abstraction, `servo_player`, adds a background software task around the hardware
+//! control signal.
+//!
+//! # Controlling Multiple Servos
+//!
+//! Supports up to eight servos, one per [PWM slice](crate#glossary) resource. To calculate which PWM slice a pin uses,
+//! use the formula: `PWM slice = (pin / 2) % 8`. For example, PIN_10 and PIN_11 must both use PWM_SLICE5
+//! ((10 / 2) % 8 = 5, (11 / 2) % 8 = 5). Therefore, either of these these two pins can have a servo, but not both.
+//!
 //!
 //! # Example: Basic Servo Control
 //!
 //! This example demonstrates basic servo control: moving to a position, holding, relaxing,
-//! and using animation. Here, the generated struct type is named `ServoBasic`.
+//! and using animation. Here, the generated struct type is named `ServoPlayer11`.
 //!
 //! ```rust,no_run
 //! # #![no_std]
@@ -39,10 +44,10 @@
 //! use device_kit::{Result, servo_player::{AtEnd, servo_player}};
 //! use embassy_time::{Duration, Timer};
 //!
-//! // Define ServoBasic, a struct type for a servo on PIN_11.
+//! // Define ServoPlayer11, a struct type for a servo on PIN_11.
 //! servo_player! {
-//!     ServoBasic {
-//!         pin: PIN_11,  // GPIO pin for servo PWM signal
+//!     ServoPlayer11 {
+//!         pin: PIN_11,  // GPIO pin for servo
 //!         // other inputs set to their defaults
 //!     }
 //! }
@@ -55,13 +60,13 @@
 //! async fn example(spawner: embassy_executor::Spawner) -> Result<Infallible> {
 //!     let p = embassy_rp::init(Default::default());
 //!
-//!     // PIN_11 uses PWM_SLICE5 (slice = pin / 2 = 11 / 2 = 5)
-//!     let servo_basic = ServoBasic::new(p.PIN_11, p.PWM_SLICE5, spawner)?;
+//!     // PIN_11 uses PWM_SLICE5 (pin / 2) % 8 = (11 / 2) % 8 = 5 % 8 = 5)
+//!     let servo_player11 = ServoPlayer11::new(p.PIN_11, p.PWM_SLICE5, spawner)?;
 //!
 //!     // Move to 90°, wait 1 second, then relax.
-//!     servo_basic.set_degrees(90);
+//!     servo_player11.set_degrees(90);
 //!     Timer::after(Duration::from_secs(1)).await;
-//!     servo_basic.relax();
+//!     servo_player11.relax();
 //!
 //!     // Animate: hold at 180° for 1 second, then 0° for 1 second, then relax.
 //!     const STEPS: [(u16, Duration); 2] = [
@@ -70,7 +75,7 @@
 //!     ];
 //!     // AtEnd::Relax quiets the servo; AtEnd::Hold keeps driving pulses to hold
 //!     // position; AtEnd::Loop repeats.
-//!     servo_basic.animate(STEPS, AtEnd::Relax);
+//!     servo_player11.animate(STEPS, AtEnd::Relax);
 //!
 //!     core::future::pending().await // run forever
 //! }
@@ -79,7 +84,7 @@
 //! # Example: Multi-Step Animation
 //!
 //! This example combines 40 animation steps using `linear` and`combine!` to
-//! a sweep up, hold, sweep down, hold pattern. Here, the generated struct type is named
+//! sweep up, hold, sweep down, hold pattern. Here, the generated struct type is named
 //! `ServoSweep`.
 //!
 //! ```rust,no_run
@@ -96,7 +101,7 @@
 //! servo_player! {
 //!     ServoSweep {
 //!         pin: PIN_12,
-//!         max_steps: 40,          // Increase from default (16) to hold all steps
+//!         max_steps: 40,          // Increase from default (16) to hold animation steps
 //!
 //!        // Optional
 //!         min_us: 500,            // Minimum pulse width (µs) for 0° (default)
@@ -114,7 +119,7 @@
 //!     let p = embassy_rp::init(Default::default());
 //!     let servo_sweep = ServoSweep::new(p.PIN_12, p.PWM_SLICE6, spawner)?;
 //!
-//!     // Combine animation steps into one array.
+//!     // Combine 40 animation steps into one array.
 //!     const STEPS: [(u16, Duration); 40] = combine!(
 //!         linear::<19>(0, 180, Duration::from_secs(2)), // 19 steps from 0° to 180°
 //!         [(180, Duration::from_millis(400))],          // Hold at 180° for 400 ms
@@ -124,7 +129,7 @@
 //!
 //!     servo_sweep.animate(STEPS, AtEnd::Loop); // Loop the sweep animation
 //!
-//!     // Let it run for 10 seconds, then relax.
+//!     // Let it run in the background for 10 seconds, then relax.
 //!     embassy_time::Timer::after(Duration::from_secs(10)).await;
 //!     servo_sweep.relax();
 //!
@@ -171,6 +176,8 @@ enum PlayerCommand<const MAX_STEPS: usize> {
 }
 
 /// Animation end behavior.
+///
+/// See the [servo_player module documentation](mod@crate::servo_player) for usage.
 #[derive(Clone, Copy, Debug, defmt::Format)]
 pub enum AtEnd {
     /// Repeat the animation sequence indefinitely.
@@ -186,14 +193,14 @@ pub enum AtEnd {
 /// Returns a fixed-size array with `N` steps interpolating linearly from `start_degrees` to
 /// `end_degrees` over `total_duration`. Can be used in const contexts.
 ///
+/// See the [servo_player module documentation](mod@crate::servo_player) for usage.
+///
 /// # Parameters
 ///
 /// - `N` — Number of steps in the sequence (const generic parameter)
 /// - `start_degrees` — Starting angle in degrees
 /// - `end_degrees` — Ending angle in degrees
 /// - `total_duration` — Total time for the entire sequence
-///
-/// See the [servo_player module documentation](mod@crate::servo_player) for usage.
 #[must_use]
 pub const fn linear<const N: usize>(
     start_degrees: u16,
@@ -397,75 +404,38 @@ impl<const MAX_STEPS: usize> ServoPlayer<MAX_STEPS> {
 ///
 /// This page provides the primary documentation for configuring individual servo players.
 ///
+/// See the [servo_player module documentation](mod@crate::servo_player) for complete
+/// examples.
+
+///
 /// **After reading the configuration details below, see also:**
 ///
 /// - [`ServoPlayerGenerated`](servo_player_generated::ServoPlayerGenerated) — Sample servo
 ///   player type showing all methods and associated constants
 /// - [`servo_player`](mod@crate::servo_player) module — Complete examples and usage
 ///   patterns
-/// - [`ServoPlayer`] — Core player type used by macro-generated types
 ///
 /// Use this macro when your project has a servo that needs scripted animation control.
-/// The macro generates a struct type that wraps [`ServoPlayer`] and spawns a background
+/// The macro generates a struct type and spawns a background
 /// task to execute animation sequences.
 ///
 /// # Configuration
 ///
 /// ## Required Fields
 ///
-/// - `pin` — GPIO pin for servo PWM signal
+/// - `pin` — GPIO pin for servo
 ///
 /// ## Optional Fields
 ///
 /// - `min_us` — Minimum pulse width in microseconds for 0° (default: 500)
 /// - `max_us` — Maximum pulse width in microseconds for max_degrees
 ///   (default: 2500)
-/// - `max_degrees` — Maximum servo angle in degrees (default: 270)
+/// - `max_degrees` — Maximum servo angle in degrees (default: 180)
 /// - `max_steps` — Maximum number of animation steps (default: 16)
 ///
 /// `max_steps = 0` disables animation and allocates no step storage; `set_degrees()`,
 /// `hold()`, and `relax()` are still supported.
-///
-/// # Example
-///
-/// See the [servo_player module documentation](mod@crate::servo_player) for complete
-/// examples.
-///
-/// Basic usage:
-///
-/// ```rust,no_run
-/// # #![no_std]
-/// # #![no_main]
-/// # use panic_probe as _;
-/// use device_kit::servo_player::servo_player;
-///
-/// servo_player! {
-///     ServoSweep {
-///         pin: PIN_11,  // Required: GPIO pin for servo PWM
-///     }
-/// }
-/// # fn main() {}
-/// ```
-///
-/// With custom configuration:
-///
-/// ```rust,no_run
-/// # #![no_std]
-/// # #![no_main]
-/// # use panic_probe as _;
-/// use device_kit::servo_player::servo_player;
-///
-/// servo_player! {
-///     pub(self) ServoCustom {     // Can provide a visibility modifier
-///         pin: PIN_12,            // GPIO pin for servo PWM
-///         min_us: 544,            // Minimum pulse width (µs)
-///         max_us: 2400,           // Maximum pulse width (µs)
-///         max_degrees: 180,       // Maximum angle (degrees)
-///         max_steps: 40,          // Maximum animation steps
-///     }
-/// }
-/// # fn main() {}
-/// ```
+
 #[cfg(not(feature = "host"))]
 #[macro_export]
 macro_rules! servo_player {
@@ -1145,7 +1115,7 @@ macro_rules! __servo_player_impl {
                 ///
                 /// # Parameters
                 ///
-                /// - `pin` — GPIO pin for servo PWM signal
+                /// - `pin` — GPIO pin for servo
                 /// - `slice` — PWM slice corresponding to the pin
                 /// - `spawner` — Task spawner for background operations
                 ///
@@ -1225,7 +1195,7 @@ macro_rules! __servo_player_impl {
                 ///
                 /// # Parameters
                 ///
-                /// - `pin` — GPIO pin for servo PWM signal
+                /// - `pin` — GPIO pin for servo
                 /// - `slice` — PWM slice corresponding to the pin
                 /// - `spawner` — Task spawner for background operations
                 ///

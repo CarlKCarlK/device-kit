@@ -64,12 +64,12 @@ impl ServoPlayerGenerated {
     /// See the [`servo_player`](mod@crate::servo_player) module docs for usage.
     ///
     /// The `pin` and `slice` parameters must correspond to the
-    /// GPIO pin and PWM slice specified in the macro.
+    /// GPIO pin specified in the macro.
     ///
     /// # Parameters
     ///
-    /// - `pin`: GPIO pin for servo PWM signal
-    /// - `slice`: PWM slice for servo control
+    /// - `pin`: GPIO pin for servo
+    /// - `slice`: [PWM slice](crate#glossary) for servo control (`slice = (pin / 2) % 8`)
     /// - `spawner`: Task spawner for background operations
     pub fn new(
         pin: embassy_rp::Peri<'static, embassy_rp::peripherals::PIN_11>,
@@ -88,12 +88,12 @@ impl ServoPlayerGenerated {
         let _ = degrees;
     }
 
-    /// Hold the servo at its current position (turn on PWM).
+    /// Hold the servo at its current position.
     ///
     /// See the [`servo_player`](mod@crate::servo_player) module docs for usage.
     pub fn hold(&self) {}
 
-    /// Relax the servo (turn off PWM, servo can move freely).
+    /// Relax the servo. Servo can move freely.
     ///
     /// See the [`servo_player`](mod@crate::servo_player) module docs for usage.
     pub fn relax(&self) {}

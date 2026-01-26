@@ -1,4 +1,4 @@
-//! A device abstraction for SG90 servo motors.
+//! A device abstraction for hobby servos.
 //!
 //! This module provides a simple interface for controlling hobby positional servo motors
 //! like the SG90. See [`Servo`] for usage examples.
@@ -645,13 +645,20 @@ servo_pin_map!(PIN_46, PWM_SLICE11, A);
 #[cfg(feature = "pico2")]
 servo_pin_map!(PIN_47, PWM_SLICE11, B);
 
-/// A device abstraction for hobby servos such as the SG90.
+/// A device abstraction for hobby servos.
+///
+/// Use `Servo` for direct, immediate control when you want to manually manage servo
+/// positioning. Use [`servo_player`](mod@crate::servo_player) instead when you need
+/// background animation sequences or want motion to continue while your code does other work.
+///
+#[doc = include_str!("../docs/how_servos_work.md")]
 ///
 /// # Examples
 /// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// use device_kit::{servo, servo::Servo};
+/// use embassy_time::{Duration, Timer};
 /// # use core::panic::PanicInfo;
 /// # #[panic_handler]
 /// # fn panic(_info: &PanicInfo) -> ! { loop {} }
@@ -663,9 +670,11 @@ servo_pin_map!(PIN_47, PWM_SLICE11, B);
 ///         slice: p.PWM_SLICE5,
 ///     };
 ///
-///     servo.set_degrees(45);  // Move to 45 degrees
-///     servo.set_degrees(90);  // Move to 90 degrees
-///     servo.relax();          // Let the servo relax, will re-enable on next set_degrees()
+///     servo.set_degrees(45);                          // Move to 45 degrees and hold.
+///     Timer::after(Duration::from_secs(1)).await;     // Give servo reasonable time to reach position
+///     servo.set_degrees(90);                          // Move to 90 degrees and hold.
+///     Timer::after(Duration::from_secs(1)).await;     // Give servo reasonable time to reach position
+///     servo.relax();                                  // Let the servo relax. It will re-enable on next set_degrees()
 /// }
 /// ```
 pub struct Servo<'d> {
@@ -696,15 +705,15 @@ impl<'d> Servo<'d> {
 
     /// Create a servo on a PWM output A channel.
     ///
-    /// See the [struct-level example](Self) for usage.
-    pub fn new_output_a(pwm: Pwm<'d>, min_us: u16, max_us: u16, max_degrees: u16) -> Self {
+    /// See the [`Servo`] example for usage.
+    pub(crate) fn new_output_a(pwm: Pwm<'d>, min_us: u16, max_us: u16, max_degrees: u16) -> Self {
         Self::init(pwm, ServoChannel::A, min_us, max_us, max_degrees)
     }
 
     /// Create a servo on a PWM output B channel.
     ///
-    /// See the [struct-level example](Self) for usage.
-    pub fn new_output_b(pwm: Pwm<'d>, min_us: u16, max_us: u16, max_degrees: u16) -> Self {
+    /// See the [`Servo`] example for usage.
+    pub(crate) fn new_output_b(pwm: Pwm<'d>, min_us: u16, max_us: u16, max_degrees: u16) -> Self {
         Self::init(pwm, ServoChannel::B, min_us, max_us, max_degrees)
     }
 
@@ -772,7 +781,7 @@ impl<'d> Servo<'d> {
     ///
     /// Automatically enables the servo if it was disabled.
     ///
-    /// See the [struct-level example](Self) for usage.
+    /// See the [`Servo`] example for usage.
     pub fn set_degrees(&mut self, degrees: u16) {
         assert!((0..=self.max_degrees).contains(&degrees));
         self.ensure_enabled();
@@ -785,7 +794,7 @@ impl<'d> Servo<'d> {
 
     /// Set raw pulse width in microseconds.
     ///
-    /// See the [struct-level example](Self) for usage.
+    /// See the [`Servo`] example for usage.
     /// NOTE: only update the *compare* register; do not reconfigure the slice.
     #[doc(hidden)]
     pub fn set_pulse_us(&mut self, us: u16) {
@@ -815,7 +824,7 @@ impl<'d> Servo<'d> {
     /// This allows the servo to relax and move freely, reducing power consumption
     /// and mechanical stress.
     ///
-    /// See the [struct-level example](Self) for usage.
+    /// See the [`Servo`] example for usage.
     pub fn relax(&mut self) {
         if self.state == ServoState::Disabled {
             return;
@@ -829,8 +838,6 @@ impl<'d> Servo<'d> {
     /// Resume sending control signals to the servo.
     ///
     /// The servo will move back to its last commanded position.
-    ///
-    /// See the [struct-level example](Self) for usage.
     pub fn hold(&mut self) {
         if self.state == ServoState::Enabled {
             return;

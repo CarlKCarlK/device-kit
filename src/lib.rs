@@ -4,7 +4,8 @@
 //!
 //! - **PIO (Programmable I/O):** Pico 1 has 2. Pico 2 has 3.
 //! - **DMA (Direct Memory Access):** Both Pico1 and 2 have 12 channels.
-//! - **PWM slice (PWM_SLICE#):** A PWM resource that drives two related outputs (A/B) from one counter.
+//! - **PWM ([Pulse Width Modulation](https://en.wikipedia.org/wiki/Pulse-width_modulation)) Slices:** Both Pico1 and 2 have 8 slices (& 16 channels). These "slices"
+//!   are unrelated Rust slices.
 #![cfg_attr(not(feature = "host"), no_std)]
 #![cfg_attr(not(feature = "host"), no_main)]
 #![allow(async_fn_in_trait, reason = "single-threaded embedded")]

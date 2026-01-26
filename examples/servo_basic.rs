@@ -16,7 +16,7 @@ use embassy_time::{Duration, Timer};
 // Define ServoBasic, a struct type for a servo on PIN_11.
 servo_player! {
     ServoBasic {
-        pin: PIN_11,  // GPIO pin for servo PWM signal
+        pin: PIN_11,  // GPIO pin for servo player
         // other inputs set to their defaults
     }
 }
@@ -30,8 +30,8 @@ async fn main(spawner: Spawner) -> ! {
 async fn servo_basic_example(spawner: Spawner) -> Result<Infallible> {
     let p = embassy_rp::init(Default::default());
 
-    // PIN_11 uses PWM_SLICE5 (slice = pin / 2 = 11 / 2 = 5)
-    let servo_basic = ServoBasic::new(p.PIN_11, p.PWM_SLICE5, spawner)?;
+    // PIN_11 uses PWM_SLICE5 (slice = (pin / 2) % 8 = (11 / 2) % 8 = 5 % 8 = 5)
+    let servo_player11 = ServoPlayer11::new(p.PIN_11, p.PWM_SLICE5, spawner)?;
 
     // Move to 90°, wait 1 second, then relax.
     servo_basic.set_degrees(90);
