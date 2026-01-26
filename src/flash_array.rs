@@ -1,31 +1,9 @@
 //! A device abstraction for type-safe persistent storage in flash memory.
 //!
 //! This module provides a generic flash block storage system that allows storing any
-//! `serde`-compatible type in Raspberry Pi Pico's internal flash memory using postcard
-//! serialization.
+//! `serde`-compatible type in Raspberry Pi Pico's internal flash memory.
 //!
-//! # Features
-//!
-//! - **"Type safety"**: Uses whiteboard semantics—any data left over from other types or
-//!   past runs is treated as empty from the current type's perspective. Reading with a
-//!   different type than what was saved returns `None` (type hash mismatch).
-//! - **Postcard serialization**: Compact, no_std-compatible binary format
-//!
-//! # Block Allocation
-//!
-//! Conceptually, flash is treated as an array of fixed-size erase blocks counted from the end of
-//! memory backwards. Code can carve out disjoint partitions at compile time (similar to using
-//! `split_at_mut` on slices) and hand those partitions to subsystems that need persistent storage.
-//!
-//! ⚠️ **Warning**: The RP2040 stores firmware, vector tables, and user data in the same flash
-//! device. Only request block handles from regions you have explicitly reserved for storage.
-//! Writing to an arbitrary block can erase the running program and leave the device unbootable.
-//!
-//! **Important**: Users are responsible for avoiding block_id collisions. Using the same
-//! block_id for different types will cause type hash mismatches and return `None` on reads.
-//!
-//! See [`FlashArray`] for usage examples.
-// cmk00 what if your data is better than a block? How big is a block?
+//! See [`FlashArray`] for details and usage examples.
 
 use core::array;
 use core::cell::RefCell;
@@ -89,7 +67,7 @@ impl FlashManager {
         })
     }
 
-    fn reserve<const N: usize>(&'static self) -> Result<[FlashBlock; N]> {
+    fn reserve<const N: usize>(&'static self) -> Result<[FlashElement; N]> {
         let start = self.next_block.fetch_add(N as u32, Ordering::SeqCst);
         let end = start.checked_add(N as u32).ok_or(Error::IndexOutOfBounds)?;
         if end > TOTAL_BLOCKS {
@@ -97,21 +75,25 @@ impl FlashManager {
             self.next_block.fetch_sub(N as u32, Ordering::SeqCst);
             return Err(Error::IndexOutOfBounds);
         }
-        Ok(array::from_fn(|idx| FlashBlock {
+        Ok(array::from_fn(|idx| FlashElement {
             manager: self,
             block: start + idx as u32,
         }))
     }
 }
 
-/// Handle to a single flash erase block.
-pub struct FlashBlock {
+/// Type of a [`FlashArray`] element, with methods such as [`load`](Self::load), [`save`](Self::save), and [`clear`](Self::clear).
+///
+/// See [`FlashArray`] for usage examples.
+pub struct FlashElement {
     manager: &'static FlashManager,
     block: u32,
 }
 
-impl FlashBlock {
+impl FlashElement {
     /// Load data stored in this block.
+    ///
+    /// See [`FlashArray`] for usage examples.
     pub fn load<T>(&mut self) -> Result<Option<T>>
     where
         T: Serialize + for<'de> Deserialize<'de>,
@@ -120,6 +102,8 @@ impl FlashBlock {
     }
 
     /// Save data to this block.
+    ///
+    /// See [`FlashArray`] for usage examples.
     pub fn save<T>(&mut self, value: &T) -> Result<()>
     where
         T: Serialize + for<'de> Deserialize<'de>,
@@ -131,15 +115,11 @@ impl FlashBlock {
     pub fn clear(&mut self) -> Result<()> {
         clear_block(self.manager, self.block)
     }
-
-    /// Return the absolute block index within flash.
-    #[must_use]
-    pub const fn block_id(&self) -> u32 {
-        self.block
-    }
 }
 
-/// Static type for constructing flash arrays.
+/// Static resources for [`FlashArray`].
+///
+/// See [`FlashArray`] for usage examples.
 pub struct FlashArrayStatic {
     manager_cell: StaticCell<FlashManager>,
     manager_ref: Mutex<CriticalSectionRawMutex, core::cell::RefCell<Option<&'static FlashManager>>>,
@@ -170,82 +150,99 @@ impl FlashArrayStatic {
 
 /// A device abstraction for type-safe persistent storage in flash memory.
 ///
-/// This provides type-safe persistent storage using postcard serialization with whiteboard
-/// semantics—reading with a different type than what was saved returns `None`. Rather than
-/// manually juggling partitions, you reserve a contiguous prefix of flash blocks (0..N-1) and
-/// destructure the returned array however you like.
+/// This struct provides a generic flash-block storage system for Raspberry Pi Pico,
+/// allowing you to store any `serde`-compatible type in the device’s internal flash.
 ///
-/// # Examples
+/// You choose the number of storage blocks at compile time. Each block holds up to
+/// 3900 bytes of postcard-serialized data (a hardware-determined 4 KB flash block
+/// minus metadata space).
 ///
-/// ## Storing custom device configuration
+/// # Features
 ///
-/// ```rust,no_run
-/// # #![no_std]
-/// # #![no_main]
-/// # use panic_probe as _;
-/// use device_kit::flash_array::{FlashArray, FlashArrayStatic};
+/// - **Type safety**: Hash-based type checking prevents reading data written under a
+///   different Rust type name. The hash is derived from the full type path
+///   (for example, `app1::BootCounter`), so renaming or moving a type causes reads
+///   to return `Ok(None)`. Structural changes (adding or removing fields) do not
+///   change the hash, but may cause deserialization to fail and return an error.
+/// - **Postcard serialization**: A compact, `no_std`-friendly binary format.
 ///
-/// // Define your configuration type
-/// #[derive(serde::Serialize, serde::Deserialize, Debug, Default)]
-/// struct DeviceConfig {
-///     brightness: u8,
-///     timezone_offset: i16,
-///     display_mode: u8,
-/// }
+/// # Block allocation
 ///
-/// async fn example(p: embassy_rp::Peripherals) -> device_kit::Result<()> {
-///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<1>::new_static();
-///     let [mut device_config_block] = FlashArray::new(&FLASH_STATIC, p.FLASH)?;
+/// Conceptually, flash is treated as an array of fixed-size erase blocks counted from
+/// the end of memory backward. Your code can split that array using destructuring
+/// assignment and hand individual blocks to subsystems that need persistent storage.
 ///
-///     // Load existing config if present.
-///     let mut device_config: DeviceConfig = device_config_block
-///         .load()?
-///         .unwrap_or_default();
+/// ⚠️ **Warning**: Pico 1 and Pico 2 store firmware, vector tables, and user data in the
+/// same flash device. Allocating too many blocks can overwrite your firmware.
+
 ///
-///     // Modify and save
-///     device_config.brightness = 255;
-///     device_config_block.save(&device_config)?;
-///
-///     // Can also clear storage with: device_config_block.clear()?;
-///     Ok(())
-/// }
-/// ```
-///
-/// ## Whiteboard semantics demonstration
+/// # Example
 ///
 /// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// # use panic_probe as _;
+/// # use defmt_rtt as _;
+/// use core::{convert::Infallible, future};
 /// use device_kit::flash_array::{FlashArray, FlashArrayStatic};
-/// async fn example() -> device_kit::Result<()> {
+/// use defmt::info;
+///
+/// /// Boot counter (newtype) that wraps at 10.
+/// /// Stored with `postcard` (Serde).
+/// #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Copy)]
+/// struct BootCounter(u8);
+///
+/// impl BootCounter {
+///     const fn new(value: u8) -> Self {
+///         Self(value)
+///     }
+///
+///     fn increment(self) -> Self {
+///         Self((self.0 + 1) % 10)
+///     }
+/// }
+///
+/// async fn example() -> device_kit::Result<Infallible> {
 ///     let p = embassy_rp::init(Default::default());
-///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<1>::new_static();
-///     let [mut string_block] = FlashArray::new(&FLASH_STATIC, p.FLASH)?;
-///     string_block.save(&heapless::String::<64>::try_from("Hello")?)?;
 ///
-///     // Reading with a different type returns None (whiteboard semantics)
-///     let result: Option<u64> = string_block.load()?;
-///     assert!(result.is_none());  // Different type (u64 vs String<64>)!
-///     Ok(())
+///     // Create a flash array. Here we make it length 1.
+///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<1>::new_static();
+///     // Can destructure the array however you like.
+///     let [mut boot_counter_flash_element] = FlashArray::<1>::new(&FLASH_STATIC, p.FLASH)?;
+///
+///     // Read boot counter from flash then increment.
+///     // FlashArray includes a runtime type hash so values are only loaded
+///     // if the stored type matches the requested type; mismatches yield `None`.
+///     let boot_counter = boot_counter_flash_element
+///         .load()?
+///         .unwrap_or(BootCounter::new(0)) // Default to 0 if not present
+///         .increment();
+///
+///     // Write incremented counter back to flash.
+///     // This example writes once per power-up (fine for a demo; don't write in a tight loop).
+///     // Flash is typically good for ~100K erase cycles per sector.
+///     boot_counter_flash_element.save(&boot_counter)?;
+///
+///     info!("Boot counter: {}", boot_counter.0);
+///     future::pending().await // Keep running
 /// }
 /// ```
-/// Marker type used as a namespace for creating flash-backed arrays of length `N`.
 pub struct FlashArray<const N: usize>;
 
 impl<const N: usize> FlashArray<N> {
-    /// Get static resources for creating flash arrays.
+    /// Construct static resources for [`FlashArray`].
     #[must_use]
     pub const fn new_static() -> FlashArrayStatic {
         FlashArrayStatic::new_static()
     }
 
-    /// Reserve `N` contiguous blocks (starting from block 0 on the first call) and return them as
-    /// an array that you can destructure however you like.
+    /// Reserve `N` contiguous elements and return them as an array that you can destructure however you like.
+    ///
+    /// See [`FlashArray`] for usage examples.
     pub fn new(
         flash_static: &'static FlashArrayStatic,
         peripheral: Peri<'static, FLASH>,
-    ) -> Result<[FlashBlock; N]> {
+    ) -> Result<[FlashElement; N]> {
         let manager = flash_static.manager(peripheral);
         manager.reserve::<N>()
     }
