@@ -127,6 +127,12 @@ path = "demos/d_servo/d2_servo_animate.rs"
 test = false
 required-features = ["arm"]
 
+[[bin]]
+name = "demo_e1_power_counter"
+path = "demos/e_flash/e1_power_counter.rs"
+test = false
+required-features = ["arm"]
+
 [features]
 default = ["defmt", "pico1", "arm"]
 defmt = []

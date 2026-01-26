@@ -26,6 +26,14 @@ gather-docs:
 attach-probe:
 	./scripts/attach-probe.sh
 
+demo-e1:
+	./scripts/attach-probe.sh
+	cargo demo-e1
+
+demo-e1-2:
+	./scripts/attach-probe.sh
+	cargo demo-e1-2
+
 regenerate-text-pngs:
 	./scripts/regenerate-text-pngs.sh
 

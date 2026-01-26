@@ -25,6 +25,7 @@
 //! block_id for different types will cause type hash mismatches and return `None` on reads.
 //!
 //! See [`FlashArray`] for usage examples.
+// cmk00 what if your data is better than a block? How big is a block?
 
 use core::array;
 use core::cell::RefCell;
