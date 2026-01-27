@@ -6,7 +6,7 @@
 #![allow(clippy::future_not_send, reason = "single-threaded")]
 
 use core::{convert::Infallible, panic};
-use defmt::{info, warn};
+use defmt::warn;
 use device_kit::{
     Result,
     button::PressedTo,
@@ -25,9 +25,10 @@ use embassy_net::{
 use embassy_time::{Duration, Timer};
 use {defmt_rtt as _, panic_probe as _};
 
-// Set up LED layout for 12x8 panel (two 12x4 panels stacked)
+// Set up LED layout for 8x12 panel (12x8 panel rotated 90 degrees clockwise)
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 const LED_LAYOUT_12X8: LedLayout<96, 12, 8> = LED_LAYOUT_12X4.combine_v(LED_LAYOUT_12X4);
+const LED_LAYOUT_8X12: LedLayout<96, 8, 12> = LED_LAYOUT_12X8.rotate_cw();
 
 // Color palette for display
 const COLORS: &[smart_leds::RGB8] = &[
@@ -38,13 +39,14 @@ const COLORS: &[smart_leds::RGB8] = &[
     colors::WHITE,
 ];
 
+// We can't use default PIO0/DMA_CH0 for the LED display because that's used by WiFi.
 led2d! {
-    Led12x8 {
+    Led8x12 {
         pin: PIN_4,
         pio: PIO1,
         dma: DMA_CH1,
-        led_layout: LED_LAYOUT_12X8,
-        font: Led2dFont::Font3x4Trim,
+        led_layout: LED_LAYOUT_8X12,
+        font: Led2dFont::Font4x6Trim,
     }
 }
 
@@ -55,15 +57,14 @@ async fn main(spawner: Spawner) -> ! {
 }
 
 async fn inner_main(spawner: Spawner) -> Result<Infallible> {
-    info!("WiFi Auto LED Display - Starting");
     let p = embassy_rp::init(Default::default());
 
-    // Set up flash storage for WiFi credentials
-    // cmk0 Commenting out device name field for now - only need 1 flash block
+    // Flash stores WiFi credentials.
     static FLASH_STATIC: FlashArrayStatic = FlashArray::<1>::new_static();
     let [wifi_credentials_flash_block] = FlashArray::new(&FLASH_STATIC, p.FLASH)?;
 
-    // Initialize WifiAuto
+    // Initialize WifiAuto. Pico Wifi uses internal pins.
+    // A button is used to force reconfiguration via captive portal.
     let wifi_auto = WifiAuto::new(
         p.PIN_23,  // CYW43 power
         p.PIN_25,  // CYW43 chip select
@@ -75,49 +76,52 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         p.PIN_13, // Button for forced reconfiguration
         PressedTo::Ground,
         "PicoTime", // Captive-portal SSID
-        [],         // No custom fields
+        [],         // Any custom fields
         spawner,
     )?;
 
-    // Set up LED display (PIO1/DMA_CH1 to avoid conflict with WiFi)
-    let led12x8 = Led12x8::new(p.PIN_4, p.PIO1, p.DMA_CH1, spawner)?;
+    let led8x12 = Led8x12::new(p.PIN_4, p.PIO1, p.DMA_CH1, spawner)?;
 
-    // Connect with status on display
-    let led12x8_ref = &led12x8;
+    // Try to connect. Will launch captive portal if needed.
+    // Returns network stack and button.
+    //
+    // (Reference here lets move closure capture led8x12 without taking ownership)
+    let led8x12_ref = &led8x12;
     let (stack, _button) = wifi_auto
         .connect(spawner, move |event| async move {
             match event {
                 WifiAutoEvent::CaptivePortalReady => {
-                    led12x8_ref.write_text("CONN", COLORS).await.ok();
+                    led8x12_ref.write_text("CO\nNN", COLORS).await.ok();
                 }
                 WifiAutoEvent::Connecting { .. } => {
-                    led12x8_ref.write_text("...", COLORS).await.ok();
+                    led8x12_ref.write_text("..\n..", COLORS).await.ok();
                 }
                 WifiAutoEvent::Connected => {
-                    led12x8_ref.write_text("DONE", COLORS).await.ok();
+                    led8x12_ref.write_text("DO\nNE", COLORS).await.ok();
                 }
                 WifiAutoEvent::ConnectionFailed => {
-                    led12x8_ref.write_text("FAIL", COLORS).await.ok();
+                    led8x12_ref.write_text("FA\nIL", COLORS).await.ok();
                 }
             }
         })
         .await?;
 
     // Show initial state with dashes until time arrives
-    led12x8.write_text("----", COLORS).await?;
+    led8x12.write_text("--\n--", COLORS).await?;
 
-    // Main loop: fetch and display time every minute
+    // Now use the network stack to fetch NTP time once per minute
+    // and display the last 4 digits of the Unix timestamp.
     loop {
         match fetch_ntp_time(stack).await {
             Ok(unix_seconds) => {
                 // Get last 4 digits of unix timestamp
                 let last_4_digits = (unix_seconds % 10000) as u16;
-                let time_str = format_4_digits(last_4_digits);
-                led12x8.write_text(&time_str, COLORS).await?;
+                let time_str = format_4_digits_with_newline(last_4_digits);
+                led8x12.write_text(&time_str, COLORS).await?;
             }
             Err(msg) => {
                 warn!("NTP fetch failed: {}", msg);
-                led12x8.write_text("----", COLORS).await?;
+                led8x12.write_text("--\n--", COLORS).await?;
             }
         }
 
@@ -125,15 +129,17 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     }
 }
 
-/// Format a number as a 4-digit string with leading zeros
-fn format_4_digits(num: u16) -> heapless::String<4> {
+fn format_4_digits_with_newline(num: u16) -> heapless::String<6> {
     use core::fmt::Write;
     let mut s = heapless::String::new();
-    write!(&mut s, "{:04}", num).unwrap();
+    let d1 = (num / 1000) % 10;
+    let d2 = (num / 100) % 10;
+    let d3 = (num / 10) % 10;
+    let d4 = num % 10;
+    write!(&mut s, "{}{}\n{}{}", d1, d2, d3, d4).unwrap();
     s
 }
 
-/// Fetch current time from NTP server and return Unix timestamp.
 async fn fetch_ntp_time(stack: &Stack<'static>) -> core::result::Result<i64, &'static str> {
     const NTP_SERVER: &str = "pool.ntp.org";
     const NTP_PORT: u16 = 123;
