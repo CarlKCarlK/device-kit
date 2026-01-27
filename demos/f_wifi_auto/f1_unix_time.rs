@@ -84,7 +84,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Try to connect. Will launch captive portal as needed.
     // Returns network stack and button.
     //
-    // Borrow `led8x12`` outside closure so the event handler can use it without owning it.
+    // Borrow `led8x12` outside closure so the event handler can use it without owning it.
     let led8x12_ref = &led8x12;
     let (stack, _button) = wifi_auto
         .connect(
@@ -95,16 +95,16 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             move |event| async move {
                 match event {
                     WifiAutoEvent::CaptivePortalReady => {
-                        led8x12_ref.write_text("JO\nIN", &[COLORS[0]]).await.ok();
+                        led8x12_ref.write_text("JO\nIN", COLORS).await.ok();
                     }
                     WifiAutoEvent::Connecting { .. } => {
                         show_connecting(led8x12_ref).await.ok(); // animate dots
                     }
                     WifiAutoEvent::Connected => {
-                        led8x12_ref.write_text("DO\nNE", &[COLORS[1]]).await.ok();
+                        led8x12_ref.write_text("DO\nNE", COLORS).await.ok();
                     }
                     WifiAutoEvent::ConnectionFailed => {
-                        led8x12_ref.write_text("FA\nIL", &[COLORS[2]]).await.ok();
+                        led8x12_ref.write_text("FA\nIL", COLORS).await.ok();
                     }
                 }
             },
@@ -112,7 +112,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         .await?;
 
     // Show initial state with dashes until time is fetched.
-    led8x12.write_text("--\n--", &[COLORS[3]]).await?;
+    led8x12.write_text("--\n--", COLORS).await?;
 
     // Now use the network stack to fetch NTP time once per minute
     // and display the last 4 digits of the Unix timestamp.
@@ -126,7 +126,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             }
             Err(msg) => {
                 warn!("NTP fetch failed: {}", msg);
-                led8x12.write_text("--\n--", &[COLORS[3]]).await?;
+                led8x12.write_text("--\n--", COLORS).await?;
             }
         }
 
