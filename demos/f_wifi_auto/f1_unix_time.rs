@@ -59,13 +59,13 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Pico W uses the CYW43 chip wired to fixed GPIOs; we pass those resources here.
     let wifi_auto = WifiAuto::new(
         p.PIN_23,  // CYW43 power
-        p.PIN_25,  // CYW43 chip select
-        p.PIO1,    // CYW43 PIO interface (required)
         p.PIN_24,  // CYW43 clock
+        p.PIN_25,  // CYW43 chip select
         p.PIN_29,  // CYW43 data
+        p.PIO1,    // CYW43 PIO interface (required)
         p.DMA_CH1, // CYW43 DMA 0 (required)
         wifi_credentials_flash_block,
-        p.PIN_13, // Button for forced reconfiguration
+        p.PIN_15, // Button for forced reconfiguration
         PressedTo::Ground,
         "PicoTime", // Captive-portal SSID
         [],         // Any custom fields

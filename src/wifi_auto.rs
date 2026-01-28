@@ -128,10 +128,10 @@ pub(crate) struct WifiAutoStatic {
 ///     // Construct WifiAuto
 ///     let wifi_auto = WifiAuto::new(
 ///         p.PIN_23,          // CYW43 power
-///         p.PIN_25,          // CYW43 chip select
-///         p.PIO0,            // WiFi PIO
 ///         p.PIN_24,          // CYW43 clock
+///         p.PIN_25,          // CYW43 chip select
 ///         p.PIN_29,          // CYW43 data
+///         p.PIO0,            // WiFi PIO
 ///         p.DMA_CH0,         // WiFi DMA
 ///         wifi_flash,
 ///         p.PIN_13,          // Button for reconfiguration
@@ -248,10 +248,10 @@ impl WifiAuto {
     #[allow(clippy::too_many_arguments)]
     pub fn new<const N: usize, PIO: WifiPio, DMA: Channel>(
         pin_23: Peri<'static, PIN_23>,
-        pin_25: Peri<'static, PIN_25>,
-        pio: Peri<'static, PIO>,
         pin_24: Peri<'static, PIN_24>,
+        pin_25: Peri<'static, PIN_25>,
         pin_29: Peri<'static, PIN_29>,
+        pio: Peri<'static, PIO>,
         dma: Peri<'static, DMA>,
         mut wifi_credentials_flash_block: FlashBlock,
         button_pin: Peri<'static, impl Pin>,
@@ -275,6 +275,11 @@ impl WifiAuto {
 
         let button = Button::new(button_pin, button_pressed_to);
         let force_captive_portal = button.is_pressed();
+        let button_level_high = button.is_high_raw();
+        info!(
+            "WifiAuto: button_pressed={} button_level_high={} pressed_to={:?}",
+            force_captive_portal, button_level_high, button_pressed_to
+        );
 
         // Check if custom fields are satisfied
         let extras_ready = custom_fields
@@ -297,10 +302,10 @@ impl WifiAuto {
         let wifi = Wifi::new_with_captive_portal_ssid(
             &wifi_auto_static.wifi,
             pin_23,
-            pin_25,
-            pio,
             pin_24,
+            pin_25,
             pin_29,
+            pio,
             dma,
             wifi_credentials_flash_block,
             captive_portal_ssid,

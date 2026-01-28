@@ -54,10 +54,10 @@ use crate::{Error, Result};
 ///     // Pass to WifiAuto
 ///     let wifi_auto = WifiAuto::new(
 ///         p.PIN_23,
-///         p.PIN_25,
-///         p.PIO0,
 ///         p.PIN_24,
+///         p.PIN_25,
 ///         p.PIN_29,
+///         p.PIO0,
 ///         p.DMA_CH0,
 ///         wifi_flash,
 ///         p.PIN_13,
@@ -412,10 +412,10 @@ const TIMEZONE_OPTIONS: &[TimezoneOption] = &[
 ///     // Pass to WifiAuto
 ///     let wifi_auto = WifiAuto::new(
 ///         p.PIN_23,
-///         p.PIN_25,
-///         p.PIO0,
 ///         p.PIN_24,
+///         p.PIN_25,
 ///         p.PIN_29,
+///         p.PIO0,
 ///         p.DMA_CH0,
 ///         wifi_flash,
 ///         p.PIN_13,

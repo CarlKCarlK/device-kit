@@ -129,10 +129,10 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         TimeSync::new(
             &TIME_SYNC_STATIC,
             p.PIN_23, // WiFi power enable
+            p.PIN_24, // WiFi clock
             p.PIN_25, // WiFi chip select
-            p.PIO0,   // WiFi PIO block
-            p.PIN_24, // WiFi MOSI
-            p.PIN_29, // WiFi CLK
+            p.PIN_29, // WiFi data
+            p.PIO0,   // WiFi PIO
             p.DMA_CH0,
             wifi_block,
             DEFAULT_CAPTIVE_PORTAL_SSID,

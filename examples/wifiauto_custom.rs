@@ -78,10 +78,10 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Initialize WifiAuto
     let wifi_auto = WifiAuto::new(
         p.PIN_23,  // CYW43 power
-        p.PIN_25,  // CYW43 chip select
-        p.PIO0,    // CYW43 PIO interface (required)
         p.PIN_24,  // CYW43 clock
+        p.PIN_25,  // CYW43 chip select
         p.PIN_29,  // CYW43 data
+        p.PIO0,    // CYW43 PIO interface (required)
         p.DMA_CH0, // CYW43 DMA (required)
         wifi_credentials_flash_block,
         p.PIN_13, // Button for forced reconfiguration

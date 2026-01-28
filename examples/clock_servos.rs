@@ -69,10 +69,10 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Set up Wifi via a captive portal. The button pin is used to reset stored credentials.
     let wifi_auto = WifiAuto::new(
         p.PIN_23,  // CYW43 power
-        p.PIN_25,  // CYW43 chip select
-        p.PIO0,    // CYW43 PIO interface
         p.PIN_24,  // CYW43 clock
+        p.PIN_25,  // CYW43 chip select
         p.PIN_29,  // CYW43 data pin
+        p.PIO0,    // CYW43 PIO interface
         p.DMA_CH0, // CYW43 DMA channel
         wifi_credentials_flash_block,
         p.PIN_13, // Reset button pin

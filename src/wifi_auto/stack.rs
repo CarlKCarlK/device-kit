@@ -30,10 +30,10 @@
 //! let wifi = Wifi::new(
 //!     &WIFI_STATIC,
 //!     p.PIN_23,
-//!     p.PIN_25,
-//!     p.PIO0,
 //!     p.PIN_24,
+//!     p.PIN_25,
 //!     p.PIN_29,
+//!     p.PIO0,
 //!     p.DMA_CH0,
 //!     wifi_block,
 //!     spawner,
@@ -72,10 +72,10 @@
 //! let wifi = Wifi::new(
 //!     &WIFI_STATIC,
 //!     p.PIN_23,
-//!     p.PIN_25,
-//!     p.PIO0,
 //!     p.PIN_24,
+//!     p.PIN_25,
 //!     p.PIN_29,
+//!     p.PIO0,
 //!     p.DMA_CH0,
 //!     wifi_block,
 //!     spawner,
@@ -226,10 +226,10 @@ pub trait WifiPio: Instance {
     fn spawn_device_loop(
         spawner: Spawner,
         pin_23: Peri<'static, PIN_23>,
-        pin_25: Peri<'static, PIN_25>,
-        pio: Peri<'static, Self>,
         pin_24: Peri<'static, PIN_24>,
+        pin_25: Peri<'static, PIN_25>,
         pin_29: Peri<'static, PIN_29>,
+        pio: Peri<'static, Self>,
         dma: Peri<'static, AnyChannel>,
         mode: WifiMode,
         captive_portal_ssid: &'static str,
@@ -302,10 +302,10 @@ impl Wifi {
     ///
     /// * `resources` - Static WiFi resources created with [`Wifi::new_static`]
     /// * `pin_23` - WiFi chip power pin (GPIO 23)
-    /// * `pin_25` - WiFi chip chip select pin (GPIO 25)
-    /// * `pio` - PIO peripheral for WiFi communication
     /// * `pin_24` - WiFi chip clock pin (GPIO 24)
+    /// * `pin_25` - WiFi chip chip select pin (GPIO 25)
     /// * `pin_29` - WiFi chip data pin (GPIO 29)
+    /// * `pio` - PIO peripheral for WiFi communication
     /// * `dma` - DMA channel for WiFi SPI communication
     /// * `credential_store` - Flash block reserved for WiFi credentials
     /// * `spawner` - Embassy task spawner
@@ -314,10 +314,10 @@ impl Wifi {
     pub fn new<PIO: WifiPio, DMA: Channel>(
         wifi_static: &'static WifiStatic,
         pin_23: Peri<'static, PIN_23>,
-        pin_25: Peri<'static, PIN_25>,
-        pio: Peri<'static, PIO>,
         pin_24: Peri<'static, PIN_24>,
+        pin_25: Peri<'static, PIN_25>,
         pin_29: Peri<'static, PIN_29>,
+        pio: Peri<'static, PIO>,
         dma: Peri<'static, DMA>,
         credential_store: FlashBlock,
         spawner: Spawner,
@@ -325,10 +325,10 @@ impl Wifi {
         Self::new_with_captive_portal_ssid(
             wifi_static,
             pin_23,
-            pin_25,
-            pio,
             pin_24,
+            pin_25,
             pin_29,
+            pio,
             dma,
             credential_store,
             DEFAULT_CAPTIVE_PORTAL_SSID,
@@ -339,10 +339,10 @@ impl Wifi {
     pub fn new_with_captive_portal_ssid<PIO: WifiPio, DMA: Channel>(
         wifi_static: &'static WifiStatic,
         pin_23: Peri<'static, PIN_23>,
-        pin_25: Peri<'static, PIN_25>,
-        pio: Peri<'static, PIO>,
         pin_24: Peri<'static, PIN_24>,
+        pin_25: Peri<'static, PIN_25>,
         pin_29: Peri<'static, PIN_29>,
+        pio: Peri<'static, PIO>,
         dma: Peri<'static, DMA>,
         credential_store: FlashBlock,
         captive_portal_ssid: &'static str,
@@ -364,10 +364,10 @@ impl Wifi {
         PIO::spawn_device_loop(
             spawner,
             pin_23,
-            pin_25,
-            pio,
             pin_24,
+            pin_25,
             pin_29,
+            pio,
             dma,
             mode,
             captive_portal_ssid,
@@ -501,10 +501,10 @@ async fn wifi_task_impl<PIO: WifiPio>(
 
 async fn wifi_device_loop_impl<PIO: WifiPio>(
     pin_23: Peri<'static, PIN_23>,
-    pin_25: Peri<'static, PIN_25>,
-    pio: Peri<'static, PIO>,
     pin_24: Peri<'static, PIN_24>,
+    pin_25: Peri<'static, PIN_25>,
     pin_29: Peri<'static, PIN_29>,
+    pio: Peri<'static, PIO>,
     dma: Peri<'static, AnyChannel>,
     mode: WifiMode,
     captive_portal_ssid: &'static str,
@@ -516,10 +516,10 @@ async fn wifi_device_loop_impl<PIO: WifiPio>(
         WifiMode::CaptivePortal => {
             wifi_device_loop_captive_portal(
                 pin_23,
-                pin_25,
-                pio,
                 pin_24,
+                pin_25,
                 pin_29,
+                pio,
                 dma,
                 captive_portal_ssid,
                 wifi_events,
@@ -531,10 +531,10 @@ async fn wifi_device_loop_impl<PIO: WifiPio>(
         WifiMode::ClientConfigured(credentials) => {
             wifi_device_loop_client_configured(
                 pin_23,
-                pin_25,
-                pio,
                 pin_24,
+                pin_25,
                 pin_29,
+                pio,
                 dma,
                 wifi_events,
                 stack_storage,
@@ -549,10 +549,10 @@ async fn wifi_device_loop_impl<PIO: WifiPio>(
 /// WiFi device loop for captive portal mode
 async fn wifi_device_loop_captive_portal<PIO: WifiPio>(
     pin_23: Peri<'static, PIN_23>,
-    pin_25: Peri<'static, PIN_25>,
-    pio: Peri<'static, PIO>,
     pin_24: Peri<'static, PIN_24>,
+    pin_25: Peri<'static, PIN_25>,
     pin_29: Peri<'static, PIN_29>,
+    pio: Peri<'static, PIO>,
     dma: Peri<'static, AnyChannel>,
     captive_portal_ssid: &'static str,
     wifi_events: &'static WifiEvents,
@@ -665,10 +665,10 @@ async fn wifi_device_loop_captive_portal<PIO: WifiPio>(
 /// WiFi device loop for client mode with provisioned credentials
 async fn wifi_device_loop_client_configured<PIO: WifiPio>(
     pin_23: Peri<'static, PIN_23>,
-    pin_25: Peri<'static, PIN_25>,
-    pio: Peri<'static, PIO>,
     pin_24: Peri<'static, PIN_24>,
+    pin_25: Peri<'static, PIN_25>,
     pin_29: Peri<'static, PIN_29>,
+    pio: Peri<'static, PIO>,
     dma: Peri<'static, AnyChannel>,
     wifi_events: &'static WifiEvents,
     stack_storage: &'static StackStorage,
@@ -679,10 +679,10 @@ async fn wifi_device_loop_client_configured<PIO: WifiPio>(
 
     wifi_device_loop_client_impl(
         pin_23,
-        pin_25,
-        pio,
         pin_24,
+        pin_25,
         pin_29,
+        pio,
         dma,
         wifi_events,
         stack_storage,
@@ -696,10 +696,10 @@ async fn wifi_device_loop_client_configured<PIO: WifiPio>(
 /// Shared client-mode implementation.
 async fn wifi_device_loop_client_impl<PIO: WifiPio>(
     pin_23: Peri<'static, PIN_23>,
-    pin_25: Peri<'static, PIN_25>,
-    pio: Peri<'static, PIO>,
     pin_24: Peri<'static, PIN_24>,
+    pin_25: Peri<'static, PIN_25>,
     pin_29: Peri<'static, PIN_29>,
+    pio: Peri<'static, PIO>,
     dma: Peri<'static, AnyChannel>,
     wifi_events: &'static WifiEvents,
     stack_storage: &'static StackStorage,
@@ -835,10 +835,10 @@ macro_rules! impl_wifi_pio {
                 fn spawn_device_loop(
                     spawner: Spawner,
                     pin_23: Peri<'static, PIN_23>,
-                    pin_25: Peri<'static, PIN_25>,
-                    pio: Peri<'static, Self>,
                     pin_24: Peri<'static, PIN_24>,
+                    pin_25: Peri<'static, PIN_25>,
                     pin_29: Peri<'static, PIN_29>,
+                    pio: Peri<'static, Self>,
                     dma: Peri<'static, AnyChannel>,
                     mode: WifiMode,
                     captive_portal_ssid: &'static str,
@@ -847,10 +847,10 @@ macro_rules! impl_wifi_pio {
                 ) {
                     defmt::unwrap!(spawner.spawn([<wifi_device_loop_ $suffix>](
                         pin_23,
-                        pin_25,
-                        pio,
                         pin_24,
+                        pin_25,
                         pin_29,
+                        pio,
                         dma,
                         mode,
                         captive_portal_ssid,
@@ -864,10 +864,10 @@ macro_rules! impl_wifi_pio {
             #[embassy_executor::task]
             async fn [<wifi_device_loop_ $suffix>](
                 pin_23: Peri<'static, PIN_23>,
-                pin_25: Peri<'static, PIN_25>,
-                pio: Peri<'static, peripherals::$pio>,
                 pin_24: Peri<'static, PIN_24>,
+                pin_25: Peri<'static, PIN_25>,
                 pin_29: Peri<'static, PIN_29>,
+                pio: Peri<'static, peripherals::$pio>,
                 dma: Peri<'static, AnyChannel>,
                 mode: WifiMode,
                 captive_portal_ssid: &'static str,
@@ -877,10 +877,10 @@ macro_rules! impl_wifi_pio {
             ) -> ! {
                 wifi_device_loop_impl::<peripherals::$pio>(
                     pin_23,
-                    pin_25,
-                    pio,
                     pin_24,
+                    pin_25,
                     pin_29,
+                    pio,
                     dma,
                     mode,
                     captive_portal_ssid,
