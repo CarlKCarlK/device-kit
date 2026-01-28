@@ -34,7 +34,6 @@ use heapless::String;
 use panic_probe as _;
 use smart_leds::RGB8;
 
-
 // Single 12x4 panel wired serpentine column-major.
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 
@@ -112,7 +111,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             async move {
                 match event {
                     WifiAutoEvent::CaptivePortalReady => {
-                        info!("WiFi: captive portal ready, displaying CONN");
+                        info!("WiFi: captive portal ready, displaying JOIN");
                         show_portal_ready(led12x4_ref).await?;
                     }
                     WifiAutoEvent::Connecting {
@@ -360,7 +359,7 @@ impl State {
 // Display helper functions for the 12x4 LED clock
 
 async fn show_portal_ready(led12x4: &Led12x4) -> Result<()> {
-    let on_frame = text_frame(led12x4, "CONN", &DIGIT_COLORS)?;
+    let on_frame = text_frame(led12x4, "JOIN", &DIGIT_COLORS)?;
     led12x4.animate([
         (on_frame, Duration::from_millis(700)),
         (Frame2d::new(), Duration::from_millis(300)),

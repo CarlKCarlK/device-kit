@@ -26,7 +26,6 @@ use embassy_net::{
 use embassy_time::{Duration, Timer};
 use {defmt_rtt as _, panic_probe as _};
 
-
 // Set up LED layout for 12x8 panel (two 12x4 panels stacked)
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 const LED_LAYOUT_12X8: LedLayout<96, 12, 8> = LED_LAYOUT_12X4.combine_v(LED_LAYOUT_12X4);
@@ -97,10 +96,10 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Connect with status on display
     let led12x8_ref = &led12x8;
     let (stack, _button) = wifi_auto
-        .connect_with( |event| async move {
+        .connect_with(|event| async move {
             match event {
                 WifiAutoEvent::CaptivePortalReady => {
-                    led12x8_ref.write_text("CONN", COLORS).await?;
+                    led12x8_ref.write_text("JOIN", COLORS).await?;
                 }
                 WifiAutoEvent::Connecting { .. } => {
                     led12x8_ref.write_text("...", COLORS).await?;

@@ -118,7 +118,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             async move {
                 match event {
                     WifiAutoEvent::CaptivePortalReady => {
-                        info!("WiFi: captive portal ready, displaying CONN");
+                        info!("WiFi: captive portal ready, displaying JOIN");
                         show_portal_ready(led8x12_ref).await?;
                     }
                     WifiAutoEvent::Connecting {
@@ -366,7 +366,7 @@ impl State {
 // Display helper functions for the 8x12 LED clock
 
 async fn show_portal_ready(led8x12: &Led8x12) -> Result<()> {
-    let on_frame = text_frame(led8x12, "CO\nNN", &DIGIT_COLORS)?;
+    let on_frame = text_frame(led8x12, "JO\nIN", &DIGIT_COLORS)?;
     led8x12.animate([
         (on_frame, Duration::from_millis(700)),
         (Frame2d::new(), Duration::from_millis(300)),
