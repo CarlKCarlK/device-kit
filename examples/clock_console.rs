@@ -84,6 +84,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                     info!("WiFi connection failed!");
                 }
             }
+            Ok(())
         })
         .await?;
 

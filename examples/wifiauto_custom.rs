@@ -99,18 +99,19 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         .connect_with(move |event| async move {
             match event {
                 WifiAutoEvent::CaptivePortalReady => {
-                    led12x8_ref.write_text("CONN", COLORS).await.ok();
+                    led12x8_ref.write_text("CONN", COLORS).await?;
                 }
                 WifiAutoEvent::Connecting { .. } => {
-                    led12x8_ref.write_text("...", COLORS).await.ok();
+                    led12x8_ref.write_text("...", COLORS).await?;
                 }
                 WifiAutoEvent::Connected => {
-                    led12x8_ref.write_text("DONE", COLORS).await.ok();
+                    led12x8_ref.write_text("DONE", COLORS).await?;
                 }
                 WifiAutoEvent::ConnectionFailed => {
-                    led12x8_ref.write_text("FAIL", COLORS).await.ok();
+                    led12x8_ref.write_text("FAIL", COLORS).await?;
                 }
             }
+            Ok(())
         })
         .await?;
 

@@ -118,32 +118,25 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                 match event {
                     WifiAutoEvent::CaptivePortalReady => {
                         info!("WiFi: captive portal ready, displaying CONN");
-                        show_portal_ready(led8x12_ref)
-                            .await
-                            .expect("LED display failed during portal-ready");
+                        show_portal_ready(led8x12_ref).await?;
                     }
                     WifiAutoEvent::Connecting {
                         try_index,
                         try_count,
                     } => {
                         info!("WiFi: connecting (attempt {}/{})", try_index + 1, try_count);
-                        show_connecting(led8x12_ref, try_index, try_count)
-                            .await
-                            .expect("LED display failed during connecting");
+                        show_connecting(led8x12_ref, try_index, try_count).await?;
                     }
                     WifiAutoEvent::Connected => {
                         info!("WiFi: connected successfully, displaying DONE");
-                        show_connected(led8x12_ref)
-                            .await
-                            .expect("LED display failed during connected");
+                        show_connected(led8x12_ref).await?;
                     }
                     WifiAutoEvent::ConnectionFailed => {
                         info!("WiFi: connection failed, displaying FAIL, device will reset");
-                        show_connection_failed(led8x12_ref)
-                            .await
-                            .expect("LED display failed during connection-failed");
+                        show_connection_failed(led8x12_ref).await?;
                     }
                 }
+                Ok(())
             }
         })
         .await?;

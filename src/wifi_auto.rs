@@ -159,6 +159,7 @@ pub struct WifiAutoStatic {
 ///                     defmt::info!("WiFi connection failed - device will reset");
 ///                 }
 ///             }
+///             Ok(())
 ///         })
 ///         .await?;
 ///
@@ -360,37 +361,35 @@ impl WifiAuto {
         Ok(true)
     }
 
-    async fn wait_event(&self) -> WifiAutoEvent {
-        self.events.wait().await
-    }
-
     async fn connect_with<Fut, F>(
         &self,
         mut on_event: F,
     ) -> Result<(&'static Stack<'static>, Button<'static>)>
     where
         F: FnMut(WifiAutoEvent) -> Fut,
-        Fut: Future<Output = ()>,
+        Fut: Future<Output = Result<()>>,
     {
-        let ui = async {
-            loop {
-                let event = self.wait_event().await;
-                on_event(event).await;
-
-                if matches!(event, WifiAutoEvent::Connected) {
-                    break;
-                }
-            }
-        };
-
-        let (result, ()) = embassy_futures::join::join(self.ensure_connected(), ui).await;
-        result?;
+        self.ensure_connected_with(&mut on_event).await?;
         let stack = self.wifi.wait_for_stack().await;
         let button = self.take_button().ok_or(Error::StorageCorrupted)?;
         Ok((stack, button))
     }
 
-    async fn ensure_connected(&self) -> Result<()> {
+    async fn signal_event_with<Fut, F>(&self, on_event: &mut F, event: WifiAutoEvent) -> Result<()>
+    where
+        F: FnMut(WifiAutoEvent) -> Fut,
+        Fut: Future<Output = Result<()>>,
+    {
+        self.events.signal(event);
+        on_event(event).await?;
+        Ok(())
+    }
+
+    async fn ensure_connected_with<Fut, F>(&self, on_event: &mut F) -> Result<()>
+    where
+        F: FnMut(WifiAutoEvent) -> Fut,
+        Fut: Future<Output = Result<()>>,
+    {
         loop {
             let force_captive_portal = self.force_captive_portal.swap(false, Ordering::AcqRel);
             let start_mode = self.wifi.current_start_mode();
@@ -412,7 +411,8 @@ impl WifiAuto {
                         });
                     }
                 }
-                self.events.signal(WifiAutoEvent::CaptivePortalReady);
+                self.signal_event_with(on_event, WifiAutoEvent::CaptivePortalReady)
+                    .await?;
                 self.run_captive_portal().await?;
                 unreachable!("Device should reset after captive portal submission");
             }
@@ -422,15 +422,20 @@ impl WifiAuto {
                     "WifiAuto: connection attempt {}/{}",
                     attempt, MAX_CONNECT_ATTEMPTS
                 );
-                self.events.signal(WifiAutoEvent::Connecting {
-                    try_index: attempt - 1,
-                    try_count: MAX_CONNECT_ATTEMPTS,
-                });
+                self.signal_event_with(
+                    on_event,
+                    WifiAutoEvent::Connecting {
+                        try_index: attempt - 1,
+                        try_count: MAX_CONNECT_ATTEMPTS,
+                    },
+                )
+                .await?;
                 if self
                     .wait_for_client_ready_with_timeout(CONNECT_TIMEOUT)
                     .await
                 {
-                    self.events.signal(WifiAutoEvent::Connected);
+                    self.signal_event_with(on_event, WifiAutoEvent::Connected)
+                        .await?;
                     return Ok(());
                 }
                 warn!("WifiAuto: connection attempt {} timed out", attempt);
@@ -442,7 +447,8 @@ impl WifiAuto {
                 MAX_CONNECT_ATTEMPTS
             );
             info!("WifiAuto: signaling ConnectionFailed event");
-            self.events.signal(WifiAutoEvent::ConnectionFailed);
+            self.signal_event_with(on_event, WifiAutoEvent::ConnectionFailed)
+                .await?;
             if let Some(creds) = self.wifi.load_persisted_credentials() {
                 self.defaults.lock(|cell| {
                     *cell.borrow_mut() = Some(creds);
@@ -521,6 +527,8 @@ impl WifiAutoHandle {
 
     /// Ensures WiFi connection with UI callback for event-driven status updates.
     ///
+    /// If the handler returns an error, connection is aborted and the error is returned.
+    ///
     /// See the [struct-level example](WifiAuto) for usage.
     pub async fn connect_with<Fut, F>(
         self,
@@ -528,7 +536,7 @@ impl WifiAutoHandle {
     ) -> Result<(&'static Stack<'static>, Button<'static>)>
     where
         F: FnMut(WifiAutoEvent) -> Fut,
-        Fut: Future<Output = ()>,
+        Fut: Future<Output = Result<()>>,
     {
         self.wifi_auto.connect_with(on_event).await
     }

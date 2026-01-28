@@ -102,6 +102,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                     led4_ref.write_text(['F', 'A', 'I', 'L'], BlinkState::BlinkingButOff);
                 }
             }
+            Ok(())
         })
         .await?;
 

@@ -94,9 +94,11 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             async move {
                 match event {
                     WifiAutoEvent::CaptivePortalReady => {
-                        servo_display_ref.show_portal_ready().await
+                        servo_display_ref.show_portal_ready().await?;
                     }
-                    WifiAutoEvent::Connecting { .. } => servo_display_ref.show_connecting().await,
+                    WifiAutoEvent::Connecting { .. } => {
+                        servo_display_ref.show_connecting().await?;
+                    }
                     WifiAutoEvent::Connected => {
                         // No-op; main loop will immediately render real time.
                     }
@@ -104,6 +106,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                         // No-op; portal remains visible on failure.
                     }
                 }
+                Ok(())
             }
         })
         .await?;
