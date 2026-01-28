@@ -83,77 +83,55 @@ pub struct WifiAutoStatic {
     button: Mutex<CriticalSectionRawMutex, RefCell<Option<Button<'static>>>>,
     fields_storage: StaticCell<Vec<&'static dyn WifiAutoField, MAX_WIFI_AUTO_FIELDS>>,
 }
-
 /// A device abstraction for WiFi auto-provisioning on the Pico W.
 ///
-/// `WifiAuto` manages WiFi connectivity end-to-end, including:
-/// - automatic connection using stored credentials
-/// - captive-portal fallback when credentials are missing or invalid
-/// - optional collection of additional configuration fields
-/// - button-triggered reconfiguration
+/// `WifiAuto` handles WiFi connection end-to-end. It normally connects using
+/// a saved WiFi network name (SSID) and password. If those values are missing
+/// or invalid, it temporarily creates its own WiFi network (a “captive
+/// portal”) and hosts a web form where the user can enter them.
 ///
-/// It is designed for **Embassy-based, no_std** applications and owns the
-/// WiFi event stream while it is running.
+/// The typical usage pattern is:
 ///
-/// ## Hardware model
+/// 0. Ensure your hardware includes a button. The button can be used during boot to force captive-portal mode.
+/// 1. Construct a [`FlashArray`](crate::flash_array::FlashArray) to store WiFi credentials.
+/// 2. Use [`WifiAuto::new`] to construct a `WifiAuto`.
+/// 3. Use [`connect_with`]([`WifiAutoHandle::connect_with`) to connect to WiFi while optionally showing status.
 ///
-/// On the Pico W, the CYW43 WiFi chip uses a fixed internal wiring:
+/// `connect_with` returns a network stack and the reconfigure button, and it consumes
+/// the `WifiAuto`.
+
 ///
-/// - **PIO0** or **PIO1** can be used by the WiFi driver
-/// - a dedicated **DMA channel** is used for WiFi SPI
+/// Let’s look at an example. Following the example, we’ll explain the details.
 ///
-/// The PIO and DMA selection comes from the peripherals passed to [`WifiAuto::new`].
+/// ## Example: connect with logging
 ///
-/// Other peripherals (LEDs, displays, etc.) must use *different* PIO/DMA
-/// resources (for example, `PIO1` / `DMA_CH1`).
-///
-/// ## Event-driven connection
-///
-/// WiFi connection is initiated with [`WifiAutoHandle::connect_with`], which:
-///
-/// - blocks until WiFi is connected
-/// - emits high-level [`WifiAutoEvent`] values
-/// - invokes a user-supplied async handler for UI updates or logging
-///
-/// The handler:
-///
-/// - is called **sequentially**
-/// - may `await`
-/// - returns `Result<()>`
-/// - aborts connection immediately if it returns an error
-///
-/// ### Capturing external state
-///
-/// The handler closure must return an `async move { ... }` block.
-/// If you want to use external state (such as a display), bind a reference
-/// before the closure and capture that reference instead of moving the value.
-///
-/// See the [struct-level example](WifiAuto) for the full pattern.
-///
-/// ## Example
+/// This example connects to WiFi and logs progress.
 ///
 /// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// # use panic_probe as _;
 /// use device_kit::{
+///     Result,
 ///     button::PressedTo,
 ///     flash_array::{FlashArray, FlashArrayStatic},
 ///     wifi_auto::{WifiAuto, WifiAutoEvent},
 /// };
+/// use embassy_executor::Spawner;
 ///
-/// async fn example(
-///     spawner: embassy_executor::Spawner,
+/// async fn connect_wifi(
+///     spawner: Spawner,
 ///     p: embassy_rp::Peripherals,
-/// ) -> Result<(), device_kit::Error> {
-///     // Flash storage for WiFi credentials
+/// ) -> Result<()> {
+///     // Set up flash storage for WiFi credentials
 ///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<1>::new_static();
 ///     let [wifi_flash] = FlashArray::new(&FLASH_STATIC, p.FLASH)?;
 ///
+///     // Construct WifiAuto
 ///     let wifi_auto = WifiAuto::new(
 ///         p.PIN_23,          // CYW43 power
 ///         p.PIN_25,          // CYW43 chip select
-///         p.PIO0,            // WiFi PIO (fixed)
+///         p.PIO0,            // WiFi PIO
 ///         p.PIN_24,          // CYW43 clock
 ///         p.PIN_29,          // CYW43 data
 ///         p.DMA_CH0,         // WiFi DMA
@@ -161,46 +139,65 @@ pub struct WifiAutoStatic {
 ///         p.PIN_13,          // Button for reconfiguration
 ///         PressedTo::Ground,
 ///         "PicoAccess",      // Captive-portal SSID
-///         [],                // No extra fields
+///         [],                // Any extra fields
 ///         spawner,
 ///     )?;
 ///
-///     let (stack, _button) = wifi_auto
+///     // Connect (logging status as we go)
+///     let (_stack, _button) = wifi_auto
 ///         .connect_with(|event| async move {
 ///             match event {
-///                 WifiAutoEvent::CaptivePortalReady => {
-///                     defmt::info!("Captive portal ready");
-///                 }
-///                 WifiAutoEvent::Connecting { try_index, try_count } => {
-///                     defmt::info!(
-///                         "Connecting (attempt {} of {})",
-///                         try_index + 1,
-///                         try_count
-///                     );
-///                 }
-///                 WifiAutoEvent::Connected => {
-///                     defmt::info!("WiFi connected");
-///                 }
-///                 WifiAutoEvent::ConnectionFailed => {
-///                     defmt::info!("Connection failed");
-///                 }
+///                 WifiAutoEvent::CaptivePortalReady =>
+///                     defmt::info!("Captive portal ready"),
+///                 WifiAutoEvent::Connecting { .. } =>
+///                     defmt::info!("Connecting to WiFi"),
+///                 WifiAutoEvent::Connected =>
+///                     defmt::info!("WiFi connected"),
+///                 WifiAutoEvent::ConnectionFailed =>
+///                     defmt::info!("WiFi connection failed"),
 ///             }
 ///             Ok(())
 ///         })
 ///         .await?;
 ///
-///     // `stack` is now ready for network use
+///     // Use the network stack (not shown)
 ///     Ok(())
 /// }
 /// ```
 ///
-/// ## Design notes
+/// ## What happens during connection
 ///
-/// - `WifiAuto` intentionally **does not expose low-level WiFi events**
-///   while running; it owns the event loop.
-/// - The API favors correctness over configurability.
-/// - DMA and PIO choices for WiFi are fixed to match Pico W hardware
-///   and avoid subtle runtime failures.
+/// While `connect_with` is running:
+///
+/// - The WiFi chip may reset as it switches between normal WiFi operation and
+///   hosting its own temporary WiFi network.
+/// - Your code should tolerate these resets.
+///   Initializing LEDs or displays before WiFi is fine; just be aware they may be
+///   momentarily disrupted during mode changes.
+///
+/// ## Performance and code size
+///
+/// You may choose any PIO instance and any DMA channel for WiFi.
+/// With **Thin LTO enabled**, this flexibility has minimal impact on
+/// code size (about 0.25% in typical builds).
+///
+/// Recommended release profile:
+///
+/// ```toml
+/// [profile.release]
+/// # debug = 2    # uncomment for better backtraces, at the cost of code size
+/// lto = "thin"
+/// codegen-units = 1
+/// panic = "abort"
+/// ```
+///
+/// ## Hardware model
+///
+/// On the Pico W, the CYW43 WiFi chip is wired to fixed GPIOs. You must
+/// also provide a PIO instance and a DMA channel for the WiFi driver.
+///
+/// These are supplied explicitly to [`WifiAuto::new`]. The chosen PIO/DMA
+/// pair cannot be shared with other devices; the compiler enforces this.
 pub struct WifiAuto {
     events: &'static WifiAutoEvents,
     wifi: &'static Wifi,
