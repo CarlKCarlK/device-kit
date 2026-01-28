@@ -74,10 +74,10 @@ pub type WifiAutoEvents = Signal<CriticalSectionRawMutex, WifiAutoEvent>;
 const MAX_WIFI_AUTO_FIELDS: usize = 8;
 
 /// Static for [`WifiAuto`]. See [`WifiAuto`] for usage example.
-pub struct WifiAutoStatic {
+pub(crate) struct WifiAutoStatic {
     events: WifiAutoEvents,
     wifi: InnerWifiStatic,
-    wifi_auto_cell: StaticCell<WifiAuto>,
+    wifi_auto_cell: StaticCell<WifiAutoInner>,
     force_captive_portal: AtomicBool,
     defaults: Mutex<CriticalSectionRawMutex, RefCell<Option<InnerWifiCredentials>>>,
     button: Mutex<CriticalSectionRawMutex, RefCell<Option<Button<'static>>>>,
@@ -95,12 +95,10 @@ pub struct WifiAutoStatic {
 /// 0. Ensure your hardware includes a button. The button can be used during boot to force captive-portal mode.
 /// 1. Construct a [`FlashArray`](crate::flash_array::FlashArray) to store WiFi credentials.
 /// 2. Use [`WifiAuto::new`] to construct a `WifiAuto`.
-/// 3. Use [`connect_with`]([`WifiAutoHandle::connect_with`) to connect to WiFi while optionally showing status.
+/// 3. Use [`WifiAuto::connect_with`] to connect to WiFi while optionally showing status.
 ///
 /// `connect_with` returns a network stack and the reconfigure button, and it consumes
 /// the `WifiAuto`.
-
-///
 /// Let’s look at an example. Following the example, we’ll explain the details.
 ///
 /// ## Example: connect with logging
@@ -199,6 +197,10 @@ pub struct WifiAutoStatic {
 /// These are supplied explicitly to [`WifiAuto::new`]. The chosen PIO/DMA
 /// pair cannot be shared with other devices; the compiler enforces this.
 pub struct WifiAuto {
+    wifi_auto: &'static WifiAutoInner,
+}
+
+struct WifiAutoInner {
     events: &'static WifiAutoEvents,
     wifi: &'static Wifi,
     spawner: Spawner,
@@ -206,11 +208,6 @@ pub struct WifiAuto {
     defaults: &'static Mutex<CriticalSectionRawMutex, RefCell<Option<InnerWifiCredentials>>>,
     button: &'static Mutex<CriticalSectionRawMutex, RefCell<Option<Button<'static>>>>,
     fields: &'static [&'static dyn WifiAutoField],
-}
-
-/// Handle for [`WifiAuto`]. See [`WifiAuto`] for usage example.
-pub struct WifiAutoHandle {
-    wifi_auto: &'static WifiAuto,
 }
 
 impl WifiAutoStatic {
@@ -245,14 +242,6 @@ impl WifiAutoStatic {
 }
 
 impl WifiAuto {
-    /// Create static resources for [`WifiAuto`].
-    ///
-    /// See [`WifiAuto`] for a complete example.
-    #[must_use]
-    pub const fn new_static() -> WifiAutoStatic {
-        WifiAutoStatic::new()
-    }
-
     /// Initialize WiFi auto-provisioning with custom configuration fields.
     ///
     /// See [`WifiAuto`] for a complete example.
@@ -270,8 +259,8 @@ impl WifiAuto {
         captive_portal_ssid: &'static str,
         custom_fields: [&'static dyn WifiAutoField; N],
         spawner: Spawner,
-    ) -> Result<WifiAutoHandle> {
-        static WIFI_AUTO_STATIC: WifiAutoStatic = WifiAuto::new_static();
+    ) -> Result<Self> {
+        static WIFI_AUTO_STATIC: WifiAutoStatic = WifiAutoInner::new_static();
         let wifi_auto_static = &WIFI_AUTO_STATIC;
 
         let stored_credentials = Wifi::peek_credentials(&mut wifi_credentials_flash_block);
@@ -339,7 +328,7 @@ impl WifiAuto {
             &[]
         };
 
-        let instance = wifi_auto_static.wifi_auto_cell.init(Self {
+        let instance = wifi_auto_static.wifi_auto_cell.init(WifiAutoInner {
             events: &wifi_auto_static.events,
             wifi,
             spawner,
@@ -353,19 +342,46 @@ impl WifiAuto {
             instance.force_captive_portal();
         }
 
-        Ok(WifiAutoHandle {
-            wifi_auto: instance,
-        })
+        Ok(Self { wifi_auto: instance })
+    }
+
+    /// Return the underlying WiFi handle for advanced operations such as clearing
+    /// credentials. Avoid waiting on WiFi events while [`WifiAuto`] is running, as it
+    /// already owns the event stream.
+    ///
+    /// See the [struct-level example](Self) for usage.
+    pub fn wifi(&self) -> &'static Wifi {
+        self.wifi_auto.wifi()
+    }
+
+    /// Ensures WiFi connection with UI callback for event-driven status updates.
+    ///
+    /// If the handler returns an error, connection is aborted and the error is returned.
+    ///
+    /// See the [struct-level example](Self) for usage.
+    pub async fn connect_with<Fut, F>(
+        self,
+        on_event: F,
+    ) -> Result<(&'static Stack<'static>, Button<'static>)>
+    where
+        F: FnMut(WifiAutoEvent) -> Fut,
+        Fut: Future<Output = Result<()>>,
+    {
+        self.wifi_auto.connect_with(on_event).await
+    }
+}
+
+impl WifiAutoInner {
+    #[must_use]
+    const fn new_static() -> WifiAutoStatic {
+        WifiAutoStatic::new()
     }
 
     fn force_captive_portal(&self) {
         self.force_captive_portal.store(true, Ordering::Relaxed);
     }
 
-    /// Return the underlying WiFi handle for advanced operations such as clearing
-    /// credentials. Avoid waiting on WiFi events while [`WifiAuto`] is running, as it
-    /// already owns the event stream.
-    pub fn wifi(&self) -> &'static Wifi {
+    fn wifi(&self) -> &'static Wifi {
         self.wifi
     }
 
@@ -539,32 +555,5 @@ impl WifiAuto {
         loop {
             cortex_m::asm::nop();
         }
-    }
-}
-
-impl WifiAutoHandle {
-    /// Return the underlying WiFi handle for advanced operations such as clearing
-    /// credentials. Avoid waiting on WiFi events while [`WifiAuto`] is running, as it
-    /// already owns the event stream.
-    ///
-    /// See the [struct-level example](WifiAuto) for usage.
-    pub fn wifi(&self) -> &'static Wifi {
-        self.wifi_auto.wifi()
-    }
-
-    /// Ensures WiFi connection with UI callback for event-driven status updates.
-    ///
-    /// If the handler returns an error, connection is aborted and the error is returned.
-    ///
-    /// See the [struct-level example](WifiAuto) for usage.
-    pub async fn connect_with<Fut, F>(
-        self,
-        on_event: F,
-    ) -> Result<(&'static Stack<'static>, Button<'static>)>
-    where
-        F: FnMut(WifiAutoEvent) -> Fut,
-        Fut: Future<Output = Result<()>>,
-    {
-        self.wifi_auto.connect_with(on_event).await
     }
 }
