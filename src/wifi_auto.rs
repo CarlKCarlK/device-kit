@@ -351,7 +351,7 @@ impl WifiAuto {
     /// credentials. Avoid waiting on WiFi events while [`WifiAuto`] is running, as it
     /// already owns the event stream.
     ///
-    /// See the [struct-level example](Self) for usage.
+    /// See the [WifiAuto struct example](Self) for usage.
     pub fn wifi(&self) -> &'static Wifi {
         self.wifi_auto.wifi()
     }
@@ -360,7 +360,7 @@ impl WifiAuto {
     ///
     /// If the handler returns an error, connection is aborted and the error is returned.
     ///
-    /// See the [struct-level example](Self) for usage.
+    /// See the [WifiAuto struct example](Self) for usage.
     pub async fn connect_with<Fut, F>(
         self,
         on_event: F,
