@@ -106,7 +106,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Connect Wi-Fi, using the LED panel for status.
     let led12x4_ref = &led12x4;
     let (stack, mut button) = wifi_auto
-        .connect_with(move |event| {
+        .connect_with(|event| {
             let led12x4_ref = led12x4_ref;
             async move {
                 match event {
@@ -360,11 +360,10 @@ impl State {
 
 async fn show_portal_ready(led12x4: &Led12x4) -> Result<()> {
     let on_frame = text_frame(led12x4, "CONN", &DIGIT_COLORS)?;
-    led12x4
-        .animate([
-            (on_frame, Duration::from_millis(700)),
-            (Frame2d::new(), Duration::from_millis(300)),
-        ])
+    led12x4.animate([
+        (on_frame, Duration::from_millis(700)),
+        (Frame2d::new(), Duration::from_millis(300)),
+    ])
 }
 
 async fn show_connecting(led12x4: &Led12x4, try_index: u8, _try_count: u8) -> Result<()> {

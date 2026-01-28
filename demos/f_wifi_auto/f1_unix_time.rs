@@ -87,7 +87,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Borrow `led8x12` outside closure so the event handler can use it without owning it.
     let led8x12_ref = &led8x12;
     let (stack, _button) = wifi_auto
-        .connect_with(move |event| async move {
+        .connect_with(|event| async move {
             match event {
                 WifiAutoEvent::CaptivePortalReady => {
                     led8x12_ref.write_text("JO\nIN", COLORS).await?;

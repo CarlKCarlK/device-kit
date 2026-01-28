@@ -241,6 +241,10 @@ fn check_all() -> ExitCode {
     }
     let examples = discover_examples(&workspace_root);
     let demos = discover_demo_bins(&workspace_root);
+    let no_wifi_demos: Vec<_> = demos
+        .iter()
+        .filter(|demo| !demo.wifi_required)
+        .collect();
     let no_wifi_examples: Vec<_> = examples
         .iter()
         .filter(|example| !example.wifi_required)
@@ -341,7 +345,7 @@ fn check_all() -> ExitCode {
         // 5. Demos (pico2 + pico1, no wifi)
         s.spawn(|_| {
             println!("{}", "  [5/9] Demos (pico2 + pico1, no wifi)...".bright_black());
-            demos.par_iter().for_each(|demo| {
+            no_wifi_demos.par_iter().for_each(|demo| {
                 if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
                     "build",
                     "--bin",
@@ -660,6 +664,9 @@ fn check_demos() -> ExitCode {
     println!("{}", "==> Checking demos...".cyan());
 
     for demo in &demos {
+        if demo.wifi_required {
+            continue;
+        }
         if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
             "build",
             "--bin",
@@ -831,6 +838,7 @@ fn discover_examples(workspace_root: &Path) -> Vec<ExampleInfo> {
 #[derive(Debug, Clone)]
 struct DemoInfo {
     name: String,
+    wifi_required: bool,
 }
 
 fn discover_demo_bins(workspace_root: &Path) -> Vec<DemoInfo> {
@@ -841,29 +849,49 @@ fn discover_demo_bins(workspace_root: &Path) -> Vec<DemoInfo> {
     let mut in_bin = false;
     let mut current_name: Option<String> = None;
     let mut current_path: Option<String> = None;
+    let mut current_wifi_required = false;
 
     let finalize = |current_name: &mut Option<String>,
                     current_path: &mut Option<String>,
+                    current_wifi_required: &mut bool,
                     demos: &mut Vec<DemoInfo>| {
         if let (Some(name), Some(path)) = (current_name.take(), current_path.take()) {
             if path.starts_with("demos/") {
-                demos.push(DemoInfo { name });
+                let demo_path = workspace_root.join(&path);
+                let mut wifi_required = *current_wifi_required;
+                if !wifi_required {
+                    let source = fs::read_to_string(&demo_path)
+                        .unwrap_or_else(|_| panic!("Failed to read {}", demo_path.display()));
+                    wifi_required = source.contains("#![cfg(feature = \"wifi\")]");
+                }
+                demos.push(DemoInfo { name, wifi_required });
             }
         }
+        *current_wifi_required = false;
     };
 
     for line in contents.lines() {
         let trimmed = line.trim();
         if trimmed == "[[bin]]" {
             if in_bin {
-                finalize(&mut current_name, &mut current_path, &mut demos);
+                finalize(
+                    &mut current_name,
+                    &mut current_path,
+                    &mut current_wifi_required,
+                    &mut demos,
+                );
             }
             in_bin = true;
             continue;
         }
 
         if in_bin && trimmed.starts_with('[') && trimmed != "[[bin]]" {
-            finalize(&mut current_name, &mut current_path, &mut demos);
+            finalize(
+                &mut current_name,
+                &mut current_path,
+                &mut current_wifi_required,
+                &mut demos,
+            );
             in_bin = false;
             continue;
         }
@@ -876,11 +904,18 @@ fn discover_demo_bins(workspace_root: &Path) -> Vec<DemoInfo> {
             current_name = Some(value);
         } else if let Some(value) = parse_toml_string(trimmed, "path") {
             current_path = Some(value);
+        } else if trimmed.starts_with("required-features") && trimmed.contains("wifi") {
+            current_wifi_required = true;
         }
     }
 
     if in_bin {
-        finalize(&mut current_name, &mut current_path, &mut demos);
+        finalize(
+            &mut current_name,
+            &mut current_path,
+            &mut current_wifi_required,
+            &mut demos,
+        );
     }
 
     demos.sort_by(|a, b| a.name.cmp(&b.name));
