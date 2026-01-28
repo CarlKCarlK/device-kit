@@ -100,8 +100,8 @@ use defmt::*;
 use embassy_executor::Spawner;
 use embassy_net::{Config, Stack, StackResources};
 use embassy_rp::interrupt::typelevel::Binding;
-use embassy_rp::pio::{Instance, InterruptHandler, Pio};
 use embassy_rp::peripherals;
+use embassy_rp::pio::{Instance, InterruptHandler, Pio};
 use embassy_rp::{
     Peri,
     dma::{AnyChannel, Channel},

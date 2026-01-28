@@ -355,4 +355,6 @@ panic = "abort"
 
 [profile.release]
 debug = 2
+lto = "thin"
+codegen-units = 1
 panic = "abort"

@@ -83,6 +83,7 @@ demo-e1-2 = "run --bin demo_e1_power_counter --release --target thumbv8m.main-no
 demo-e1-2-check = "check --bin demo_e1_power_counter --release --target thumbv8m.main-none-eabihf --features pico2,arm --no-default-features"
 demo-f1-2w = "run --bin demo_f1_unix_time --release --target thumbv8m.main-none-eabihf --features pico2,arm,wifi --no-default-features"
 demo-f1-2w-check = "check --bin demo_f1_unix_time --release --target thumbv8m.main-none-eabihf --features pico2,arm,wifi --no-default-features"
+demo-f1-2w-build = "build --bin demo_f1_unix_time --release --target thumbv8m.main-none-eabihf --features pico2,arm,wifi --no-default-features"
 demo-f1-w = "run --bin demo_f1_unix_time --release --target thumbv6m-none-eabi --features pico1,arm,wifi"
 demo-f1-w-check = "check --bin demo_f1_unix_time --release --target thumbv6m-none-eabi --features pico1,arm,wifi"
 wifiauto-custom-2w = "run --example wifiauto_custom --release --target thumbv8m.main-none-eabihf --features pico2,arm,wifi --no-default-features"
@@ -253,7 +254,14 @@ update-docs-host = "doc --no-deps --features doc-images"
 
 [target.thumbv6m-none-eabi]
 runner = "probe-rs run --chip=RP2040"
-rustflags = ["-C", "link-arg=-Tlink.x", "-C", "link-arg=-Tdefmt.x"]
+rustflags = [
+    "-C",
+    "link-arg=-Tlink.x",
+    "-C",
+    "link-arg=-Tdefmt.x",
+    "-C",
+    "link-arg=--gc-sections",
+]
 
 [target.thumbv8m.main-none-eabihf]
 runner = "probe-rs run --chip=RP235x"
@@ -264,8 +272,17 @@ rustflags = [
     "link-arg=-Tlink-rp.x",
     "-C",
     "link-arg=-Tdefmt.x",
+    "-C",
+    "link-arg=--gc-sections",
 ]
 
 [target.riscv32imac-unknown-none-elf]
 runner = "probe-rs run --chip=RP235x"
-rustflags = ["-C", "link-arg=-Tlink.x", "-C", "link-arg=-Tdefmt.x"]
+rustflags = [
+    "-C",
+    "link-arg=-Tlink.x",
+    "-C",
+    "link-arg=-Tdefmt.x",
+    "-C",
+    "link-arg=--gc-sections",
+]
