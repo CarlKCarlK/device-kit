@@ -90,17 +90,11 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         .connect_with(|event| async move {
             match event {
                 WifiAutoEvent::CaptivePortalReady => {
-                    led8x12_ref.write_text("JO\nIN", COLORS).await?;
+                    led8x12_ref.write_text("JO\nIN", COLORS).await?
                 }
-                WifiAutoEvent::Connecting { .. } => {
-                    show_connecting(led8x12_ref).await?; // animate dots
-                }
-                WifiAutoEvent::Connected => {
-                    led8x12_ref.write_text("DO\nNE", COLORS).await?;
-                }
-                WifiAutoEvent::ConnectionFailed => {
-                    led8x12_ref.write_text("FA\nIL", COLORS).await?;
-                }
+                WifiAutoEvent::Connecting { .. } => show_connecting(led8x12_ref).await?, // animate dots
+                WifiAutoEvent::Connected => led8x12_ref.write_text("DO\nNE", COLORS).await?,
+                WifiAutoEvent::ConnectionFailed => led8x12_ref.write_text("FA\nIL", COLORS).await?,
             }
             Ok(())
         })
@@ -115,7 +109,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         match fetch_ntp_time(stack).await {
             Ok(unix_seconds) => {
                 // Get last 4 digits of unix timestamp
-                let last_4_digits = (unix_seconds % 10000) as u16;
+                let last_4_digits = unix_seconds.rem_euclid(10_000) as u16;
                 let time_str = format_4_digits_with_newline(last_4_digits);
                 led8x12.write_text(&time_str, COLORS).await?;
             }
