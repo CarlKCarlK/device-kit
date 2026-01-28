@@ -17,6 +17,8 @@
 //! use device_kit::flash_array::{FlashArray, FlashArrayStatic};
 //! # #[cfg(feature = "wifi")]
 //! use device_kit::wifi::{Wifi, WifiStatic};
+//! # #[cfg(feature = "wifi")]
+//! device_kit::wifi!();
 //! # fn main() {}
 //! #[cfg(feature = "wifi")]
 //! async fn example(spawner: embassy_executor::Spawner) {
@@ -59,6 +61,8 @@
 //! use device_kit::wifi::{Wifi, WifiStatic};
 //! # #[cfg(feature = "wifi")]
 //! use device_kit::wifi_auto::WifiCredentials;
+//! # #[cfg(feature = "wifi")]
+//! device_kit::wifi!();
 //! # fn main() {}
 //! #[cfg(feature = "wifi")]
 //! async fn example(spawner: embassy_executor::Spawner, credentials: WifiCredentials) {
@@ -101,10 +105,12 @@ use embassy_executor::Spawner;
 use embassy_net::{Config, Stack, StackResources};
 use embassy_rp::interrupt::typelevel::Binding;
 use embassy_rp::pio::{Instance, InterruptHandler, Pio};
+use embassy_rp::peripherals;
 use embassy_rp::{
     Peri,
+    dma::{AnyChannel, Channel},
     gpio::{Level, Output},
-    peripherals::{DMA_CH0, PIN_23, PIN_24, PIN_25, PIN_29},
+    peripherals::{PIN_23, PIN_24, PIN_25, PIN_29},
 };
 use embassy_sync::blocking_mutex::{Mutex, raw::CriticalSectionRawMutex};
 use embassy_sync::signal::Signal;
@@ -218,7 +224,7 @@ pub trait WifiPio: Instance {
 
     fn spawn_wifi_task(
         spawner: Spawner,
-        runner: cyw43::Runner<'static, Output<'static>, PioSpi<'static, Self, 0, DMA_CH0>>,
+        runner: cyw43::Runner<'static, Output<'static>, PioSpi<'static, Self, 0, AnyChannel>>,
     );
 
     fn spawn_device_loop(
@@ -228,7 +234,7 @@ pub trait WifiPio: Instance {
         pio: Peri<'static, Self>,
         pin_24: Peri<'static, PIN_24>,
         pin_29: Peri<'static, PIN_29>,
-        dma_ch0: Peri<'static, DMA_CH0>,
+        dma: Peri<'static, AnyChannel>,
         mode: WifiMode,
         captive_portal_ssid: &'static str,
         wifi_events: &'static WifiEvents,
@@ -245,7 +251,7 @@ pub struct WifiStatic {
 
 /// A device abstraction that manages WiFi connectivity and network stack in both captive portal and client modes.
 ///
-/// See the [module-level documentation](crate::wifi) for usage examples.
+/// See the [module-level documentation](mod@crate::wifi) for usage examples.
 // cmk consider hiding this behind WifiAuto-only APIs if external access is unwanted
 pub struct Wifi {
     events: &'static WifiEvents,
@@ -258,7 +264,7 @@ impl Wifi {
     ///
     /// This must be called once to create a static `WifiStatic` that will be passed to [`Wifi::new`].
     ///
-    /// See the [module-level documentation](crate::wifi) for usage examples.
+    /// See the [module-level documentation](mod@crate::wifi) for usage examples.
     #[must_use]
     pub const fn new_static() -> WifiStatic {
         WifiStatic {
@@ -275,7 +281,7 @@ impl Wifi {
     /// - In captive portal mode: static IP 192.168.4.1
     /// - In client mode: DHCP-assigned IP
     ///
-    /// See the [module-level documentation](crate::wifi) for usage examples.
+    /// See the [module-level documentation](mod@crate::wifi) for usage examples.
     pub async fn wait_for_stack(&self) -> &'static Stack<'static> {
         self.stack.get().await
     }
@@ -286,7 +292,7 @@ impl Wifi {
     /// - [`WifiEvent::CaptivePortalReady`] when captive portal mode is initialized
     /// - [`WifiEvent::ClientReady`] when connected to WiFi and DHCP is configured
     ///
-    /// See the [module-level documentation](crate::wifi) for usage examples.
+    /// See the [module-level documentation](mod@crate::wifi) for usage examples.
     pub async fn wait_for_wifi_event(&self) -> WifiEvent {
         self.events.wait().await
     }
@@ -304,19 +310,19 @@ impl Wifi {
     /// * `pio` - PIO peripheral for WiFi communication
     /// * `pin_24` - WiFi chip clock pin (GPIO 24)
     /// * `pin_29` - WiFi chip data pin (GPIO 29)
-    /// * `dma_ch0` - DMA channel for WiFi SPI communication
+    /// * `dma` - DMA channel for WiFi SPI communication
     /// * `credential_store` - Flash block reserved for WiFi credentials
     /// * `spawner` - Embassy task spawner
     ///
-    /// See the [module-level documentation](crate::wifi) for usage examples.
-    pub fn new<PIO: WifiPio>(
+    /// See the [module-level documentation](mod@crate::wifi) for usage examples.
+    pub fn new<PIO: WifiPio, DMA: Channel>(
         wifi_static: &'static WifiStatic,
         pin_23: Peri<'static, PIN_23>,
         pin_25: Peri<'static, PIN_25>,
         pio: Peri<'static, PIO>,
         pin_24: Peri<'static, PIN_24>,
         pin_29: Peri<'static, PIN_29>,
-        dma_ch0: Peri<'static, DMA_CH0>,
+        dma: Peri<'static, DMA>,
         credential_store: FlashBlock,
         spawner: Spawner,
     ) -> &'static Self {
@@ -327,21 +333,21 @@ impl Wifi {
             pio,
             pin_24,
             pin_29,
-            dma_ch0,
+            dma,
             credential_store,
             DEFAULT_CAPTIVE_PORTAL_SSID,
             spawner,
         )
     }
 
-    pub fn new_with_captive_portal_ssid<PIO: WifiPio>(
+    pub fn new_with_captive_portal_ssid<PIO: WifiPio, DMA: Channel>(
         wifi_static: &'static WifiStatic,
         pin_23: Peri<'static, PIN_23>,
         pin_25: Peri<'static, PIN_25>,
         pio: Peri<'static, PIO>,
         pin_24: Peri<'static, PIN_24>,
         pin_29: Peri<'static, PIN_29>,
-        dma_ch0: Peri<'static, DMA_CH0>,
+        dma: Peri<'static, DMA>,
         credential_store: FlashBlock,
         captive_portal_ssid: &'static str,
         spawner: Spawner,
@@ -358,6 +364,7 @@ impl Wifi {
                 }
             }
         };
+        let dma = dma.into();
         PIO::spawn_device_loop(
             spawner,
             pin_23,
@@ -365,7 +372,7 @@ impl Wifi {
             pio,
             pin_24,
             pin_29,
-            dma_ch0,
+            dma,
             mode,
             captive_portal_ssid,
             &wifi_static.events,
@@ -491,7 +498,7 @@ fn save_state_to_block(
 }
 
 async fn wifi_task_impl<PIO: WifiPio>(
-    runner: cyw43::Runner<'static, Output<'static>, PioSpi<'static, PIO, 0, DMA_CH0>>,
+    runner: cyw43::Runner<'static, Output<'static>, PioSpi<'static, PIO, 0, AnyChannel>>,
 ) -> ! {
     runner.run().await
 }
@@ -502,7 +509,7 @@ async fn wifi_device_loop_impl<PIO: WifiPio>(
     pio: Peri<'static, PIO>,
     pin_24: Peri<'static, PIN_24>,
     pin_29: Peri<'static, PIN_29>,
-    dma_ch0: Peri<'static, DMA_CH0>,
+    dma: Peri<'static, AnyChannel>,
     mode: WifiMode,
     captive_portal_ssid: &'static str,
     wifi_events: &'static WifiEvents,
@@ -517,7 +524,7 @@ async fn wifi_device_loop_impl<PIO: WifiPio>(
                 pio,
                 pin_24,
                 pin_29,
-                dma_ch0,
+                dma,
                 captive_portal_ssid,
                 wifi_events,
                 stack_storage,
@@ -532,7 +539,7 @@ async fn wifi_device_loop_impl<PIO: WifiPio>(
                 pio,
                 pin_24,
                 pin_29,
-                dma_ch0,
+                dma,
                 wifi_events,
                 stack_storage,
                 spawner,
@@ -550,7 +557,7 @@ async fn wifi_device_loop_captive_portal<PIO: WifiPio>(
     pio: Peri<'static, PIO>,
     pin_24: Peri<'static, PIN_24>,
     pin_29: Peri<'static, PIN_29>,
-    dma_ch0: Peri<'static, DMA_CH0>,
+    dma: Peri<'static, AnyChannel>,
     captive_portal_ssid: &'static str,
     wifi_events: &'static WifiEvents,
     stack_storage: &'static StackStorage,
@@ -576,7 +583,7 @@ async fn wifi_device_loop_captive_portal<PIO: WifiPio>(
         cs,
         pin_24,
         pin_29,
-        dma_ch0,
+        dma,
     );
 
     static STATE: StaticCell<cyw43::State> = StaticCell::new();
@@ -666,7 +673,7 @@ async fn wifi_device_loop_client_configured<PIO: WifiPio>(
     pio: Peri<'static, PIO>,
     pin_24: Peri<'static, PIN_24>,
     pin_29: Peri<'static, PIN_29>,
-    dma_ch0: Peri<'static, DMA_CH0>,
+    dma: Peri<'static, AnyChannel>,
     wifi_events: &'static WifiEvents,
     stack_storage: &'static StackStorage,
     spawner: Spawner,
@@ -680,7 +687,7 @@ async fn wifi_device_loop_client_configured<PIO: WifiPio>(
         pio,
         pin_24,
         pin_29,
-        dma_ch0,
+        dma,
         wifi_events,
         stack_storage,
         spawner,
@@ -697,7 +704,7 @@ async fn wifi_device_loop_client_impl<PIO: WifiPio>(
     pio: Peri<'static, PIO>,
     pin_24: Peri<'static, PIN_24>,
     pin_29: Peri<'static, PIN_29>,
-    dma_ch0: Peri<'static, DMA_CH0>,
+    dma: Peri<'static, AnyChannel>,
     wifi_events: &'static WifiEvents,
     stack_storage: &'static StackStorage,
     spawner: Spawner,
@@ -724,7 +731,7 @@ async fn wifi_device_loop_client_impl<PIO: WifiPio>(
         cs,
         pin_24,
         pin_29,
-        dma_ch0,
+        dma,
     );
 
     static STATE: StaticCell<cyw43::State> = StaticCell::new();
@@ -811,7 +818,7 @@ async fn net_task(mut runner: embassy_net::Runner<'static, cyw43::NetDriver<'sta
 macro_rules! impl_wifi_pio {
     ($pio:ident, $irqs:ident, $suffix:ident) => {
         paste::paste! {
-            impl WifiPio for embassy_rp::peripherals::$pio {
+            impl WifiPio for peripherals::$pio {
                 type Irqs = crate::pio_irqs::$irqs;
 
                 fn irqs() -> Self::Irqs {
@@ -823,10 +830,10 @@ macro_rules! impl_wifi_pio {
                     runner: cyw43::Runner<
                         'static,
                         Output<'static>,
-                        PioSpi<'static, Self, 0, DMA_CH0>,
+                        PioSpi<'static, Self, 0, AnyChannel>,
                     >,
                 ) {
-                    unwrap!(spawner.spawn([<wifi_task_ $suffix>](runner)));
+                    defmt::unwrap!(spawner.spawn([<wifi_task_ $suffix>](runner)));
                 }
 
                 fn spawn_device_loop(
@@ -836,19 +843,19 @@ macro_rules! impl_wifi_pio {
                     pio: Peri<'static, Self>,
                     pin_24: Peri<'static, PIN_24>,
                     pin_29: Peri<'static, PIN_29>,
-                    dma_ch0: Peri<'static, DMA_CH0>,
+                    dma: Peri<'static, AnyChannel>,
                     mode: WifiMode,
                     captive_portal_ssid: &'static str,
                     wifi_events: &'static WifiEvents,
                     stack_storage: &'static StackStorage,
                 ) {
-                    unwrap!(spawner.spawn([<wifi_device_loop_ $suffix>](
+                    defmt::unwrap!(spawner.spawn([<wifi_device_loop_ $suffix>](
                         pin_23,
                         pin_25,
                         pio,
                         pin_24,
                         pin_29,
-                        dma_ch0,
+                        dma,
                         mode,
                         captive_portal_ssid,
                         wifi_events,
@@ -862,23 +869,23 @@ macro_rules! impl_wifi_pio {
             async fn [<wifi_device_loop_ $suffix>](
                 pin_23: Peri<'static, PIN_23>,
                 pin_25: Peri<'static, PIN_25>,
-                pio: Peri<'static, embassy_rp::peripherals::$pio>,
+                pio: Peri<'static, peripherals::$pio>,
                 pin_24: Peri<'static, PIN_24>,
                 pin_29: Peri<'static, PIN_29>,
-                dma_ch0: Peri<'static, DMA_CH0>,
+                dma: Peri<'static, AnyChannel>,
                 mode: WifiMode,
                 captive_portal_ssid: &'static str,
                 wifi_events: &'static WifiEvents,
                 stack_storage: &'static StackStorage,
                 spawner: Spawner,
             ) -> ! {
-                wifi_device_loop_impl::<embassy_rp::peripherals::$pio>(
+                wifi_device_loop_impl::<peripherals::$pio>(
                     pin_23,
                     pin_25,
                     pio,
                     pin_24,
                     pin_29,
-                    dma_ch0,
+                    dma,
                     mode,
                     captive_portal_ssid,
                     wifi_events,
@@ -893,10 +900,10 @@ macro_rules! impl_wifi_pio {
                 runner: cyw43::Runner<
                     'static,
                     Output<'static>,
-                    PioSpi<'static, embassy_rp::peripherals::$pio, 0, DMA_CH0>,
+                    PioSpi<'static, peripherals::$pio, 0, AnyChannel>,
                 >,
             ) -> ! {
-                wifi_task_impl(runner).await
+                wifi_task_impl::<peripherals::$pio>(runner).await
             }
         }
     };
@@ -906,3 +913,14 @@ impl_wifi_pio!(PIO0, Pio0Irqs, pio0);
 impl_wifi_pio!(PIO1, Pio1Irqs, pio1);
 #[cfg(feature = "pico2")]
 impl_wifi_pio!(PIO2, Pio2Irqs, pio2);
+
+#[macro_export]
+/// Marker macro retained for ergonomics.
+///
+/// The PIO and DMA selection comes from the peripherals passed to
+/// [`WifiAuto::new`](crate::wifi_auto::WifiAuto::new) or
+/// [`Wifi::new`](crate::wifi::Wifi::new).
+macro_rules! wifi {
+    () => {};
+    ($pio:ident, $dma:ident) => {};
+}

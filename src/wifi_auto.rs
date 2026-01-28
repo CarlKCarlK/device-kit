@@ -13,8 +13,9 @@ use embassy_executor::Spawner;
 use embassy_net::{Ipv4Address, Stack};
 use embassy_rp::{
     Peri,
+    dma::Channel,
     gpio::Pin,
-    peripherals::{DMA_CH0, PIN_23, PIN_24, PIN_25, PIN_29},
+    peripherals::{PIN_23, PIN_24, PIN_25, PIN_29},
 };
 use embassy_sync::{
     blocking_mutex::{Mutex, raw::CriticalSectionRawMutex},
@@ -83,94 +84,125 @@ pub struct WifiAutoStatic {
     fields_storage: StaticCell<Vec<&'static dyn WifiAutoField, MAX_WIFI_AUTO_FIELDS>>,
 }
 
-/// WiFi auto-provisioning with captive portal and custom configuration fields.
+/// A device abstraction for WiFi auto-provisioning on the Pico W.
 ///
-/// Manages WiFi connectivity with automatic fallback to a captive portal when credentials
-/// are missing or invalid. Supports collecting additional configuration (e.g., timezone,
-/// device name) through custom [`WifiAutoField`] implementations.
+/// `WifiAuto` manages WiFi connectivity end-to-end, including:
+/// - automatic connection using stored credentials
+/// - captive-portal fallback when credentials are missing or invalid
+/// - optional collection of additional configuration fields
+/// - button-triggered reconfiguration
 ///
-/// # Features
-/// - Automatic captive portal on first boot or failed connections
-/// - Customizable configuration fields beyond WiFi credentials
-/// - Button-triggered reconfiguration
-/// - Event-driven UI updates via [`WifiAutoHandle::connect_with`]
+/// It is designed for **Embassy-based, no_std** applications and owns the
+/// WiFi event stream while it is running.
 ///
-/// Supports any PIO instance that implements [`WifiPio`], including `PIO0` and `PIO1`
-/// (and `PIO2` on supported boards).
+/// ## Hardware model
 ///
-/// # Example
+/// On the Pico W, the CYW43 WiFi chip uses a fixed internal wiring:
 ///
-/// # Example
+/// - **PIO0** or **PIO1** can be used by the WiFi driver
+/// - a dedicated **DMA channel** is used for WiFi SPI
+///
+/// The [`wifi!`](crate::wifi!) macro is a no-op marker retained for ergonomics.
+/// The PIO and DMA selection comes from the peripherals passed to [`WifiAuto::new`].
+///
+/// Other peripherals (LEDs, displays, etc.) must use *different* PIO/DMA
+/// resources (for example, `PIO1` / `DMA_CH1`).
+///
+/// ## Event-driven connection
+///
+/// WiFi connection is initiated with [`WifiAutoHandle::connect_with`], which:
+///
+/// - blocks until WiFi is connected
+/// - emits high-level [`WifiAutoEvent`] values
+/// - invokes a user-supplied async handler for UI updates or logging
+///
+/// The handler:
+///
+/// - is called **sequentially**
+/// - may `await`
+/// - returns `Result<()>`
+/// - aborts connection immediately if it returns an error
+///
+/// ### Capturing external state
+///
+/// The handler closure must return an `async move { ... }` block.
+/// If you want to use external state (such as a display), bind a reference
+/// before the closure and capture that reference instead of moving the value.
+///
+/// See the [struct-level example](WifiAuto) for the full pattern.
+///
+/// ## Example
 ///
 /// ```rust,no_run
 /// # #![no_std]
 /// # #![no_main]
 /// # use panic_probe as _;
-/// use device_kit::button::PressedTo;
-/// use device_kit::flash_array::{FlashArray, FlashArrayStatic};
-/// use device_kit::wifi_auto::{WifiAuto, WifiAutoEvent};
-/// use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};
+/// use device_kit::{
+///     button::PressedTo,
+///     flash_array::{FlashArray, FlashArrayStatic},
+///     wifi_auto::{WifiAuto, WifiAutoEvent},
+/// };
+/// device_kit::wifi!();
+///
 /// async fn example(
 ///     spawner: embassy_executor::Spawner,
 ///     p: embassy_rp::Peripherals,
 /// ) -> Result<(), device_kit::Error> {
-///     // Set up flash storage for WiFi credentials and timezone
-///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<2>::new_static();
-///     let [wifi_flash, timezone_flash] =
-///         FlashArray::new(&FLASH_STATIC, p.FLASH)?;
+///     // Flash storage for WiFi credentials
+///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<1>::new_static();
+///     let [wifi_flash] = FlashArray::new(&FLASH_STATIC, p.FLASH)?;
 ///
-///     // Create a timezone field to collect during provisioning
-///     static TIMEZONE_STATIC: TimezoneFieldStatic = TimezoneField::new_static();
-///     let timezone_field = TimezoneField::new(&TIMEZONE_STATIC, timezone_flash);
-///
-///     // Initialize WifiAuto with the custom field
 ///     let wifi_auto = WifiAuto::new(
-///         p.PIN_23,               // CYW43 power
-///         p.PIN_25,               // CYW43 chip select
-///         p.PIO0,                 // CYW43 PIO interface
-///         p.PIN_24,               // CYW43 clock
-///         p.PIN_29,               // CYW43 data
-///         p.DMA_CH0,              // CYW43 DMA
-///         wifi_flash,             // Flash for WiFi credentials
-///         p.PIN_13,               // Button for forced reconfiguration
-///         PressedTo::Ground,      // Button wiring
-///         "PicoAccess",           // Captive-portal SSID for provisioning
-///         [timezone_field],       // Array of custom fields
+///         p.PIN_23,          // CYW43 power
+///         p.PIN_25,          // CYW43 chip select
+///         p.PIO0,            // WiFi PIO (fixed)
+///         p.PIN_24,          // CYW43 clock
+///         p.PIN_29,          // CYW43 data
+///         p.DMA_CH0,         // WiFi DMA
+///         wifi_flash,
+///         p.PIN_13,          // Button for reconfiguration
+///         PressedTo::Ground,
+///         "PicoAccess",      // Captive-portal SSID
+///         [],                // No extra fields
 ///         spawner,
 ///     )?;
 ///
-///     // Connect with UI feedback (blocks until connected)
-///     // Note: If capturing variables from outer scope, create a reference first:
-///     //   let display_ref = &display;
-///     // Then use display_ref inside the closure.
-///     let (stack, button) = wifi_auto
+///     let (stack, _button) = wifi_auto
 ///         .connect_with(|event| async move {
 ///             match event {
 ///                 WifiAutoEvent::CaptivePortalReady => {
-///                     defmt::info!("Captive portal ready - connect to WiFi network");
+///                     defmt::info!("Captive portal ready");
 ///                 }
 ///                 WifiAutoEvent::Connecting { try_index, try_count } => {
-///                     defmt::info!("Connecting to WiFi (attempt {} of {})...", try_index + 1, try_count);
+///                     defmt::info!(
+///                         "Connecting (attempt {} of {})",
+///                         try_index + 1,
+///                         try_count
+///                     );
 ///                 }
 ///                 WifiAutoEvent::Connected => {
-///                     defmt::info!("WiFi connected successfully!");
+///                     defmt::info!("WiFi connected");
 ///                 }
 ///                 WifiAutoEvent::ConnectionFailed => {
-///                     defmt::info!("WiFi connection failed - device will reset");
+///                     defmt::info!("Connection failed");
 ///                 }
 ///             }
 ///             Ok(())
 ///         })
 ///         .await?;
 ///
-///     // Now connected - retrieve timezone configuration
-///     let offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
-///
-///     // Use stack for internet access and button for user interactions
-///     // Example: fetch NTP time, make HTTP requests, etc.
+///     // `stack` is now ready for network use
 ///     Ok(())
 /// }
 /// ```
+///
+/// ## Design notes
+///
+/// - `WifiAuto` intentionally **does not expose low-level WiFi events**
+///   while running; it owns the event loop.
+/// - The API favors correctness over configurability.
+/// - DMA and PIO choices for WiFi are fixed to match Pico W hardware
+///   and avoid subtle runtime failures.
 pub struct WifiAuto {
     events: &'static WifiAutoEvents,
     wifi: &'static Wifi,
@@ -230,13 +262,13 @@ impl WifiAuto {
     ///
     /// See [`WifiAuto`] for a complete example.
     #[allow(clippy::too_many_arguments)]
-    pub fn new<const N: usize, PIO: WifiPio>(
+    pub fn new<const N: usize, PIO: WifiPio, DMA: Channel>(
         pin_23: Peri<'static, PIN_23>,
         pin_25: Peri<'static, PIN_25>,
         pio: Peri<'static, PIO>,
         pin_24: Peri<'static, PIN_24>,
         pin_29: Peri<'static, PIN_29>,
-        dma_ch0: Peri<'static, DMA_CH0>,
+        dma: Peri<'static, DMA>,
         mut wifi_credentials_flash_block: FlashBlock,
         button_pin: Peri<'static, impl Pin>,
         button_pressed_to: PressedTo,
@@ -285,7 +317,7 @@ impl WifiAuto {
             pio,
             pin_24,
             pin_29,
-            dma_ch0,
+            dma,
             wifi_credentials_flash_block,
             captive_portal_ssid,
             spawner,

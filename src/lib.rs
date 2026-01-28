@@ -34,6 +34,8 @@ compile_error!("Pico 1 (RP2040) only supports ARM architecture, not RISC-V");
 #[cfg(not(feature = "host"))]
 #[doc(hidden)]
 pub mod pio_irqs;
+#[cfg(not(feature = "host"))]
+#[doc(hidden)]
 
 // Only include modules that work without embassy when host feature is enabled
 #[cfg(feature = "host")]

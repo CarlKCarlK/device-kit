@@ -29,6 +29,8 @@ use embassy_time::Duration;
 use heapless::String;
 use panic_probe as _;
 
+device_kit::wifi!();
+
 #[embassy_executor::main]
 pub async fn main(spawner: Spawner) -> ! {
     let err = inner_main(spawner).await.unwrap_err();

@@ -25,6 +25,8 @@ use embassy_futures::select::{Either, select};
 use embassy_rp::gpio::{self, Level};
 use panic_probe as _;
 
+device_kit::wifi!();
+
 const FAST_MODE_SPEED: f32 = 720.0;
 
 #[embassy_executor::main]

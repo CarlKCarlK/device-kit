@@ -21,6 +21,8 @@ use embassy_futures::select::{Either, select};
 use heapless::String;
 use panic_probe as _;
 
+device_kit::wifi!();
+
 // ============================================================================
 // Main Orchestrator
 // ============================================================================

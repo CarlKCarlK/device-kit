@@ -29,6 +29,8 @@ use embassy_futures::select::{Either, select};
 use embassy_time::Duration;
 use panic_probe as _;
 
+device_kit::wifi!();
+
 const FAST_MODE_SPEED: f32 = 720.0;
 
 // Define two typed servo players at module scope
