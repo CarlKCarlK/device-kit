@@ -1,4 +1,5 @@
-//! A device abstraction for WiFi auto-provisioning with captive portal fallback.
+//! A device abstraction that connects a Pico with WiFi to the Internet and, when needed,
+//! creates a temporary WiFi network to enter credentials.
 //!
 //! See [`WifiAuto`] for the main struct and usage examples.
 // cmk we we really need both wifi and wifi_auto modules? If so, give better names and descriptions.
@@ -46,7 +47,8 @@ pub(crate) use stack::{Wifi, WifiEvent};
 
 pub use portal::WifiAutoField;
 
-/// Events emitted while provisioning or connecting.
+/// Events emitted while connecting. See [`WifiAuto::connect`](crate::wifi_auto::WifiAuto::connect)
+/// for usage examples.
 #[derive(Clone, Copy, Debug, defmt::Format)]
 pub enum WifiAutoEvent {
     /// Captive portal is ready and waiting for user configuration.
@@ -67,7 +69,7 @@ const MAX_CONNECT_ATTEMPTS: u8 = 4;
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(40);
 const RETRY_DELAY: Duration = Duration::from_secs(3);
 
-pub type WifiAutoEvents = Signal<CriticalSectionRawMutex, WifiAutoEvent>;
+pub(crate) type WifiAutoEvents = Signal<CriticalSectionRawMutex, WifiAutoEvent>;
 
 const MAX_WIFI_AUTO_FIELDS: usize = 8;
 
@@ -81,7 +83,8 @@ pub(crate) struct WifiAutoStatic {
     button: Mutex<CriticalSectionRawMutex, RefCell<Option<Button<'static>>>>,
     fields_storage: StaticCell<Vec<&'static dyn WifiAutoField, MAX_WIFI_AUTO_FIELDS>>,
 }
-/// A device abstraction for WiFi auto-provisioning on the Pico 1 W or Pico 2 W.
+/// A device abstraction that connects a Pico with WiFi to the Internet and, when needed,
+/// creates a temporary WiFi network to enter credentials.
 ///
 /// `WifiAuto` handles WiFi connections end-to-end. It normally connects using
 /// a saved WiFi network name (SSID) and password. If those values are missing

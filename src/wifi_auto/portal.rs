@@ -15,7 +15,8 @@ use crate::Result;
 
 pub type HtmlBuffer = String<16384>;
 
-/// Trait for custom configuration fields in the WiFi provisioning portal.
+/// Traits for custom extra information that [`WifiAuto`](crate::wifi_auto::WifiAuto) can ask the
+/// user for on its setup web page. Supports HTML snippets.
 ///
 /// Implement this trait to collect additional configuration beyond WiFi credentials
 /// during the captive portal setup. Fields must be `Sync` since they're shared across

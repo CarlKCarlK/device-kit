@@ -1,4 +1,6 @@
-//! Pre-built field implementations for [`WifiAutoField`].
+//! Types for optional extra information (such as timezone or a short text)
+//! that [`WifiAuto`](crate::wifi_auto::WifiAuto) can ask the user for on its setup web page.
+
 //!
 //! This module provides ready-to-use field types that can be passed to
 //! [`WifiAuto::new()`](super::WifiAuto::new) for collecting additional
