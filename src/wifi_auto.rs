@@ -96,7 +96,7 @@ pub(crate) struct WifiAutoStatic {
 ///
 /// The typical usage pattern is:
 ///
-/// 0. Ensure your hardware includes a button. The button can be used during boot to force captive-portal mode.
+/// 0. Ensure your hardware includes a button wired to a GPIO. The button can be used during boot to force captive-portal mode.
 /// 1. Construct a [`FlashArray`](crate::flash_array::FlashArray) to store WiFi credentials.
 /// 2. Use [`WifiAuto::new`] to construct a `WifiAuto`.
 /// 3. Use [`WifiAuto::connect`] to connect to WiFi while optionally showing status.
@@ -105,6 +105,8 @@ pub(crate) struct WifiAutoStatic {
 /// the `WifiAuto`. See its documentation for examples and details.
 ///
 /// Let’s look at an example. Following the example, we’ll explain the details.
+/// (For additional examples, see the [wifi_auto::fields module example](crate::wifi_auto::fields)
+/// and the [`WifiAuto::connect`] docs.)
 ///
 /// ## Example: Connect with logging
 ///
@@ -184,6 +186,10 @@ pub(crate) struct WifiAutoStatic {
 ///   Initializing LEDs or displays before WiFi is fine; just be aware they may be
 ///   momentarily disrupted during mode changes.
 ///
+/// ## WiFi limitations
+///
+/// - Only standard SSID/password 2.4 Ghz WiFi networks are supported.
+///
 /// ## Performance and code size
 ///
 /// You may choose any PIO instance and any DMA channel for WiFi.
@@ -262,7 +268,21 @@ impl WifiAutoStatic {
 impl WifiAuto {
     /// Initialize WiFi auto-provisioning with custom configuration fields.
     ///
-    /// See [`WifiAuto`] for a complete example.
+    /// # Parameters
+    ///
+    /// - `pin_23`, `pin_24`, `pin_25`, `pin_29`: the internal GPIO pins for the CYW43 WiFi chip.
+    /// - `pio`: PIO resource used for WiFi.
+    /// - `dma`: DMA resource for WiFi.
+    /// - `wifi_credentials_flash_block`: [`FlashBlock`] reserved
+    ///   for WiFi credentials.
+    /// - `button_pin`: Button pin used to force setup mode on boot.
+    /// - `button_pressed_to`: Wiring for the button (ground or VCC).
+    /// - `captive_portal_ssid`: SSID shown when the device starts setup mode.
+    /// - `custom_fields`: Extra fields collected in the setup page. See the
+    ///   [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
+    /// - `spawner`: Embassy task spawner for background work.
+    ///
+    /// See the [WifiAuto struct example](Self) for a complete example.
     #[allow(clippy::too_many_arguments)]
     pub fn new<const N: usize, PIO: WifiPio, DMA: Channel>(
         pin_23: Peri<'static, PIN_23>,
@@ -383,8 +403,8 @@ impl WifiAuto {
     /// The handler is called sequentially for each event and may `await`.
     ///
     /// The three events are:
-    /// - `Connecting`: The device is attempting to connect to the WiFi network.
     /// - `CaptivePortalReady`: The device is hosting a captive portal and waiting for user input.
+    /// - `Connecting`: The device is attempting to connect to the WiFi network.
     /// - `ConnectionFailed`: All connection attempts failed. The device
     ///   will reset and re-enter setup mode (for example, if the password
     ///   is incorrect).

@@ -112,7 +112,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 //    snippets are supported.
 //
 // Limitations:
-//  - Only standard SSID/password WiFi networks are supported.
+//  - Only standard SSID/password 2.4 Ghz WiFi networks are supported.
 //  - Networks that require their own login web page after connecting
 //    (for example, public WiFi with an acceptance form) are not supported.
 

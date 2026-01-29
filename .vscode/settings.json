@@ -41,7 +41,8 @@
         "refdiv",
         "reqa",
         "syncer",
-        "Vecs"
+        "Vecs",
+        "wifiauto"
     ],
     "terminal.integrated.shellIntegration.enabled": true
 }
