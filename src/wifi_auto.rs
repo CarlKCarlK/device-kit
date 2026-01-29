@@ -117,10 +117,10 @@ pub(crate) struct WifiAutoStatic {
 ///     flash_array::{FlashArray, FlashArrayStatic},
 ///     wifi_auto::{WifiAuto, WifiAutoEvent},
 /// };
-/// use embassy_executor::Spawner;
+/// use embassy_time::Duration;
 ///
 /// async fn connect_wifi(
-///     spawner: Spawner,
+///     spawner: embassy_executor::Spawner,
 ///     p: embassy_rp::Peripherals,
 /// ) -> Result<()> {
 ///     // Set up flash storage for WiFi credentials
@@ -144,7 +144,7 @@ pub(crate) struct WifiAutoStatic {
 ///     )?;
 ///
 ///     // Connect (logging status as we go)
-///     let (_stack, _button) = wifi_auto
+///     let (stack, _button) = wifi_auto
 ///         .connect(|event| async move {
 ///             match event {
 ///                 WifiAutoEvent::CaptivePortalReady =>
@@ -160,8 +160,14 @@ pub(crate) struct WifiAutoStatic {
 ///
 ///     defmt::info!("WiFi connected");
 ///
-///     // Use the network stack (not shown)
-///     Ok(())
+///     loop {
+///         if let Ok(addresses) = stack.dns_query("google.com", embassy_net::dns::DnsQueryType::A).await {
+///             defmt::info!("google.com: {:?}", addresses);
+///         } else {
+///             defmt::info!("google.com: lookup failed");
+///         }
+///         embassy_time::Timer::after(Duration::from_secs(15)).await;
+///     }
 /// }
 /// ```
 ///
@@ -364,6 +370,70 @@ impl WifiAuto {
     /// If the handler returns an error, connection is aborted and the error is returned.
     ///
     /// See the [WifiAuto struct example](Self) for usage.
+    ///
+    /// ```rust,no_run
+    /// # // Based on the f1_dns demo.
+/// # #![no_std]
+/// # #![no_main]
+/// # use panic_probe as _;
+/// # use device_kit::{
+/// #     Result,
+/// #     button::PressedTo,
+/// #     flash_array::{FlashArray, FlashArrayStatic},
+/// #     led_strip::colors,
+/// #     wifi_auto::{WifiAuto, WifiAutoEvent},
+/// # };
+/// # use smart_leds::RGB8;
+/// # use embassy_executor::Spawner;
+/// # use embassy_rp::Peripherals;
+/// # struct Led8x12;
+/// # impl Led8x12 {
+/// #     async fn write_text(&self, _text: &str, _colors: &[RGB8]) -> Result<()> { Ok(()) }
+/// # }
+/// # async fn show_animated_dots(_led8x12: &Led8x12) -> Result<()> { Ok(()) }
+/// # const COLORS: &[RGB8] = &[colors::WHITE];
+/// # async fn example(spawner: Spawner, p: Peripherals) -> Result<()> {
+/// # static FLASH_STATIC: FlashArrayStatic = FlashArray::<1>::new_static();
+/// # let [wifi_flash] = FlashArray::new(&FLASH_STATIC, p.FLASH)?;
+/// # let wifi_auto = WifiAuto::new(
+/// #     p.PIN_23,
+/// #     p.PIN_24,
+    /// #     p.PIN_25,
+    /// #     p.PIN_29,
+    /// #     p.PIO0,
+    /// #     p.DMA_CH0,
+    /// #     wifi_flash,
+    /// #     p.PIN_13,
+    /// #     PressedTo::Ground,
+    /// #     "PicoAccess",
+/// #     [],
+/// #     spawner,
+/// # )?;
+/// # let led8x12 = Led8x12;
+/// // Keep a reference so the handler can reuse the display across events.
+/// let led8x12_ref = &led8x12;
+/// let (stack, button) = wifi_auto
+    ///     .connect(|event| async move {
+    ///         // `async move` keeps `event` alive across await points.
+    ///         match event {
+    ///             WifiAutoEvent::CaptivePortalReady => {
+    ///                 led8x12_ref.write_text("JO\nIN", COLORS).await?;
+    ///             }
+    ///             WifiAutoEvent::Connecting { .. } => {
+    ///                 show_animated_dots(led8x12_ref).await?;
+    ///             }
+    ///             WifiAutoEvent::ConnectionFailed => {
+    ///                 led8x12_ref.write_text("FA\nIL", COLORS).await?;
+    ///             }
+    ///         }
+    ///         Ok(())
+    ///     })
+///     .await?;
+/// # let _stack = stack;
+/// # let _button = button;
+/// # Ok(())
+/// # }
+/// ```
     pub async fn connect<Fut, F>(
         self,
         on_event: F,
