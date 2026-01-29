@@ -390,14 +390,19 @@ const TIMEZONE_OPTIONS: &[TimezoneOption] = &[
 /// use device_kit::button::PressedTo;
 /// use device_kit::flash_array::{FlashArray, FlashArrayStatic};
 /// use device_kit::wifi_auto::{WifiAuto, WifiAutoEvent};
-/// use device_kit::wifi_auto::fields::{TextField, TextFieldStatic};
+/// use device_kit::wifi_auto::fields::{
+///     TextField,
+///     TextFieldStatic,
+///     TimezoneField,
+///     TimezoneFieldStatic,
+/// };
 ///
 /// async fn example(
 ///     spawner: embassy_executor::Spawner,
 ///     p: embassy_rp::Peripherals,
 /// ) -> Result<(), device_kit::Error> {
-///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<2>::new_static();
-///     let [wifi_flash, website_flash] =
+///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<3>::new_static();
+///     let [wifi_flash, website_flash, timezone_flash] =
 ///         FlashArray::new(&FLASH_STATIC, p.FLASH)?;
 ///
 ///     static WEBSITE_STATIC: TextFieldStatic<32> = TextField::new_static();
@@ -408,6 +413,9 @@ const TIMEZONE_OPTIONS: &[TimezoneOption] = &[
 ///         "Website",
 ///         "google.com",
 ///     );
+///
+///     static TIMEZONE_STATIC: TimezoneFieldStatic = TimezoneField::new_static();
+///     let timezone_field = TimezoneField::new(&TIMEZONE_STATIC, timezone_flash);
 ///
 ///     let wifi_auto = WifiAuto::new(
 ///         p.PIN_23,
@@ -420,7 +428,7 @@ const TIMEZONE_OPTIONS: &[TimezoneOption] = &[
 ///         p.PIN_13,
 ///         PressedTo::Ground,
 ///         "Pico",
-///         [website_field],
+///         [website_field, timezone_field],
 ///         spawner,
 ///     )?;
 ///
@@ -449,6 +457,8 @@ const TIMEZONE_OPTIONS: &[TimezoneOption] = &[
 ///         .await?;
 ///
 ///     let website = website_field.text()?.unwrap_or_default();
+///     let offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
+///     defmt::info!("Timezone offset minutes: {}", offset_minutes);
 ///     loop {
 ///         let query_name = website.as_str();
 ///         if let Ok(addresses) = stack
