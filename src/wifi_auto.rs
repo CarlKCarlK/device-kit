@@ -58,8 +58,6 @@ pub enum WifiAutoEvent {
         /// Total number of attempts that will be made.
         try_count: u8,
     },
-    /// Successfully connected to WiFi network.
-    Connected,
     /// Connection failed after all attempts, device will reset.
     ConnectionFailed,
 }
@@ -153,14 +151,14 @@ pub(crate) struct WifiAutoStatic {
 ///                     defmt::info!("Captive portal ready"),
 ///                 WifiAutoEvent::Connecting { .. } =>
 ///                     defmt::info!("Connecting to WiFi"),
-///                 WifiAutoEvent::Connected =>
-///                     defmt::info!("WiFi connected"),
 ///                 WifiAutoEvent::ConnectionFailed =>
 ///                     defmt::info!("WiFi connection failed"),
 ///             }
 ///             Ok(())
 ///         })
 ///         .await?;
+///
+///     defmt::info!("WiFi connected");
 ///
 ///     // Use the network stack (not shown)
 ///     Ok(())
@@ -480,8 +478,6 @@ impl WifiAutoInner {
                     .wait_for_client_ready_with_timeout(CONNECT_TIMEOUT)
                     .await
                 {
-                    self.signal_event_with(on_event, WifiAutoEvent::Connected)
-                        .await?;
                     return Ok(());
                 }
                 warn!("WifiAuto: connection attempt {} timed out", attempt);

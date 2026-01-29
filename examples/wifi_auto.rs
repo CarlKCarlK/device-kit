@@ -118,10 +118,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                     led4_ref.animate_text(circular_outline_animation((try_index & 1) == 0));
                 }
 
-                WifiAutoEvent::Connected => {
-                    led4_ref.write_text(['D', 'O', 'N', 'E'], BlinkState::Solid);
-                }
-
                 WifiAutoEvent::ConnectionFailed => {
                     led4_ref.write_text(['F', 'A', 'I', 'L'], BlinkState::BlinkingButOff);
                 }
@@ -129,6 +125,8 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             Ok(())
         })
         .await?;
+
+    led4.write_text(['D', 'O', 'N', 'E'], BlinkState::Solid);
 
     let timezone_offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
     let device_name = device_name_field.text()?.unwrap_or_else(|| {

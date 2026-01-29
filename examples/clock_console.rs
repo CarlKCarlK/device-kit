@@ -78,9 +78,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                         try_count
                     );
                 }
-                WifiAutoEvent::Connected => {
-                    info!("WiFi connected successfully!");
-                }
                 WifiAutoEvent::ConnectionFailed => {
                     info!("WiFi connection failed!");
                 }
@@ -88,6 +85,8 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             Ok(())
         })
         .await?;
+
+    info!("WiFi connected successfully!");
 
     // Create TimeSync with network stack
     static TIME_SYNC_STATIC: TimeSyncStatic = TimeSync::new_static();

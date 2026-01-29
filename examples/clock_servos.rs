@@ -98,9 +98,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                         servo_display_ref.show_portal_ready().await;
                     }
                     WifiAutoEvent::Connecting { .. } => servo_display_ref.show_connecting().await,
-                    WifiAutoEvent::Connected => {
-                        // No-op; main loop will immediately render real time.
-                    }
                     WifiAutoEvent::ConnectionFailed => {
                         // No-op; portal remains visible on failure.
                     }

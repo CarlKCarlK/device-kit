@@ -84,7 +84,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                     led8x12_ref.write_text("JO\nIN", COLORS).await?
                 }
                 WifiAutoEvent::Connecting { .. } => show_connecting(led8x12_ref).await?, // animate dots
-                WifiAutoEvent::Connected => led8x12_ref.write_text("DO\nNE", COLORS).await?,
                 WifiAutoEvent::ConnectionFailed => led8x12_ref.write_text("FA\nIL", COLORS).await?,
             }
             Ok(())

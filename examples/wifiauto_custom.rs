@@ -104,9 +104,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                 WifiAutoEvent::Connecting { .. } => {
                     led12x8_ref.write_text("...", COLORS).await?;
                 }
-                WifiAutoEvent::Connected => {
-                    led12x8_ref.write_text("DONE", COLORS).await?;
-                }
                 WifiAutoEvent::ConnectionFailed => {
                     led12x8_ref.write_text("FAIL", COLORS).await?;
                 }
@@ -114,6 +111,8 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             Ok(())
         })
         .await?;
+
+    led12x8.write_text("DONE", COLORS).await?;
 
     // Get device name from field
     let device_name = device_name_field.text()?.unwrap_or_default();

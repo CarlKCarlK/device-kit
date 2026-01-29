@@ -96,9 +96,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                 WifiAutoEvent::Connecting { .. } => {
                     led4_ref.animate_text(circular_outline_animation(true));
                 }
-                WifiAutoEvent::Connected => {
-                    led4_ref.write_text(['D', 'O', 'N', 'E'], BlinkState::Solid);
-                }
                 WifiAutoEvent::ConnectionFailed => {
                     led4_ref.write_text(['F', 'A', 'I', 'L'], BlinkState::BlinkingButOff);
                 }
@@ -107,6 +104,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         })
         .await?;
 
+    led4.write_text(['D', 'O', 'N', 'E'], BlinkState::Solid);
     info!("WiFi connected");
 
     // Every hour, check the time and fire an event.

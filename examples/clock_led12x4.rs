@@ -121,10 +121,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
                         info!("WiFi: connecting (attempt {}/{})", try_index + 1, try_count);
                         show_connecting(led12x4_ref, try_index, try_count).await?;
                     }
-                    WifiAutoEvent::Connected => {
-                        info!("WiFi: connected successfully, displaying DONE");
-                        show_connected(led12x4_ref).await?;
-                    }
                     WifiAutoEvent::ConnectionFailed => {
                         info!("WiFi: connection failed, displaying FAIL, device will reset");
                         show_connection_failed(led12x4_ref).await?;
@@ -135,7 +131,8 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         })
         .await?;
 
-    info!("WiFi connected");
+    info!("WiFi: connected successfully, displaying DONE");
+    show_connected(&led12x4).await?;
 
     // Every hour, check the time and fire an event.
     static TIME_SYNC_STATIC: TimeSyncStatic = TimeSync::new_static();
