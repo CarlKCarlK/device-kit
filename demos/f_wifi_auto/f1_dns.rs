@@ -1,12 +1,11 @@
-//! WiFi auto-provisioning demo with LED display showing last 4 digits of Unix time.
+//! WiFi auto-provisioning demo with LED display showing last 4 hex digits of DNS.
 
 #![no_std]
 #![no_main]
 #![cfg(feature = "wifi")]
 #![allow(clippy::future_not_send, reason = "single-threaded")]
 
-use core::{convert::Infallible, panic};
-use defmt::warn;
+use core::{convert::Infallible, fmt::Write, panic};
 use device_kit::{
     Result,
     button::PressedTo,
@@ -17,11 +16,7 @@ use device_kit::{
     wifi_auto::{WifiAuto, WifiAutoEvent},
 };
 use embassy_executor::Spawner;
-use embassy_net::{
-    Stack,
-    dns::DnsQueryType,
-    udp::{PacketMetadata, UdpSocket},
-};
+use embassy_net::dns::DnsQueryType;
 use embassy_time::{Duration, Timer};
 use {defmt_rtt as _, panic_probe as _};
 
@@ -90,38 +85,26 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         })
         .await?;
 
-    // Show initial state with dashes until time is fetched.
+    // Show initial state with dashes until DNS is fetched.
     led8x12.write_text("--\n--", COLORS).await?;
 
-    // Now use the network stack to fetch NTP time once per minute
-    // and display the last 4 digits of the Unix timestamp.
+    // Do DNS on google.com periodically. Display last 4 hex digits of IP address.
     loop {
-        match fetch_ntp_time(stack).await {
-            Ok(unix_seconds) => {
-                // Get last 4 digits of unix timestamp
-                let last_4_digits = unix_seconds.rem_euclid(10_000) as u16;
-                let time_str = format_4_digits_with_newline(last_4_digits);
-                led8x12.write_text(&time_str, COLORS).await?;
-            }
-            Err(msg) => {
-                warn!("NTP fetch failed: {}", msg);
-                led8x12.write_text("--\n--", COLORS).await?;
-            }
+        let mut hex_str: heapless::String<6> = heapless::String::new();
+        if let Ok(Some(embassy_net::IpAddress::Ipv4(ipv4))) = stack
+            .dns_query("google.com", DnsQueryType::A)
+            .await
+            .map(|results| results.first().copied())
+        {
+            let bytes = ipv4.octets();
+            write!(&mut hex_str, "{:02X}\n{:02X}", bytes[2], bytes[3]).unwrap();
+        } else {
+            hex_str.push_str("--\n--").unwrap();
         }
+        led8x12.write_text(&hex_str, COLORS).await?;
 
-        Timer::after(Duration::from_secs(60)).await;
+        Timer::after(Duration::from_secs(15)).await;
     }
-}
-
-fn format_4_digits_with_newline(num: u16) -> heapless::String<6> {
-    use core::fmt::Write;
-    let mut s = heapless::String::new();
-    let d1 = (num / 1000) % 10;
-    let d2 = (num / 100) % 10;
-    let d3 = (num / 10) % 10;
-    let d4 = num % 10;
-    write!(&mut s, "{}{}\n{}{}", d1, d2, d3, d4).unwrap();
-    s
 }
 
 async fn show_animated_dots(led8x12: &Led8x12) -> Result<()> {
@@ -133,50 +116,4 @@ async fn show_animated_dots(led8x12: &Led8x12) -> Result<()> {
     led8x12.write_text_to_frame(" \n. ", &[COLORS[3]], &mut frames[3].0)?;
 
     led8x12.animate(frames)
-}
-
-async fn fetch_ntp_time(stack: &Stack<'static>) -> core::result::Result<i64, &'static str> {
-    const NTP_SERVER: &str = "pool.ntp.org";
-    const NTP_PORT: u16 = 123;
-
-    let dns_result = stack
-        .dns_query(NTP_SERVER, DnsQueryType::A)
-        .await
-        .map_err(|_| "DNS lookup failed")?;
-    let server_addr = dns_result.first().ok_or("No DNS results")?;
-
-    let mut rx_meta = [PacketMetadata::EMPTY; 1];
-    let mut rx_buffer = [0; 128];
-    let mut tx_meta = [PacketMetadata::EMPTY; 1];
-    let mut tx_buffer = [0; 128];
-    let mut socket = UdpSocket::new(
-        *stack,
-        &mut rx_meta,
-        &mut rx_buffer,
-        &mut tx_meta,
-        &mut tx_buffer,
-    );
-
-    socket.bind(0).map_err(|_| "Socket bind failed")?;
-
-    let mut ntp_request = [0u8; 48];
-    ntp_request[0] = 0x23; // LI=0, VN=4, Mode=3 (client)
-
-    socket
-        .send_to(&ntp_request, (*server_addr, NTP_PORT))
-        .await
-        .map_err(|_| "NTP send failed")?;
-
-    let mut response = [0u8; 48];
-    embassy_time::with_timeout(Duration::from_secs(5), socket.recv_from(&mut response))
-        .await
-        .map_err(|_| "NTP receive timeout")?
-        .map_err(|_| "NTP receive failed")?;
-
-    let ntp_seconds = u32::from_be_bytes([response[40], response[41], response[42], response[43]]);
-
-    const NTP_TO_UNIX_OFFSET: i64 = 2_208_988_800;
-    let unix_seconds = (ntp_seconds as i64) - NTP_TO_UNIX_OFFSET;
-
-    Ok(unix_seconds)
 }

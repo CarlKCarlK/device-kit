@@ -134,8 +134,8 @@ test = false
 required-features = ["arm"]
 
 [[bin]]
-name = "demo_f1_unix_time"
-path = "demos/f_wifi_auto/f1_unix_time.rs"
+name = "demo_f1_dns"
+path = "demos/f_wifi_auto/f1_dns.rs"
 test = false
 required-features = ["arm", "wifi"]
 
