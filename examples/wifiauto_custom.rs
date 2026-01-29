@@ -96,7 +96,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Connect with status on display
     let led12x8_ref = &led12x8;
     let (stack, _button) = wifi_auto
-        .connect_with(|event| async move {
+        .connect(|event| async move {
             match event {
                 WifiAutoEvent::CaptivePortalReady => {
                     led12x8_ref.write_text("JOIN", COLORS).await?;

@@ -78,12 +78,12 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Borrow `led8x12` outside closure so the event handler can use it without owning it.
     let led8x12_ref = &led8x12;
     let (stack, _button) = wifi_auto
-        .connect_with(|event| async move {
+        .connect(|event| async move {
             match event {
                 WifiAutoEvent::CaptivePortalReady => {
                     led8x12_ref.write_text("JO\nIN", COLORS).await?
                 }
-                WifiAutoEvent::Connecting { .. } => show_connecting(led8x12_ref).await?, // animate dots
+                WifiAutoEvent::Connecting { .. } => show_animated_dots(led8x12_ref).await?,
                 WifiAutoEvent::ConnectionFailed => led8x12_ref.write_text("FA\nIL", COLORS).await?,
             }
             Ok(())
@@ -124,7 +124,7 @@ fn format_4_digits_with_newline(num: u16) -> heapless::String<6> {
     s
 }
 
-async fn show_connecting(led8x12: &Led8x12) -> Result<()> {
+async fn show_animated_dots(led8x12: &Led8x12) -> Result<()> {
     const FRAME_DURATION: Duration = Duration::from_millis(200);
     let mut frames = [(led2d::Frame2d::new(), FRAME_DURATION); 4];
     led8x12.write_text_to_frame(".\n ", &[COLORS[0]], &mut frames[0].0)?;

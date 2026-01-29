@@ -45,7 +45,7 @@ async fn inner_main(spawner: embassy_executor::Spawner) -> Result<Infallible> {
     )?;
 
     let (stack, _button) = wifi_auto
-        .connect_with(|event| async move {
+        .connect(|event| async move {
             match event {
                 WifiAutoEvent::CaptivePortalReady => {
                     defmt::info!("Captive portal ready");

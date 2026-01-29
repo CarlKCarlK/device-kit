@@ -90,7 +90,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Connect Wi-Fi, using the servos for status indications.
     let servo_display_ref = &servo_display;
     let (stack, mut button) = wifi_auto
-        .connect_with( |event| {
+        .connect( |event| {
             let servo_display_ref = servo_display_ref;
             async move {
                 match event {

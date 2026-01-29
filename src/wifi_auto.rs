@@ -96,9 +96,9 @@ pub(crate) struct WifiAutoStatic {
 /// 0. Ensure your hardware includes a button. The button can be used during boot to force captive-portal mode.
 /// 1. Construct a [`FlashArray`](crate::flash_array::FlashArray) to store WiFi credentials.
 /// 2. Use [`WifiAuto::new`] to construct a `WifiAuto`.
-/// 3. Use [`WifiAuto::connect_with`] to connect to WiFi while optionally showing status.
+/// 3. Use [`WifiAuto::connect`] to connect to WiFi while optionally showing status.
 ///
-/// The `connect_with` method returns a network stack and the button, and it consumes
+/// The `connect` method returns a network stack and the button, and it consumes
 /// the `WifiAuto`.
 ///
 /// Let’s look at an example. Following the example, we’ll explain the details.
@@ -145,7 +145,7 @@ pub(crate) struct WifiAutoStatic {
 ///
 ///     // Connect (logging status as we go)
 ///     let (_stack, _button) = wifi_auto
-///         .connect_with(|event| async move {
+///         .connect(|event| async move {
 ///             match event {
 ///                 WifiAutoEvent::CaptivePortalReady =>
 ///                     defmt::info!("Captive portal ready"),
@@ -167,7 +167,7 @@ pub(crate) struct WifiAutoStatic {
 ///
 /// ## What happens during connection
 ///
-/// While `connect_with` is running:
+/// While `connect` is running:
 ///
 /// - The WiFi chip may reset as it switches between normal WiFi operation and
 ///   hosting its own temporary WiFi network.
@@ -364,7 +364,7 @@ impl WifiAuto {
     /// If the handler returns an error, connection is aborted and the error is returned.
     ///
     /// See the [WifiAuto struct example](Self) for usage.
-    pub async fn connect_with<Fut, F>(
+    pub async fn connect<Fut, F>(
         self,
         on_event: F,
     ) -> Result<(&'static Stack<'static>, Button<'static>)>
@@ -372,7 +372,7 @@ impl WifiAuto {
         F: FnMut(WifiAutoEvent) -> Fut,
         Fut: Future<Output = Result<()>>,
     {
-        self.wifi_auto.connect_with(on_event).await
+        self.wifi_auto.connect(on_event).await
     }
 }
 
@@ -405,7 +405,7 @@ impl WifiAutoInner {
         Ok(true)
     }
 
-    async fn connect_with<Fut, F>(
+    async fn connect<Fut, F>(
         &self,
         mut on_event: F,
     ) -> Result<(&'static Stack<'static>, Button<'static>)>

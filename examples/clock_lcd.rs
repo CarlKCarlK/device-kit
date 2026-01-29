@@ -70,7 +70,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     // Connect to WiFi
     let (stack, _button) = wifi_auto
-        .connect_with(|_event| async move { Ok(()) })
+        .connect(|_event| async move { Ok(()) })
         .await?;
 
     // Create Clock device with timezone from WiFi portal

@@ -106,7 +106,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Connect Wi-Fi, using the LED panel for status.
     let led12x4_ref = &led12x4;
     let (stack, mut button) = wifi_auto
-        .connect_with(|event| {
+        .connect(|event| {
             let led12x4_ref = led12x4_ref;
             async move {
                 match event {

@@ -108,7 +108,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     let led4_ref = &led4;
     let (stack, mut button) = wifi_auto
-        .connect_with(|event| async move {
+        .connect(|event| async move {
             match event {
                 WifiAutoEvent::CaptivePortalReady => {
                     led4_ref.write_text(['C', 'O', 'N', 'N'], BlinkState::BlinkingAndOn);
