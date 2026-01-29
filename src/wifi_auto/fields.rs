@@ -1,12 +1,105 @@
-//! Types for optional extra information (such as timezone or a short text)
-//! that [`WifiAuto`](crate::wifi_auto::WifiAuto) can ask the user for on its setup web page.
-
+//! A device abstraction for extra setup fields used by [`WifiAuto`](crate::wifi_auto::WifiAuto).
+//! See the [`WifiAuto` struct example](crate::wifi_auto::WifiAuto) for the full setup.
 //!
 //! This module provides ready-to-use field types that can be passed to
 //! [`WifiAuto::new()`](super::WifiAuto::new) for collecting additional
-//! configuration beyond WiFi credentials.
+//! configuration beyond WiFi credentials. The fields module example below focuses
+//! on adding custom fields.
 //!
-//! See [`TimezoneField`] and [`TextField`] for complete examples of implementing custom fields.
+//! # Example
+//!
+//! ```rust,no_run
+//! # #![no_std]
+//! # #![no_main]
+//! # use defmt_rtt as _;
+//! # use panic_probe as _;
+//! use device_kit::button::PressedTo;
+//! use device_kit::flash_array::{FlashArray, FlashArrayStatic};
+//! use device_kit::wifi_auto::{WifiAuto, WifiAutoEvent};
+//! use device_kit::wifi_auto::fields::{
+//!     TextField,
+//!     TextFieldStatic,
+//!     TimezoneField,
+//!     TimezoneFieldStatic,
+//! };
+//!
+//! async fn example(
+//!     spawner: embassy_executor::Spawner,
+//!     p: embassy_rp::Peripherals,
+//! ) -> Result<(), device_kit::Error> {
+//!     static FLASH_STATIC: FlashArrayStatic = FlashArray::<3>::new_static();
+//!     let [wifi_flash, website_flash, timezone_flash] =
+//!         FlashArray::new(&FLASH_STATIC, p.FLASH)?;
+//!
+//!     static WEBSITE_STATIC: TextFieldStatic<32> = TextField::new_static();
+//!     let website_field = TextField::new(
+//!         &WEBSITE_STATIC,
+//!         website_flash,
+//!         "website",
+//!         "Website",
+//!         "google.com",
+//!     );
+//!
+//!     static TIMEZONE_STATIC: TimezoneFieldStatic = TimezoneField::new_static();
+//!     let timezone_field = TimezoneField::new(&TIMEZONE_STATIC, timezone_flash);
+//!
+//!     let wifi_auto = WifiAuto::new(
+//!         p.PIN_23,
+//!         p.PIN_24,
+//!         p.PIN_25,
+//!         p.PIN_29,
+//!         p.PIO0,
+//!         p.DMA_CH0,
+//!         wifi_flash,
+//!         p.PIN_13,
+//!         PressedTo::Ground,
+//!         "Pico",
+//!         [website_field, timezone_field],
+//!         spawner,
+//!     )?;
+//!
+//!     let (stack, _button) = wifi_auto
+//!         .connect(|event| async move {
+//!             match event {
+//!                 WifiAutoEvent::CaptivePortalReady => {
+//!                     defmt::info!("Captive portal ready");
+//!                 }
+//!                 WifiAutoEvent::Connecting {
+//!                     try_index,
+//!                     try_count,
+//!                 } => {
+//!                     defmt::info!(
+//!                         "Connecting to WiFi (attempt {} of {})...",
+//!                         try_index + 1,
+//!                         try_count
+//!                     );
+//!                 }
+//!                 WifiAutoEvent::ConnectionFailed => {
+//!                     defmt::info!("WiFi connection failed");
+//!                 }
+//!             }
+//!             Ok(())
+//!         })
+//!         .await?;
+//!
+//!     let website = website_field.text()?.unwrap_or_default();
+//!     let offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
+//!     defmt::info!("Timezone offset minutes: {}", offset_minutes);
+//!
+//!     loop {
+//!         let query_name = website.as_str();
+//!         if let Ok(addresses) = stack
+//!             .dns_query(query_name, embassy_net::dns::DnsQueryType::A)
+//!             .await
+//!         {
+//!             defmt::info!("{}: {:?}", query_name, addresses);
+//!         } else {
+//!             defmt::info!("{}: lookup failed", query_name);
+//!         }
+//!         embassy_time::Timer::after(embassy_time::Duration::from_secs(15)).await;
+//!     }
+//! }
+//! ```
 
 #![allow(
     unsafe_code,
@@ -28,52 +121,7 @@ use crate::{Error, Result};
 /// setup. The selected offset (in minutes from UTC) is persisted to flash and can
 /// be retrieved later.
 ///
-/// # Example
-///
-/// ```rust,no_run
-/// # #![no_std]
-/// # #![no_main]
-/// use device_kit::button::PressedTo;
-/// use device_kit::flash_array::{FlashArray, FlashArrayStatic, FlashBlock};
-/// use device_kit::wifi_auto::WifiAuto;
-/// use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};
-///
-/// # #[panic_handler]
-/// # fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
-/// async fn example(
-///     spawner: embassy_executor::Spawner,
-///     p: embassy_rp::Peripherals,
-/// ) -> Result<(), device_kit::Error> {
-///     // Set up flash storage
-///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<2>::new_static();
-///     let [wifi_flash, timezone_flash] =
-///         FlashArray::new(&FLASH_STATIC, p.FLASH)?;
-///
-///     // Create timezone field
-///     static TIMEZONE_STATIC: TimezoneFieldStatic = TimezoneField::new_static();
-///     let timezone_field = TimezoneField::new(&TIMEZONE_STATIC, timezone_flash);
-///
-///     // Pass to WifiAuto
-///     let wifi_auto = WifiAuto::new(
-///         p.PIN_23,
-///         p.PIN_24,
-///         p.PIN_25,
-///         p.PIN_29,
-///         p.PIO0,
-///         p.DMA_CH0,
-///         wifi_flash,
-///         p.PIN_13,
-///         PressedTo::Ground,
-///         "ClockStation",
-///         [timezone_field],  // Custom fields array
-///         spawner,
-///     )?;
-///
-///     // Later, retrieve the timezone offset
-///     let offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
-///     Ok(())
-/// }
-/// ```
+/// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
 pub struct TimezoneField {
     flash: RefCell<FlashBlock>,
 }
@@ -84,7 +132,8 @@ pub struct TimezoneField {
 // are stored in static storage, not because of actual concurrent access.
 unsafe impl Sync for TimezoneField {}
 
-/// Static for [`TimezoneField`]. See [`TimezoneField`] for usage example.
+/// Static for [`TimezoneField`]. See the [wifi_auto::fields module example](crate::wifi_auto::fields)
+/// for usage.
 pub struct TimezoneFieldStatic {
     cell: StaticCell<TimezoneField>,
 }
@@ -100,14 +149,14 @@ impl TimezoneFieldStatic {
 impl TimezoneField {
     /// Create static resources for [`TimezoneField`].
     ///
-    /// See [`TimezoneField`] for a complete example.
+    /// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
     pub const fn new_static() -> TimezoneFieldStatic {
         TimezoneFieldStatic::new()
     }
 
     /// Initialize a new timezone field.
     ///
-    /// See [`TimezoneField`] for a complete example.
+    /// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
     pub fn new(
         timezone_field_static: &'static TimezoneFieldStatic,
         flash: FlashBlock,
@@ -125,7 +174,7 @@ impl TimezoneField {
     ///
     /// Returns `None` if no timezone has been configured yet.
     ///
-    /// See [`TimezoneField`] for a complete example.
+    /// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
     pub fn offset_minutes(&self) -> Result<Option<i32>> {
         self.flash.borrow_mut().load::<i32>()
     }
@@ -380,99 +429,7 @@ const TIMEZONE_OPTIONS: &[TimezoneOption] = &[
 /// Multiple `TextField` instances can be created with different labels and field names
 /// to collect various pieces of information during the provisioning process.
 ///
-/// # Example
-///
-/// ```rust,no_run
-/// # #![no_std]
-/// # #![no_main]
-/// # use defmt_rtt as _;
-/// # use panic_probe as _;
-/// use device_kit::button::PressedTo;
-/// use device_kit::flash_array::{FlashArray, FlashArrayStatic};
-/// use device_kit::wifi_auto::{WifiAuto, WifiAutoEvent};
-/// use device_kit::wifi_auto::fields::{
-///     TextField,
-///     TextFieldStatic,
-///     TimezoneField,
-///     TimezoneFieldStatic,
-/// };
-///
-/// async fn example(
-///     spawner: embassy_executor::Spawner,
-///     p: embassy_rp::Peripherals,
-/// ) -> Result<(), device_kit::Error> {
-///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<3>::new_static();
-///     let [wifi_flash, website_flash, timezone_flash] =
-///         FlashArray::new(&FLASH_STATIC, p.FLASH)?;
-///
-///     static WEBSITE_STATIC: TextFieldStatic<32> = TextField::new_static();
-///     let website_field = TextField::new(
-///         &WEBSITE_STATIC,
-///         website_flash,
-///         "website",
-///         "Website",
-///         "google.com",
-///     );
-///
-///     static TIMEZONE_STATIC: TimezoneFieldStatic = TimezoneField::new_static();
-///     let timezone_field = TimezoneField::new(&TIMEZONE_STATIC, timezone_flash);
-///
-///     let wifi_auto = WifiAuto::new(
-///         p.PIN_23,
-///         p.PIN_24,
-///         p.PIN_25,
-///         p.PIN_29,
-///         p.PIO0,
-///         p.DMA_CH0,
-///         wifi_flash,
-///         p.PIN_13,
-///         PressedTo::Ground,
-///         "Pico",
-///         [website_field, timezone_field],
-///         spawner,
-///     )?;
-///
-///     let (stack, _button) = wifi_auto
-///         .connect(|event| async move {
-///             match event {
-///                 WifiAutoEvent::CaptivePortalReady => {
-///                     defmt::info!("Captive portal ready");
-///                 }
-///                 WifiAutoEvent::Connecting {
-///                     try_index,
-///                     try_count,
-///                 } => {
-///                     defmt::info!(
-///                         "Connecting to WiFi (attempt {} of {})...",
-///                         try_index + 1,
-///                         try_count
-///                     );
-///                 }
-///                 WifiAutoEvent::ConnectionFailed => {
-///                     defmt::info!("WiFi connection failed");
-///                 }
-///             }
-///             Ok(())
-///         })
-///         .await?;
-///
-///     let website = website_field.text()?.unwrap_or_default();
-///     let offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
-///     defmt::info!("Timezone offset minutes: {}", offset_minutes);
-///     loop {
-///         let query_name = website.as_str();
-///         if let Ok(addresses) = stack
-///             .dns_query(query_name, embassy_net::dns::DnsQueryType::A)
-///             .await
-///         {
-///             defmt::info!("{}: {:?}", query_name, addresses);
-///         } else {
-///             defmt::info!("{}: lookup failed", query_name);
-///         }
-///         embassy_time::Timer::after(embassy_time::Duration::from_secs(15)).await;
-///     }
-/// }
-/// ```
+/// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
 pub struct TextField<const N: usize> {
     flash: RefCell<FlashBlock>,
     field_name: &'static str,
@@ -486,7 +443,8 @@ pub struct TextField<const N: usize> {
 // are stored in static storage, not because of actual concurrent access.
 unsafe impl<const N: usize> Sync for TextField<N> {}
 
-/// Static for [`TextField`]. See [`TextField`] for usage example.
+/// Static for [`TextField`]. See the [wifi_auto::fields module example](crate::wifi_auto::fields)
+/// for usage.
 pub struct TextFieldStatic<const N: usize> {
     cell: StaticCell<TextField<N>>,
 }
@@ -502,7 +460,7 @@ impl<const N: usize> TextFieldStatic<N> {
 impl<const N: usize> TextField<N> {
     /// Create static resources for [`TextField`].
     ///
-    /// See [`TextField`] for a complete example.
+    /// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
     pub const fn new_static() -> TextFieldStatic<N> {
         TextFieldStatic::new()
     }
@@ -518,7 +476,7 @@ impl<const N: usize> TextField<N> {
     ///
     /// The maximum length is determined by the generic parameter `N`.
     ///
-    /// See [`TextField`] for a complete example.
+    /// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
     pub fn new(
         text_field_static: &'static TextFieldStatic<N>,
         flash: FlashBlock,
@@ -549,7 +507,7 @@ impl<const N: usize> TextField<N> {
     ///
     /// Returns `None` if no text has been configured yet.
     ///
-    /// See [`TextField`] for a complete example.
+    /// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
     pub fn text(&self) -> Result<Option<String<N>>> {
         self.flash.borrow_mut().load::<String<N>>()
     }

@@ -106,6 +106,15 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         Timer::after(Duration::from_secs(15)).await;
     }
 }
+// Not shown:
+//  - You can define custom fields for the setup web page to collect extra
+//    information from the user, such as text or a timezone. Custom HTML
+//    snippets are supported.
+//
+// Limitations:
+//  - Only standard SSID/password WiFi networks are supported.
+//  - Networks that require their own login web page after connecting
+//    (for example, public WiFi with an acceptance form) are not supported.
 
 async fn show_animated_dots(led8x12: &Led8x12) -> Result<()> {
     const FRAME_DURATION: Duration = Duration::from_millis(200);

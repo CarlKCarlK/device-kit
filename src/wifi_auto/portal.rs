@@ -22,9 +22,7 @@ pub type HtmlBuffer = String<16384>;
 /// during the captive portal setup. Fields must be `Sync` since they're shared across
 /// async tasks.
 ///
-/// See [`TimezoneField`](super::fields::TimezoneField) and
-/// [`TextField`](super::fields::TextField) for complete
-/// implementation examples.
+/// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
 ///
 /// # Methods
 ///
@@ -37,8 +35,7 @@ pub trait WifiAutoField: Sync {
     /// Append form elements (labels, inputs, selects, etc.) to the `page` buffer.
     /// This is called when generating the captive portal page.
     ///
-    /// See [`TimezoneField`](super::fields::TimezoneField) and
-    /// [`TextField`](super::fields::TextField) for examples.
+    /// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
     fn render(&self, page: &mut HtmlBuffer) -> Result<()>;
 
     /// Parse and save form data submitted by the user.
@@ -46,8 +43,7 @@ pub trait WifiAutoField: Sync {
     /// Extract values from the `form` data and persist them (typically to flash).
     /// Return an error if validation fails.
     ///
-    /// See [`TimezoneField`](super::fields::TimezoneField) and
-    /// [`TextField`](super::fields::TextField) for examples.
+    /// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
     fn parse(&self, form: &FormData<'_>) -> Result<()>;
 
     /// Check if this field has valid configuration.
@@ -56,8 +52,7 @@ pub trait WifiAutoField: Sync {
     /// returns `true`). If `false`, the captive portal will be shown even if WiFi
     /// credentials exist.
     ///
-    /// See [`TimezoneField`](super::fields::TimezoneField) and
-    /// [`TextField`](super::fields::TextField) for examples.
+    /// See the [wifi_auto::fields module example](crate::wifi_auto::fields) for usage.
     fn is_satisfied(&self) -> Result<bool> {
         Ok(true)
     }
