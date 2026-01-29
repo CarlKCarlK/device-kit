@@ -265,6 +265,7 @@ pub const fn combine<const N1: usize, const N2: usize, const OUT_N: usize>(
     result
 }
 
+// cmk0 this is visible at the top level which seems wrong (and likely to collide)
 /// Combine multiple animation step arrays into one larger array.
 ///
 /// This macro allows combining any number of const arrays with a clean syntax.

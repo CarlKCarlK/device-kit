@@ -17,6 +17,7 @@ use crate::Result;
 
 /// WiFi network credentials (SSID and password).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[doc(hidden)]
 pub struct WifiCredentials {
     /// Network SSID (up to 32 characters).
     pub ssid: heapless::String<32>,

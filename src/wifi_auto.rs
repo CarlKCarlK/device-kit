@@ -41,7 +41,6 @@ use credentials::WifiCredentials as InnerWifiCredentials;
 use dns::dns_server_task;
 use stack::{WifiStartMode, WifiStatic as InnerWifiStatic};
 
-pub use credentials::WifiCredentials;
 pub use stack::WifiPio;
 pub(crate) use stack::{Wifi, WifiEvent};
 
