@@ -63,7 +63,13 @@ mod wifi_impl {
     // ============================================================================
 
     /// Result of a time sync attempt. Emitted by [`TimeSync`] when sync completes.
-    pub type TimeSyncEvent = Result<UnixSeconds>;
+    #[derive(Debug, defmt::Format)]
+    pub enum TimeSyncEvent {
+        /// Time synchronization succeeded with the given Unix seconds.
+        Ok(UnixSeconds),
+        /// Time synchronization failed with the given error message.
+        Err(&'static str),
+    }
 
     /// Signal type used by [`TimeSync`] to publish events (see [`TimeSync`] docs).
     type TimeSyncEvents = Signal<CriticalSectionRawMutex, TimeSyncEvent>;
@@ -152,12 +158,14 @@ mod wifi_impl {
                         unix_seconds.as_i64()
                     );
 
-                    sync_events.signal(Ok(unix_seconds));
+                    sync_events.signal(TimeSyncEvent::Ok(unix_seconds));
                     break;
                 }
                 Err(e) => {
-                    info!("Sync failed: {}", e);
-                    sync_events.signal(Err(e));
+                    if let Error::Ntp(msg) = e {
+                        info!("Sync failed: {}", msg);
+                        sync_events.signal(TimeSyncEvent::Err(msg));
+                    }
                     // Exponential backoff: 10s, 30s, 60s, then 5min intervals
                     let delay_secs = if attempt == 1 {
                         10
@@ -193,12 +201,14 @@ mod wifi_impl {
                         unix_seconds.as_i64()
                     );
 
-                    sync_events.signal(Ok(unix_seconds));
+                    sync_events.signal(TimeSyncEvent::Ok(unix_seconds));
                     last_success_elapsed = 0; // reset backoff
                 }
                 Err(e) => {
-                    info!("Periodic sync failed: {}", e);
-                    sync_events.signal(Err(e));
+                    if let Error::Ntp(msg) = e {
+                        info!("Periodic sync failed: {}", msg);
+                        sync_events.signal(TimeSyncEvent::Err(msg));
+                    }
                     info!("Sync failed, will retry in 5 minutes");
                 }
             }
@@ -323,7 +333,14 @@ mod stub {
     use static_cell::StaticCell;
 
     /// Result of a time sync attempt. Emitted by [`TimeSync`] when sync completes.
-    pub type TimeSyncEvent = crate::Result<UnixSeconds>;
+    /// (Same structure as WiFi impl; the stub never emits events.)
+    #[derive(Debug, defmt::Format)]
+    pub enum TimeSyncEvent {
+        /// Time synchronization succeeded with the given Unix seconds.
+        Ok(UnixSeconds),
+        /// Time synchronization failed with the given error message.
+        Err(&'static str),
+    }
 
     /// Signal type that mirrors the WiFi implementation (see [`TimeSync`] docs).
     type TimeSyncEvents = Signal<CriticalSectionRawMutex, TimeSyncEvent>;
@@ -364,10 +381,4 @@ mod stub {
 }
 
 #[cfg(not(feature = "wifi"))]
-pub use stub::{TimeSync, TimeSyncStatic};
-
-// Export TimeSyncEvent type alias from both implementations
-#[cfg(not(feature = "wifi"))]
-pub use stub::TimeSyncEvent;
-#[cfg(feature = "wifi")]
-pub use wifi_impl::TimeSyncEvent;
+pub use stub::{TimeSync, TimeSyncEvent, TimeSyncStatic};
