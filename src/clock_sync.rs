@@ -1,5 +1,5 @@
 //! A device abstraction that combines time sync with a local clock.
-//! See [`ClockSync`] for usage and examples.
+//! See [`ClockSync`] for the full usage example.
 
 #![cfg(feature = "wifi")]
 #![allow(clippy::future_not_send, reason = "single-threaded")]
@@ -16,6 +16,8 @@ use crate::clock::{Clock, ClockStatic};
 use crate::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic, UnixSeconds};
 
 /// Tick event emitted by [`ClockSync`].
+///
+/// See the [ClockSync struct example](ClockSync) for usage.
 pub struct ClockSyncTick {
     pub local_time: OffsetDateTime,
     pub since_last_sync: Duration,
@@ -38,6 +40,91 @@ pub struct ClockSyncStatic {
 /// `ClockSync` does not emit ticks until the first successful sync (or a manual
 /// call to [`ClockSync::set_utc_time`]). Each tick includes how long it has been
 /// since the last successful sync.
+///
+/// # Example: WiFi + ClockSync logging
+///
+/// ```rust,no_run
+/// # #![no_std]
+/// # #![no_main]
+/// # use defmt_rtt as _;
+/// # use panic_probe as _;
+/// use device_kit::{
+///     Result,
+///     button::PressedTo,
+///     clock::{ONE_SECOND, h12_m_s},
+///     clock_sync::{ClockSync, ClockSyncStatic},
+///     flash_array::{FlashArray, FlashArrayStatic},
+///     wifi_auto::fields::{TimezoneField, TimezoneFieldStatic},
+///     wifi_auto::{WifiAuto, WifiAutoEvent},
+/// };
+/// use defmt::info;
+///
+/// async fn run(
+///     spawner: embassy_executor::Spawner,
+///     p: embassy_rp::Peripherals,
+/// ) -> Result<(), device_kit::Error> {
+///     static FLASH_STATIC: FlashArrayStatic = FlashArray::<2>::new_static();
+///     let [wifi_credentials_flash_block, timezone_flash_block] =
+///         FlashArray::new(&FLASH_STATIC, p.FLASH)?;
+///
+///     static TIMEZONE_STATIC: TimezoneFieldStatic = TimezoneField::new_static();
+///     let timezone_field = TimezoneField::new(&TIMEZONE_STATIC, timezone_flash_block);
+///
+///     let wifi_auto = WifiAuto::new(
+///         p.PIN_23,
+///         p.PIN_24,
+///         p.PIN_25,
+///         p.PIN_29,
+///         p.PIO0,
+///         p.DMA_CH0,
+///         wifi_credentials_flash_block,
+///         p.PIN_13,
+///         PressedTo::Ground,
+///         "ClockSync",
+///         [timezone_field],
+///         spawner,
+///     )?;
+///
+///     let (stack, _button) = wifi_auto
+///         .connect(|event| async move {
+///             match event {
+///                 WifiAutoEvent::CaptivePortalReady => {
+///                     info!("WifiAuto: setup mode ready");
+///                 }
+///                 WifiAutoEvent::Connecting { .. } => {
+///                     info!("WifiAuto: connecting");
+///                 }
+///                 WifiAutoEvent::ConnectionFailed => {
+///                     info!("WifiAuto: connection failed");
+///                 }
+///             }
+///             Ok(())
+///         })
+///         .await?;
+///
+///     let offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
+///     static CLOCK_SYNC_STATIC: ClockSyncStatic = ClockSync::new_static();
+///     let clock_sync = ClockSync::new(
+///         &CLOCK_SYNC_STATIC,
+///         stack,
+///         offset_minutes,
+///         Some(ONE_SECOND),
+///         spawner,
+///     );
+///
+///     loop {
+///         let tick = clock_sync.wait_for_tick().await;
+///         let (hours, minutes, seconds) = h12_m_s(&tick.local_time);
+///         info!(
+///             "Time {:02}:{:02}:{:02}, since sync {}s",
+///             hours,
+///             minutes,
+///             seconds,
+///             tick.since_last_sync.as_secs()
+///         );
+///     }
+/// }
+/// ```
 pub struct ClockSync {
     clock: &'static Clock,
     time_sync: &'static TimeSync,
@@ -68,6 +155,8 @@ impl ClockSync {
     }
 
     /// Create a [`ClockSync`] using an existing network stack.
+    ///
+    /// See the [ClockSync struct example](Self) for usage.
     pub fn new(
         clock_sync_static: &'static ClockSyncStatic,
         stack: &'static Stack<'static>,
@@ -104,6 +193,8 @@ impl ClockSync {
     }
 
     /// Wait for and return the next tick after sync.
+    ///
+    /// See the [ClockSync struct example](Self) for usage.
     pub async fn wait_for_tick(&self) -> ClockSyncTick {
         self.wait_for_first_sync().await;
         let local_time = self.clock.wait_for_tick().await;
