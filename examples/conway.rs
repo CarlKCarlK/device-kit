@@ -40,9 +40,11 @@ led2d! {
 #[derive(Clone, Copy, Debug, defmt::Format)]
 enum ConwayMessage {
     NextPattern,
+    PrevPattern,
     SetSpeed(SpeedMode),
     SetPatternIndex(usize),
     TogglePause,
+    NextColor,
 }
 
 /// Speed modes for the simulation.
@@ -81,17 +83,28 @@ enum Pattern {
     Block,
     Wall,
     Random,
+    Cross,
 }
 
 const PATTERNS: &[Pattern] = &[
     Pattern::Glider,
+    Pattern::Random,
     Pattern::Blinker,
     Pattern::Toad,
     Pattern::Beacon,
     Pattern::LWSS,
     Pattern::Block,
     Pattern::Wall,
-    Pattern::Random,
+    Pattern::Cross,
+];
+
+const ALIVE_COLORS: &[RGB8] = &[
+    colors::LIME,
+    colors::CYAN,
+    colors::MAGENTA,
+    colors::ORANGE,
+    colors::YELLOW,
+    colors::WHITE,
 ];
 
 #[embassy_executor::main]
@@ -137,8 +150,14 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             KeplerButton::Next => {
                 conway.next_pattern();
             }
+            KeplerButton::Prev => {
+                conway.prev_pattern();
+            }
             KeplerButton::PlayPause => {
                 conway.toggle_pause();
+            }
+            KeplerButton::Mode => {
+                conway.next_color();
             }
             _ => {}
         }
@@ -154,13 +173,16 @@ async fn conway_task(
     let mut pattern_index = 0;
     let mut speed_mode = SpeedMode::Slower;
     let mut paused = false;
+    let mut color_index = 0usize;
+    let mut alive_color = ALIVE_COLORS[color_index];
     board.add_pattern(PATTERNS[pattern_index]);
 
     // Track stasis for random mode: (generations without change, last live count)
     let mut stasis_tracker = (0u8, 0u16);
+    let mut empty_tracker = 0u8;
 
     loop {
-        let current_frame = board.to_frame(colors::LIME);
+        let current_frame = board.to_frame(alive_color);
         led16x16.write_frame(current_frame).unwrap();
 
         // Calculate frame duration based on speed mode
@@ -179,10 +201,10 @@ async fn conway_task(
                 }
                 board.step();
 
-                // Check for stasis in random mode
+                let live_count = board.count_live_cells();
                 let current_pattern = PATTERNS[pattern_index];
-                if matches!(current_pattern, Pattern::Random) {
-                    let live_count = board.count_live_cells();
+
+                if matches!(current_pattern, Pattern::Random | Pattern::Cross) {
                     let (unchanged_count, last_count) = stasis_tracker;
 
                     if live_count == last_count {
@@ -192,21 +214,40 @@ async fn conway_task(
 
                         if new_unchanged_count >= 15 {
                             info!(
-                                "Stasis detected ({} live cells for 15 generations), restarting with new random pattern",
-                                live_count
+                                "Stasis detected ({} live cells for 15 generations), restarting pattern {:?}",
+                                live_count, current_pattern
                             );
 
                             let mut new_board = Board::new();
-                            new_board.add_pattern(Pattern::Random);
+                            new_board.add_pattern(current_pattern);
 
                             // Update to new board
                             board = new_board;
                             stasis_tracker = (0, 0);
+                            empty_tracker = 0;
                         }
                     } else {
                         // Count changed, reset tracker
                         stasis_tracker = (1, live_count);
                     }
+                } else if live_count == 0 {
+                    empty_tracker += 1;
+                    if empty_tracker >= 15 {
+                        info!(
+                            "Empty board detected for 15 generations, restarting pattern {:?}",
+                            current_pattern
+                        );
+
+                        let mut new_board = Board::new();
+                        new_board.add_pattern(current_pattern);
+
+                        // Update to new board
+                        board = new_board;
+                        stasis_tracker = (0, 0);
+                        empty_tracker = 0;
+                    }
+                } else {
+                    empty_tracker = 0;
                 }
             }
             Either::Second(msg) => {
@@ -231,6 +272,22 @@ async fn conway_task(
                             stasis_tracker = (0, 0);
                         }
                     }
+                    ConwayMessage::PrevPattern => {
+                        if paused {
+                            continue;
+                        }
+                        pattern_index = (pattern_index + PATTERNS.len() - 1) % PATTERNS.len();
+                        let pattern = PATTERNS[pattern_index];
+                        info!("=== Pattern: {:?} ===", pattern);
+
+                        // Reset board with new pattern
+                        board = Board::new();
+                        board.add_pattern(pattern);
+
+                        // Reset stasis detection
+                        stasis_tracker = (0, 0);
+                        empty_tracker = 0;
+                    }
                     ConwayMessage::SetSpeed(new_speed) => {
                         // Speed change requested
                         speed_mode = new_speed;
@@ -238,6 +295,13 @@ async fn conway_task(
                     ConwayMessage::TogglePause => {
                         paused = !paused;
                         info!("=== {} ===", if paused { "Paused" } else { "Running" });
+                    }
+                    ConwayMessage::NextColor => {
+                        color_index = (color_index + 1) % ALIVE_COLORS.len();
+                        alive_color = ALIVE_COLORS[color_index];
+                        info!("=== Color index: {} ===", color_index);
+                        let current_frame = board.to_frame(alive_color);
+                        led16x16.write_frame(current_frame).unwrap();
                     }
                     ConwayMessage::SetPatternIndex(new_pattern_index) => {
                         assert!(new_pattern_index < PATTERNS.len());
@@ -251,6 +315,7 @@ async fn conway_task(
 
                         // Reset stasis detection
                         stasis_tracker = (0, 0);
+                        empty_tracker = 0;
                     }
                 }
             }
@@ -279,10 +344,11 @@ impl<const H: usize, const W: usize> Board<H, W> {
             Pattern::Blinker => self.add_blinker(5, 4),
             Pattern::Toad => self.add_toad(5, 4),
             Pattern::Beacon => self.add_beacon(4, 4),
-            Pattern::LWSS => self.add_lwss(5, 2),
+            Pattern::LWSS => self.add_lwss(5, 6),
             Pattern::Block => self.add_block(5, 4),
             Pattern::Wall => self.add_wall(5),
             Pattern::Random => self.add_random(),
+            Pattern::Cross => self.add_cross(7, 7),
         }
     }
 
@@ -348,6 +414,19 @@ impl<const H: usize, const W: usize> Board<H, W> {
         for x_index in 0..W {
             self.cells[row][x_index] = true;
         }
+    }
+
+    /// Vertical wall (full-height line).
+    fn add_vertical(&mut self, col: usize) {
+        for y_index in 0..H {
+            self.cells[y_index][col] = true;
+        }
+    }
+
+    /// Cross: horizontal + vertical lines.
+    fn add_cross(&mut self, row: usize, col: usize) {
+        self.add_wall(row);
+        self.add_vertical(col);
     }
 
     /// Random pattern seeded by time.
@@ -482,6 +561,11 @@ impl Conway<'_> {
         self.0.signal(ConwayMessage::NextPattern);
     }
 
+    /// Send a message to request the previous pattern.
+    pub fn prev_pattern(&self) {
+        self.0.signal(ConwayMessage::PrevPattern);
+    }
+
     /// Send a message to change the simulation speed.
     pub fn set_speed(&self, speed: SpeedMode) {
         self.0.signal(ConwayMessage::SetSpeed(speed));
@@ -495,5 +579,10 @@ impl Conway<'_> {
     /// Send a message to toggle pause/resume.
     pub fn toggle_pause(&self) {
         self.0.signal(ConwayMessage::TogglePause);
+    }
+
+    /// Send a message to advance the alive-cell color.
+    pub fn next_color(&self) {
+        self.0.signal(ConwayMessage::NextColor);
     }
 }
