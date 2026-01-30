@@ -11,7 +11,7 @@
 //!   for a sample of a generated type.
 //! - [`ServoPlayerGenerated`](servo_player_generated::ServoPlayerGenerated) — Sample struct
 //!   type showing all methods and associated constants.
-//! - [`combine!`](macro@crate::combine) & [`linear`] — Macro and function for creating
+//! - [`combine!`](macro@crate::servo_player::combine) & [`linear`] — Macro and function for creating
 //!   complex motion sequences.
 //! - [`Servo`] — Direct servo control without animation support. Use `Servo` for direct,
 //!   immediate control; use `servo_player` when you want motion to continue in the background.
@@ -94,7 +94,7 @@
 //! # use core::convert::Infallible;
 //! # use core::default::Default;
 //! # use core::result::Result::Ok;
-//! use device_kit::{Result, combine, servo_player::{AtEnd, linear, servo_player}};
+//! use device_kit::{Result, servo_player::{AtEnd, combine, linear, servo_player}};
 //! use embassy_time::Duration;
 //!
 //! // Define ServoSweep, a struct type for a servo on PIN_12.
@@ -155,6 +155,8 @@ use crate::servo::Servo;
 pub use crate::servo::servo;
 #[doc(hidden)]
 pub use paste;
+#[doc(inline)]
+pub use crate::combine;
 
 // ============================================================================
 // Submodules
@@ -271,6 +273,7 @@ pub const fn combine<const N1: usize, const N2: usize, const OUT_N: usize>(
 /// This macro allows combining any number of const arrays with a clean syntax.
 ///
 /// See the [servo_player module documentation](mod@crate::servo_player) for usage.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! combine {
     () => {

@@ -6,8 +6,7 @@ use core::{convert::Infallible, panic};
 use device_kit::{
     Result,
     button::{Button, PressDuration, PressedTo},
-    combine,
-    servo_player::{AtEnd, linear, servo_player},
+    servo_player::{AtEnd, combine, linear, servo_player},
 };
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};

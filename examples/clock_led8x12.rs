@@ -36,12 +36,12 @@ use heapless::String;
 use panic_probe as _;
 use smart_leds::RGB8;
 
-
 // Two 12x4 panels stacked vertically and rotated 90° CW → 8×12 display.
 const LED_LAYOUT_12X4: LedLayout<48, 12, 4> = LedLayout::serpentine_column_major();
 const LED_LAYOUT_8X12: LedLayout<96, 8, 12> =
     LED_LAYOUT_12X4.combine_v(LED_LAYOUT_12X4).rotate_cw();
 
+// cmk what?
 #[cfg(feature = "pico1")]
 const LED8X12_STRIP_MAX_FRAMES: usize = 16;
 #[cfg(feature = "pico2")]
@@ -246,12 +246,7 @@ impl State {
         show_minutes_seconds(led8x12, minutes, seconds).await?;
         clock_sync.set_tick_interval(Some(ONE_SECOND)).await;
         loop {
-            match select(
-                button.wait_for_press_duration(),
-                clock_sync.wait_for_tick(),
-            )
-            .await
-            {
+            match select(button.wait_for_press_duration(), clock_sync.wait_for_tick()).await {
                 // Button pushes
                 Either::First(press_duration) => {
                     info!(

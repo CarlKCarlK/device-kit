@@ -77,10 +77,5 @@ pub mod time_sync;
 #[cfg(all(feature = "wifi", not(feature = "host")))]
 pub mod wifi_auto;
 
-// Re-export servo_player macros at crate root for easier importing
-#[cfg(not(feature = "host"))]
-#[doc(inline)]
-pub use servo_player::combine;
-
 // Re-export error types and result (used throughout)
 pub use crate::error::{Error, Result};

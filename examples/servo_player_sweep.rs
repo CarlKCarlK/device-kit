@@ -6,10 +6,7 @@ use panic_probe as _;
 
 use core::convert::Infallible;
 use core::default::Default;
-use device_kit::{
-    Result, combine,
-    servo_player::{AtEnd, linear, servo_player},
-};
+use device_kit::{Result, servo_player::{AtEnd, combine, linear, servo_player}};
 use embassy_executor::Spawner;
 use embassy_time::Duration;
 
