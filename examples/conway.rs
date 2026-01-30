@@ -20,7 +20,6 @@ use embassy_rp::init;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::signal::Signal;
 use embassy_time::{Duration, Timer};
-use heapless::Vec;
 use panic_probe as _;
 use smart_leds::colors;
 
@@ -142,47 +141,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     }
 }
 
-/// Generate N intermediate frames by linearly interpolating between two frames.
-/// Returns frames with durations, ready for animate(). Excludes start and end frames.
-fn fade<const W: usize, const H: usize, const N: usize>(
-    start_frame: Frame2d<W, H>,
-    end_frame: Frame2d<W, H>,
-    total_duration: Duration,
-) -> Vec<(Frame2d<W, H>, Duration), N> {
-    let mut frames = Vec::new();
-    let frame_duration = total_duration / N as u32;
-
-    for step_index in 1..=N {
-        let mut interpolated_frame = Frame2d::<W, H>::new();
-
-        for y_index in 0..H {
-            for x_index in 0..W {
-                let start_color = start_frame[(x_index, y_index)];
-                let end_color = end_frame[(x_index, y_index)];
-
-                // Linear interpolation: start + (end - start) * t, where t = step_index / (N + 1)
-                let t = step_index as u16;
-                let divisor = (N + 1) as u16;
-
-                let interpolated_color = RGB8 {
-                    r: ((start_color.r as u16 * (divisor - t) + end_color.r as u16 * t) / divisor)
-                        as u8,
-                    g: ((start_color.g as u16 * (divisor - t) + end_color.g as u16 * t) / divisor)
-                        as u8,
-                    b: ((start_color.b as u16 * (divisor - t) + end_color.b as u16 * t) / divisor)
-                        as u8,
-                };
-
-                interpolated_frame[(x_index, y_index)] = interpolated_color;
-            }
-        }
-
-        frames.push((interpolated_frame, frame_duration)).ok();
-    }
-
-    frames
-}
-
 #[embassy_executor::task]
 async fn conway_task(
     led16x16: Led16x16,
@@ -198,6 +156,7 @@ async fn conway_task(
 
     loop {
         let current_frame = board.to_frame(colors::LIME);
+        led16x16.write_frame(current_frame).unwrap();
 
         // Calculate frame duration based on speed mode
         let frame_duration = match speed_mode {
@@ -209,20 +168,7 @@ async fn conway_task(
         // Race between timer and incoming message during steady frame display
         match select(Timer::after(frame_duration), signal.wait()).await {
             Either::First(_) => {
-                // Timer fired, now fade to next generation
-                let mut next_board = board;
-                next_board.step();
-                let next_frame = next_board.to_frame(colors::LIME);
-
-                // Generate and play fade animation (duration / 2)
-                const FADE_FRAMES: usize = 10;
-                let fade_duration = frame_duration / 2;
-                let frames_with_duration =
-                    fade::<_, _, FADE_FRAMES>(current_frame, next_frame, fade_duration);
-                led16x16.animate(frames_with_duration).unwrap();
-                Timer::after(fade_duration).await;
-
-                // Advance to next generation
+                // Timer fired, advance to next generation
                 board.step();
 
                 // Check for stasis in random mode
@@ -242,30 +188,8 @@ async fn conway_task(
                                 live_count
                             );
 
-                            // Capture old pattern before creating new one
-                            let old_board = board;
                             let mut new_board = Board::new();
                             new_board.add_pattern(Pattern::Random);
-
-                            // Generate fade animation frames (5 seconds total)
-                            const FADE_FRAMES: usize = 30;
-                            const FADE_DURATION: Duration = Duration::from_millis(2500); // 2500ms per fade
-
-                            let start_frame = old_board.to_frame(colors::LIME);
-                            let black_frame = Frame2d::new();
-                            let end_frame = new_board.to_frame(colors::LIME);
-
-                            // Fade out: old pattern to black
-                            let fade_out_frames =
-                                fade::<_, _, FADE_FRAMES>(start_frame, black_frame, FADE_DURATION);
-                            led16x16.animate(fade_out_frames).unwrap();
-                            Timer::after(FADE_DURATION).await;
-
-                            // Fade in: black to new pattern
-                            let fade_in_frames =
-                                fade::<_, _, FADE_FRAMES>(black_frame, end_frame, FADE_DURATION);
-                            led16x16.animate(fade_in_frames).unwrap();
-                            Timer::after(FADE_DURATION).await;
 
                             // Update to new board
                             board = new_board;
