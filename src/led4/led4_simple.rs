@@ -1,7 +1,6 @@
 //! A device abstraction for a non-blinking 4-digit 7-segment LED display.
 //!
 //! See [`Led4Simple`] for usage.
-// cmk hide this???
 
 use core::convert::Infallible;
 

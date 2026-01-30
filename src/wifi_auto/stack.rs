@@ -162,7 +162,6 @@ pub struct WifiStatic {
 /// A device abstraction that manages WiFi connectivity and network stack in both captive portal and client modes.
 ///
 /// See the [WifiAuto struct example](crate::wifi_auto::WifiAuto) for usage.
-// cmk consider hiding this behind WifiAuto-only APIs if external access is unwanted
 pub struct Wifi {
     events: &'static WifiEvents,
     stack: &'static StackStorage,

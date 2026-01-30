@@ -165,8 +165,7 @@ fn assert_santa_apng_matches_expected(
     gamma: Option<f32>,
     preview_inverse_gamma: f32,
 ) -> Result<(), Box<dyn Error>> {
-    let frame_delay_ms =
-        u32::try_from(SANTA_FRAME_DURATION.as_millis()).expect("santa frame delay must fit in u32"); // cmk use ?
+    let frame_delay_ms = u32::try_from(SANTA_FRAME_DURATION.as_millis())?;
     for (_, duration) in SANTA_FRAMES.iter() {
         assert!(
             duration.as_millis() == SANTA_FRAME_DURATION.as_millis(),
