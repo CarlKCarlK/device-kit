@@ -13,14 +13,13 @@ use defmt::info;
 use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::button::PressedTo;
-use device_kit::clock::{Clock, ClockStatic, ONE_SECOND};
+use device_kit::clock::ONE_SECOND;
+use device_kit::clock_sync::{ClockSync, ClockSyncStatic};
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
-use device_kit::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
 use device_kit::wifi_auto::WifiAuto;
 use device_kit::wifi_auto::WifiAutoEvent;
 use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};
 use embassy_executor::Spawner;
-use embassy_futures::select::{Either, select};
 use panic_probe as _;
 
 
@@ -88,15 +87,12 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     info!("WiFi connected successfully!");
 
-    // Create TimeSync with network stack
-    static TIME_SYNC_STATIC: TimeSyncStatic = TimeSync::new_static();
-    let time_sync = TimeSync::new(&TIME_SYNC_STATIC, stack, spawner);
-
-    // Create Clock device with timezone from WiFi portal
+    // Create ClockSync device with timezone from WiFi portal
     let timezone_offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
-    static CLOCK_STATIC: ClockStatic = Clock::new_static();
-    let clock = Clock::new(
-        &CLOCK_STATIC,
+    static CLOCK_SYNC_STATIC: ClockSyncStatic = ClockSync::new_static();
+    let clock_sync = ClockSync::new(
+        &CLOCK_SYNC_STATIC,
+        stack,
         timezone_offset_minutes,
         Some(ONE_SECOND),
         spawner,
@@ -104,32 +100,18 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     info!("WiFi connected, entering event loop");
 
-    // Main event loop - log time on every tick and handle sync events
+    // Main event loop - log time on every tick
     loop {
-        match select(clock.wait_for_tick(), time_sync.wait_for_sync()).await {
-            // On every clock tick, log the current time
-            Either::First(time_info) => {
-                info!(
-                    "Current time: {:04}-{:02}-{:02} {:02}:{:02}:{:02}",
-                    time_info.year(),
-                    u8::from(time_info.month()),
-                    time_info.day(),
-                    time_info.hour(),
-                    time_info.minute(),
-                    time_info.second(),
-                );
-            }
-
-            // On time sync success, update the clock
-            Either::Second(TimeSyncEvent::Success { unix_seconds }) => {
-                info!("Time sync SUCCESS: unix_seconds={}", unix_seconds.as_i64());
-                clock.set_utc_time(unix_seconds).await;
-            }
-
-            // On time sync failure, just log the error
-            Either::Second(TimeSyncEvent::Failed(err)) => {
-                info!("Time sync FAILED: {}", err);
-            }
-        }
+        let tick = clock_sync.wait_for_tick().await;
+        let time_info = tick.local_time;
+        info!(
+            "Current time: {:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+            time_info.year(),
+            u8::from(time_info.month()),
+            time_info.day(),
+            time_info.hour(),
+            time_info.minute(),
+            time_info.second(),
+        );
     }
 }

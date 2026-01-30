@@ -10,14 +10,13 @@ use defmt::*;
 use defmt_rtt as _;
 use device_kit::button::PressedTo;
 use device_kit::char_lcd::{CharLcd, CharLcdStatic};
-use device_kit::clock::{Clock, ClockStatic, ONE_SECOND};
+use device_kit::clock::ONE_SECOND;
+use device_kit::clock_sync::{ClockSync, ClockSyncStatic};
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
-use device_kit::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
 use device_kit::wifi_auto::WifiAuto;
 use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};
 use device_kit::{Error, Result};
 use embassy_executor::Spawner;
-use embassy_futures::select::{Either, select};
 use heapless::String;
 use panic_probe as _;
 
@@ -73,74 +72,51 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         .connect(|_event| async move { Ok(()) })
         .await?;
 
-    // Create Clock device with timezone from WiFi portal
+    // Create ClockSync device with timezone from WiFi portal
     // cmk offset must be set or return error
     let timezone_offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
-    static CLOCK_STATIC: ClockStatic = Clock::new_static();
-    let clock = Clock::new(
-        &CLOCK_STATIC,
+    static CLOCK_SYNC_STATIC: ClockSyncStatic = ClockSync::new_static();
+    let clock_sync = ClockSync::new(
+        &CLOCK_SYNC_STATIC,
+        stack,
         timezone_offset_minutes,
         Some(ONE_SECOND),
         spawner,
     );
 
-    // Create TimeSync with network stack
-    static TIME_SYNC_STATIC: TimeSyncStatic = TimeSync::new_static();
-    let time_sync = TimeSync::new(&TIME_SYNC_STATIC, stack, spawner);
-
     info!("Entering main event loop");
 
-    // Main orchestrator loop - owns LCD and displays clock/sync events
+    // Main orchestrator loop - owns LCD and displays the clock
     loop {
-        match select(clock.wait_for_tick(), time_sync.wait_for_sync()).await {
-            // On every tick event, update the LCD display
-            Either::First(time_info) => {
-                let mut text = String::<64>::new();
-                let (hour12, am_pm) = if time_info.hour() == 0 {
-                    (12, "AM")
-                } else if time_info.hour() < 12 {
-                    (time_info.hour(), "AM")
-                } else if time_info.hour() == 12 {
-                    (12, "PM")
-                } else {
-                    #[expect(clippy::arithmetic_side_effects, reason = "hour guaranteed 13-23")]
-                    {
-                        (time_info.hour() - 12, "PM")
-                    }
-                };
-                fmt::Write::write_fmt(
-                    &mut text,
-                    format_args!(
-                        "{:2}:{:02}:{:02} {}\n{:04}-{:02}-{:02}",
-                        hour12,
-                        time_info.minute(),
-                        time_info.second(),
-                        am_pm,
-                        time_info.year(),
-                        u8::from(time_info.month()),
-                        time_info.day()
-                    ),
-                )
-                .map_err(|_| Error::FormatError)?;
-                char_lcd.write_text(text, 0).await;
+        let tick = clock_sync.wait_for_tick().await;
+        let time_info = tick.local_time;
+        let mut text = String::<64>::new();
+        let (hour12, am_pm) = if time_info.hour() == 0 {
+            (12, "AM")
+        } else if time_info.hour() < 12 {
+            (time_info.hour(), "AM")
+        } else if time_info.hour() == 12 {
+            (12, "PM")
+        } else {
+            #[expect(clippy::arithmetic_side_effects, reason = "hour guaranteed 13-23")]
+            {
+                (time_info.hour() - 12, "PM")
             }
-
-            // On time sync events, set clock and display status
-            Either::Second(TimeSyncEvent::Success { unix_seconds }) => {
-                info!("Sync successful: unix_seconds={}", unix_seconds.as_i64());
-                clock.set_utc_time(unix_seconds).await;
-                char_lcd
-                    .write_text(String::<64>::try_from("Synced!").unwrap(), 800)
-                    .await;
-            }
-
-            // On sync failure, display error message for at least 8/10th of a second
-            Either::Second(TimeSyncEvent::Failed(err)) => {
-                info!("Sync failed: {}", err);
-                char_lcd
-                    .write_text(String::<64>::try_from("Sync failed").unwrap(), 800)
-                    .await;
-            }
-        }
+        };
+        fmt::Write::write_fmt(
+            &mut text,
+            format_args!(
+                "{:2}:{:02}:{:02} {}\n{:04}-{:02}-{:02}",
+                hour12,
+                time_info.minute(),
+                time_info.second(),
+                am_pm,
+                time_info.year(),
+                u8::from(time_info.month()),
+                time_info.day()
+            ),
+        )
+        .map_err(|_| Error::FormatError)?;
+        char_lcd.write_text(text, 0).await;
     }
 }
