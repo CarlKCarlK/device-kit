@@ -47,25 +47,25 @@ enum ConwayMessage {
 /// Speed modes for the simulation.
 #[derive(Clone, Copy, Debug, defmt::Format, PartialEq, Eq)]
 enum SpeedMode {
-    Slower, // 10x slower (500ms per generation)
-    Normal, // 1x normal (50ms per generation)
-    Faster, // 10x faster (5ms per generation)
+    Slower,  // 10x slower (500ms per generation)
+    Medium,  // Log midpoint (~160ms per generation)
+    Normal,  // 1x normal (50ms per generation)
 }
 
 impl SpeedMode {
     const fn slower(self) -> Self {
         match self {
-            Self::Slower => Self::Faster,
-            Self::Normal => Self::Slower,
-            Self::Faster => Self::Normal,
+            Self::Slower => Self::Normal,
+            Self::Medium => Self::Slower,
+            Self::Normal => Self::Medium,
         }
     }
 
     const fn faster(self) -> Self {
         match self {
-            Self::Slower => Self::Normal,
-            Self::Normal => Self::Faster,
-            Self::Faster => Self::Slower,
+            Self::Slower => Self::Medium,
+            Self::Medium => Self::Normal,
+            Self::Normal => Self::Slower,
         }
     }
 }
@@ -161,8 +161,8 @@ async fn conway_task(
         // Calculate frame duration based on speed mode
         let frame_duration = match speed_mode {
             SpeedMode::Slower => Duration::from_millis(500),
+            SpeedMode::Medium => Duration::from_millis(160),
             SpeedMode::Normal => Duration::from_millis(50),
-            SpeedMode::Faster => Duration::from_millis(5),
         };
 
         // Race between timer and incoming message during steady frame display
