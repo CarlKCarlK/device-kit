@@ -137,17 +137,16 @@
 //! }
 //! ```
 
+use crate::servo::Servo;
+use core::borrow::Borrow;
 use embassy_futures::select::{Either, select};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::signal::Signal;
 use embassy_time::{Duration, Timer};
 use heapless::Vec;
-// cmk00 should led*.animate use borrow?
 
-use core::borrow::Borrow;
-
-use crate::servo::Servo;
-
+#[doc(inline)]
+pub use crate::combine;
 /// Re-exported [`servo!`](macro@crate::servo) macro from the [`servo`](mod@crate::servo)
 /// module for convenience.
 ///
@@ -155,8 +154,6 @@ use crate::servo::Servo;
 pub use crate::servo::servo;
 #[doc(hidden)]
 pub use paste;
-#[doc(inline)]
-pub use crate::combine;
 
 // ============================================================================
 // Submodules
@@ -267,7 +264,6 @@ pub const fn combine<const N1: usize, const N2: usize, const OUT_N: usize>(
     result
 }
 
-// cmk0 this is visible at the top level which seems wrong (and likely to collide)
 /// Combine multiple animation step arrays into one larger array.
 ///
 /// This macro allows combining any number of const arrays with a clean syntax.

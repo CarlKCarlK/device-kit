@@ -1,9 +1,5 @@
 //! Minimal example that provisions Wi-Fi credentials using the `WifiAuto`
 //! abstraction and displays connection status on a 4-digit LED display.
-//!
-//! // cmk0 Future iterations should add extra captive-portal widgets (e.g. nickname)
-//! // and show how to persist their flash-backed values before handing control back
-//! // to the application logic.
 
 #![cfg(feature = "wifi")]
 #![no_std]
@@ -15,15 +11,9 @@ use defmt::{info, warn};
 use defmt_rtt as _;
 use device_kit::Result;
 use device_kit::button::PressedTo;
-use device_kit::flash_array::{FlashArray, FlashArrayStatic};
-use device_kit::led4::{
-    BlinkState,
-    Led4,
-    Led4Static,
-    OutputArray,
-    circular_outline_animation,
-};
 use device_kit::clock_sync::UnixSeconds;
+use device_kit::flash_array::{FlashArray, FlashArrayStatic};
+use device_kit::led4::{BlinkState, Led4, Led4Static, OutputArray, circular_outline_animation};
 use device_kit::wifi_auto::fields::{
     TextField, TextFieldStatic, TimezoneField, TimezoneFieldStatic,
 };
@@ -34,7 +24,6 @@ use embassy_rp::gpio::{self, Level};
 use embassy_time::Duration;
 use heapless::String;
 use panic_probe as _;
-
 
 #[embassy_executor::main]
 pub async fn main(spawner: Spawner) -> ! {

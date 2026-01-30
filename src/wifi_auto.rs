@@ -22,7 +22,7 @@ use embassy_sync::{
     blocking_mutex::{Mutex, raw::CriticalSectionRawMutex},
     signal::Signal,
 };
-use embassy_time::{Duration, Timer, with_timeout};
+use embassy_time::{Duration, Instant, Timer, with_timeout};
 use heapless::Vec;
 use portable_atomic::{AtomicBool, Ordering};
 use static_cell::StaticCell;
@@ -65,9 +65,9 @@ pub enum WifiAutoEvent {
 }
 
 const MAX_CONNECT_ATTEMPTS: u8 = 4;
-// cmk0 reduced from 30s since WiFi join now fails immediately instead of retrying
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(40);
-const RETRY_DELAY: Duration = Duration::from_secs(3);
+const RETRY_BASE_DELAY: Duration = Duration::from_secs(3);
+const RETRY_JITTER_MAX: Duration = Duration::from_millis(500);
 
 pub(crate) type WifiAutoEvents = Signal<CriticalSectionRawMutex, WifiAutoEvent>;
 
@@ -631,7 +631,13 @@ impl WifiAutoInner {
                     return Ok(());
                 }
                 warn!("WifiAuto: connection attempt {} timed out", attempt);
-                Timer::after(RETRY_DELAY).await;
+                let retry_delay = retry_delay_with_jitter(attempt - 1);
+                info!(
+                    "WifiAuto: retrying after {} ms (attempt {})",
+                    retry_delay.as_millis(),
+                    attempt
+                );
+                Timer::after(retry_delay).await;
             }
 
             info!(
@@ -705,4 +711,25 @@ impl WifiAutoInner {
             cortex_m::asm::nop();
         }
     }
+}
+
+fn retry_delay_with_jitter(attempt_index: u8) -> Duration {
+    let base_ms = RETRY_BASE_DELAY.as_millis();
+    assert!(base_ms > 0, "RETRY_BASE_DELAY must be positive");
+    let jitter_max_ms = RETRY_JITTER_MAX.as_millis();
+    let multiplier = 1u64
+        .checked_shl(u32::from(attempt_index))
+        .expect("attempt_index must fit in shift");
+    let delay_ms = base_ms
+        .checked_mul(multiplier)
+        .expect("retry delay must fit in millis");
+    let jitter_ms = if jitter_max_ms == 0 {
+        0
+    } else {
+        Instant::now().as_millis() % (jitter_max_ms + 1)
+    };
+    let total_ms = delay_ms
+        .checked_add(jitter_ms)
+        .expect("retry delay with jitter must fit in millis");
+    Duration::from_millis(total_ms)
 }
