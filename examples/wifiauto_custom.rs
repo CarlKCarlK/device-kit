@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! WiFi auto-provisioning demo with LED display showing Unix time.
 
 #![no_std]

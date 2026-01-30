@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Host-level tests for mapping primitives.
 
 use device_kit::led2d::layout::LedLayout;

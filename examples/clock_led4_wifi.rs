@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Wi-Fi enabled 4-digit clock that provisions credentials through `WifiAuto`.
 //!
 //! This example demonstrates how to pair the shared captive-portal workflow with the

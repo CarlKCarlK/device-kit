@@ -66,9 +66,12 @@ const ANIMATION_MAX_FRAMES: usize = 16;
 /// See the [`Led4`] documentation for usage examples.
 #[derive(Debug, Clone, Copy, defmt::Format, Default)]
 pub enum BlinkState {
+    /// Display is always on (solid, no blinking).
     #[default]
     Solid,
+    /// Display blinks; currently shows on.
     BlinkingAndOn,
+    /// Display blinks; currently shows off.
     BlinkingButOff,
 }
 
@@ -84,11 +87,14 @@ pub(crate) enum Led4Command {
 /// Frame of animated text for [`Led4::animate_text`]. See that method's example for usage.
 #[derive(Clone, Copy, Debug)]
 pub struct AnimationFrame {
+    /// Text to display (4 characters for a 4-digit display).
     pub text: [char; CELL_COUNT],
+    /// Duration to display this frame.
     pub duration: Duration,
 }
 
 impl AnimationFrame {
+    /// Creates a new animation frame with text and duration.
     #[must_use]
     pub const fn new(text: [char; CELL_COUNT], duration: Duration) -> Self {
         Self { text, duration }
@@ -167,7 +173,8 @@ pub struct Led4Static {
 }
 
 impl Led4Static {
-    pub const fn new() -> Self {
+    /// Creates static resources for the 4-digit LED display device.
+    pub(crate) const fn new() -> Self {
         Self {
             outer: Signal::new(),
             display: Led4Simple::new_static(),

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #![no_std]
 #![no_main]
 use core::convert::Infallible;

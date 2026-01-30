@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! WifiAuto example with a custom website field for DNS lookups.
 
 #![cfg(feature = "wifi")]

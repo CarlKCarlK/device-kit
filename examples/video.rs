@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! LED panel video player - plays looping 12x8 videos with button-controlled mode switching.
 //!
 //! This example cycles through multiple display modes using a button:

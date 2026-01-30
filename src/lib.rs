@@ -42,6 +42,7 @@ pub(crate) mod bit_matrix_led4;
 #[doc(hidden)]
 pub mod pio_irqs;
 #[cfg(feature = "host")]
+/// Utilities for converting frames to PNG images (host testing only).
 pub mod to_png;
 // These modules require embassy_rp and are excluded when testing on host
 #[cfg(not(feature = "host"))]

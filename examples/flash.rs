@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Flash storage example demonstrating type-safe persistent storage.
 //!
 //! This example demonstrates:

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! WiFi + ClockSync demo that logs time and sync age every second.
 
 #![no_std]

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Example showing how to use the SunFounder Kepler Kit IR remote.
 #![no_std]
 #![no_main]

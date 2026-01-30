@@ -22,8 +22,11 @@ use crate::{Error, Result};
 /// Events received from the RFID reader.
 #[derive(Debug, Clone, Copy)]
 pub enum RfidEvent {
-    /// A card was detected
-    CardDetected { uid: [u8; 10] },
+    /// A card was detected with the given unique identifier.
+    CardDetected {
+        /// The 10-byte UID of the detected card.
+        uid: [u8; 10],
+    },
 }
 
 /// Static type for RFID reader events

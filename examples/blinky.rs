@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Minimal async blink example for Raspberry Pi Pico 2.
 //! Emits SOS in Morse code on the onboard LED using Embassy timers.
 #![no_std]

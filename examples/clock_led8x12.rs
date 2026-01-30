@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Wi-Fi enabled 4-digit LED panel clock (8x12 pixels rotated) with captive-portal setup.
 //!
 //! This example uses two stacked 12x4 LED panels rotated 90° clockwise to create an 8-wide

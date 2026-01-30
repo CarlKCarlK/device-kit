@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #![cfg(not(feature = "host"))]
 #![no_std]
 #![no_main]

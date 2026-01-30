@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Wi-Fi enabled 4-character LED panel clock (12x4 pixels) with captive-portal setup.
 //!
 //! This example mirrors the WiFi/clock state machine from `clock_servos.rs` but drives a

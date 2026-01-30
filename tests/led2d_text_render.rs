@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #![cfg(feature = "host")]
 
 use png::{BitDepth, ColorType, Decoder, Encoder};

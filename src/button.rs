@@ -45,7 +45,9 @@ pub enum PressedTo {
 /// Duration of a button press (short or long).
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, defmt::Format)]
 pub enum PressDuration {
+    /// Button was held for less than [`LONG_PRESS_DURATION`](crate::button) (500ms).
     Short,
+    /// Button was held for at least [`LONG_PRESS_DURATION`](crate::button) (500ms).
     Long,
 }
 

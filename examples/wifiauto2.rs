@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Minimal WiFiAuto example with a no-op event handler.
 
 #![cfg(feature = "wifi")]

@@ -290,9 +290,7 @@ non_upper_case_globals = "warn"
 #       (`target_pointer_width = 128`) is ineffective; the setting below is overly broad
 unexpected_cfgs = "warn"
 
-# Uncomment before ship to reconcile use of possibly redundant crates, debug remnants, missing
-# license files and more
-#missing_docs = "warn"
+missing_docs = "warn"
 warnings = "deny"
 
 [lints.clippy]

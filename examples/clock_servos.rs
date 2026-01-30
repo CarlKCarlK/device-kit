@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Wi-Fi enabled clock that visualizes time with two servos.
 //!
 //! This example combines the `WifiAuto` captive-portal workflow with a servo-based

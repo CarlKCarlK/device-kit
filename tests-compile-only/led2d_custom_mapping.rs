@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Compile-only verification for Led2d with custom LED layout.
 //!
 //! This verifies that the led2d! macro works with custom LED layouts.

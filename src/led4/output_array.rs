@@ -9,6 +9,7 @@ use embassy_rp::gpio::{self, Level};
 pub struct OutputArray<'a, const N: usize>([gpio::Output<'a>; N]);
 
 impl<'a, const N: usize> OutputArray<'a, N> {
+    /// Creates a new output array from GPIO pins.
     pub const fn new(outputs: [gpio::Output<'a>; N]) -> Self {
         Self(outputs)
     }

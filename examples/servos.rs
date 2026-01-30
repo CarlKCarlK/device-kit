@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Dual servo control example.
 //! Moves two servos in opposite directions for 2 seconds.
 //! Connect servos to GPIO 11 and GPIO 12.

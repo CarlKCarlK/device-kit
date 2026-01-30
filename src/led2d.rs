@@ -185,6 +185,10 @@ use crate::led_strip::{Frame1d as StripFrame, LedStrip};
 #[cfg(feature = "host")]
 type StripFrame<const N: usize> = [RGB8; N];
 #[cfg(feature = "host")]
+/// Stub LED strip type for host testing.
+///
+/// This type provides no-op implementations for testing 2D LED panel code on host machines.
+/// See the [`led2d`](self) module documentation for usage.
 pub struct LedStrip<const N: usize, const MAX_FRAMES: usize>;
 #[cfg(feature = "host")]
 impl<const N: usize, const MAX_FRAMES: usize> LedStrip<N, MAX_FRAMES> {
@@ -298,50 +302,95 @@ pub fn render_text_to_frame<const W: usize, const H: usize>(
 /// Fonts with `Trim` suffix remove blank spacing to pack text more tightly on small displays.
 #[derive(Clone, Copy, Debug)]
 pub enum Led2dFont {
+    /// 3x4 monospace font, trimmed (compact layout).
     Font3x4Trim,
+    /// 4x6 monospace font.
     Font4x6,
+    /// 3x5 monospace font, trimmed (compact layout).
     Font3x5Trim,
+    /// 5x7 monospace font.
     Font5x7,
+    /// 4x6 monospace font, trimmed (compact layout).
     Font4x6Trim,
+    /// 5x8 monospace font.
     Font5x8,
+    /// 4x7 monospace font, trimmed (compact layout).
     Font4x7Trim,
+    /// 6x9 monospace font.
     Font6x9,
+    /// 5x8 monospace font, trimmed (compact layout).
     Font5x8Trim,
+    /// 6x10 monospace font.
     Font6x10,
+    /// 5x9 monospace font, trimmed (compact layout).
     Font5x9Trim,
+    /// 6x12 monospace font.
     Font6x12,
+    /// 5x11 monospace font, trimmed (compact layout).
     Font5x11Trim,
+    /// 6x13 monospace font.
     Font6x13,
+    /// 5x12 monospace font, trimmed (compact layout).
     Font5x12Trim,
+    /// 6x13 bold monospace font.
     Font6x13Bold,
+    /// 5x12 bold monospace font, trimmed (compact layout).
     Font5x12TrimBold,
+    /// 6x13 italic monospace font.
     Font6x13Italic,
+    /// 5x12 italic monospace font, trimmed (compact layout).
     Font5x12TrimItalic,
+    /// 7x13 monospace font.
     Font7x13,
+    /// 6x12 monospace font, trimmed (compact layout).
     Font6x12Trim,
+    /// 7x13 bold monospace font.
     Font7x13Bold,
+    /// 6x12 bold monospace font, trimmed (compact layout).
     Font6x12TrimBold,
+    /// 7x13 italic monospace font.
     Font7x13Italic,
+    /// 6x12 italic monospace font, trimmed (compact layout).
     Font6x12TrimItalic,
+    /// 7x14 monospace font.
     Font7x14,
+    /// 6x13 monospace font, trimmed (compact layout).
     Font6x13Trim,
+    /// 7x14 bold monospace font.
     Font7x14Bold,
+    /// 6x13 bold monospace font, trimmed (compact layout).
     Font6x13TrimBold,
+    /// 8x13 monospace font.
     Font8x13,
+    /// 7x12 monospace font, trimmed (compact layout).
     Font7x12Trim,
+    /// 8x13 bold monospace font.
     Font8x13Bold,
+    /// 7x12 bold monospace font, trimmed (compact layout).
     Font7x12TrimBold,
+    /// 8x13 italic monospace font.
     Font8x13Italic,
+    /// 7x12 italic monospace font, trimmed (compact layout).
     Font7x12TrimItalic,
+    /// 9x15 monospace font.
     Font9x15,
+    /// 8x14 monospace font, trimmed (compact layout).
     Font8x14Trim,
+    /// 9x15 bold monospace font.
     Font9x15Bold,
+    /// 8x14 bold monospace font, trimmed (compact layout).
     Font8x14TrimBold,
+    /// 9x18 monospace font.
     Font9x18,
+    /// 8x17 monospace font, trimmed (compact layout).
     Font8x17Trim,
+    /// 9x18 bold monospace font.
     Font9x18Bold,
+    /// 8x17 bold monospace font, trimmed (compact layout).
     Font8x17TrimBold,
+    /// 10x20 monospace font.
     Font10x20,
+    /// 9x19 monospace font, trimmed (compact layout).
     Font9x19Trim,
 }
 

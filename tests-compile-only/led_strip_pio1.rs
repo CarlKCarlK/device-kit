@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Compile-only verification that the LED strip macros work with PIO1.
 //!
 //! Run via: `cargo check-all` (xtask compiles this for thumbv6m-none-eabi)

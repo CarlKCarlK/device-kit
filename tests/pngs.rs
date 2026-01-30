@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #![cfg(feature = "host")]
 
 use device_kit::led_strip::{Frame1d, ToRgb888};

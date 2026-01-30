@@ -27,7 +27,8 @@ pub(crate) enum CharLcdMessage {
 pub struct CharLcdStatic(Channel<CriticalSectionRawMutex, CharLcdMessage, 8>);
 
 impl CharLcdStatic {
-    pub const fn new() -> Self {
+    /// Creates static resources for the character LCD device.
+    pub(crate) const fn new() -> Self {
         Self(Channel::new())
     }
 

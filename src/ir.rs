@@ -31,7 +31,12 @@ pub use mapping::{IrMapping, IrMappingStatic};
 pub enum IrEvent {
     /// Button press with 16-bit address and 8-bit command.
     /// Supports both standard NEC (8-bit address) and extended NEC (16-bit address).
-    Press { addr: u16, cmd: u8 },
+    Press {
+        /// 16-bit device address (or 8-bit address in low byte for standard NEC).
+        addr: u16,
+        /// 8-bit command code.
+        cmd: u8,
+    },
     // Repeat { addr: u16, cmd: u8 },
 }
 
@@ -41,8 +46,9 @@ pub enum IrEvent {
 pub struct IrStatic(EmbassyChannel<CriticalSectionRawMutex, IrEvent, 8>);
 
 impl IrStatic {
+    /// Creates static resources for the infrared receiver device.
     #[must_use]
-    pub const fn new() -> Self {
+    pub(crate) const fn new() -> Self {
         Self(EmbassyChannel::new())
     }
 

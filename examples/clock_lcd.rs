@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! LCD Clock - Event-driven time display with WiFi sync
 
 #![cfg(feature = "wifi")]

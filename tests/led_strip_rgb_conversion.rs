@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 use device_kit::led_strip::{RGB8, Rgb888, ToRgb8, ToRgb888};
 
 #[test]

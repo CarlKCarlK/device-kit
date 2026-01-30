@@ -13,8 +13,8 @@ use portable_atomic::{AtomicBool, AtomicU64, Ordering};
 use time::OffsetDateTime;
 
 use crate::clock::{Clock, ClockStatic};
-use crate::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
 pub use crate::time_sync::UnixSeconds;
+use crate::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
 
 /// Duration representing one second.
 pub const ONE_SECOND: Duration = Duration::from_secs(1);
@@ -40,7 +40,9 @@ pub fn h12_m_s(dt: &OffsetDateTime) -> (u8, u8, u8) {
 ///
 /// See the [ClockSync struct example](ClockSync) for usage.
 pub struct ClockSyncTick {
+    /// The current local time (adjusted by timezone offset if set).
     pub local_time: OffsetDateTime,
+    /// Duration since the last successful NTP synchronization.
     pub since_last_sync: Duration,
 }
 
@@ -154,8 +156,9 @@ pub struct ClockSync {
 }
 
 impl ClockSyncStatic {
+    /// Creates static resources for the ClockSync device.
     #[must_use]
-    pub const fn new() -> Self {
+    pub(crate) const fn new() -> Self {
         Self {
             clock_static: Clock::new_static(),
             clock_cell: static_cell::StaticCell::new(),

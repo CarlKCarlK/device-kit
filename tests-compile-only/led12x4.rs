@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Compile-only verification for Led12x4 construction using led_strips! led2d configuration.
 //!
 //! Run via: `cargo check-all` (xtask compiles this for thumbv6m-none-eabi)

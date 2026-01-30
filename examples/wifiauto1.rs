@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Minimal WiFiAuto example based on the struct docs.
 
 #![cfg(feature = "wifi")]

@@ -1,3 +1,5 @@
+//! Build script for device-kit.
+
 use std::{env, fs, path::PathBuf, process::Command};
 
 fn main() {

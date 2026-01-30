@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Compile-only verification that multiple led2d devices can coexist in the same file.
 //!
 //! This demonstrates that the associated constants approach (Gpio3Led2d::HEIGHT, Gpio4Led2d::HEIGHT)

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Minimal example that provisions Wi-Fi credentials using the `WifiAuto`
 //! abstraction and displays connection status on a 4-digit LED display.
 

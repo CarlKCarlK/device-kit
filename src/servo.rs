@@ -702,6 +702,7 @@ enum ServoState {
 }
 
 impl<'d> Servo<'d> {
+    /// Default maximum rotation range in degrees (180°).
     pub const DEFAULT_MAX_DEGREES: u16 = 180;
 
     /// Create a servo on a PWM output A channel.

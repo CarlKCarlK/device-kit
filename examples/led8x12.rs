@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #![no_std]
 #![no_main]
 #![allow(clippy::future_not_send, reason = "single-threaded")]

@@ -12,17 +12,29 @@ use crate::ir::mapping::{IrMapping, IrMappingStatic};
 /// Button types for the SunFounder Kepler Kit remote control.
 #[derive(defmt::Format, Clone, Copy, PartialEq, Eq)]
 pub enum KeplerButton {
+    /// Power button.
     Power,
+    /// Mode button.
     Mode,
+    /// Mute button.
     Mute,
+    /// Play/Pause button.
     PlayPause,
+    /// Previous track button.
     Prev,
+    /// Next track button.
     Next,
+    /// Equalizer button.
     Eq,
+    /// Minus/Decrease volume button.
     Minus,
+    /// Plus/Increase volume button.
     Plus,
+    /// Numbered button (0-9).
     Num(u8),
+    /// Repeat button.
     Repeat,
+    /// USB/SD card mode button.
     USd,
 }
 

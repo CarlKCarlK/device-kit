@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Host-side mapping algebra check for Led2d.
 //!
 //! Verifies that the clock-style 8x12 mapping matches a composition of

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! WiFi auto-provisioning demo with LED display showing last 4 hex digits of DNS.
 
 #![no_std]

@@ -1,8 +1,10 @@
+#![allow(missing_docs)]
 //! Console Clock - WiFi-synced time logging to console
 //!
 //! This example demonstrates WiFi connection with auto-provisioning
 //! and logs time sync events to the console.
 
+#![allow(missing_docs)]
 #![cfg(feature = "wifi")]
 #![no_std]
 #![no_main]

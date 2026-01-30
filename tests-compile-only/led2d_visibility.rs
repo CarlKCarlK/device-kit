@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Compile-only verification that led2d! public/private visibility works.
 //!
 //! Run via: `cargo check-all` (xtask compiles this for thumbv6m-none-eabi)

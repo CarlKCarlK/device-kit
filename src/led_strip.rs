@@ -1068,8 +1068,10 @@ macro_rules! __led_strips_impl {
         )+
 
             // Generate the group marker struct with new() constructor
+            #[allow(missing_docs)]
             $vis struct $group;
 
+            #[allow(missing_docs)]
             impl $group {
                 #[allow(clippy::too_many_arguments)]
                 pub fn new(
@@ -1172,6 +1174,7 @@ macro_rules! __led_strips_impl {
                 strip: $crate::led_strip::LedStrip<{ $len }, { $max_frames }>,
             }
 
+            #[allow(missing_docs)]
             impl $label {
                 pub const LEN: usize = $len;
                 pub const MAX_FRAMES: usize = $max_frames;
@@ -1284,10 +1287,12 @@ macro_rules! __led_strips_impl {
                 "Created with [`", stringify!($group), "::new`]. ",
                 "See the [led_strip module documentation](mod@crate::led_strip) for a similar example."
             )]
+            #[allow(missing_docs)]
             struct [<$label:camel LedStrip>] {
                 strip: $crate::led_strip::LedStrip<{ $len }, { $max_frames }>,
             }
 
+            #[allow(missing_docs)]
             impl [<$label:camel LedStrip>] {
                 pub const LEN: usize = $len;
                 pub const MAX_FRAMES: usize = $max_frames;

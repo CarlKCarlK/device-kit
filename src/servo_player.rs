@@ -1098,10 +1098,12 @@ macro_rules! __servo_player_impl {
             static [<$name:upper _SERVO_PLAYER_CELL>]: ::static_cell::StaticCell<$name> =
                 ::static_cell::StaticCell::new();
 
+            #[allow(missing_docs)]
             $vis struct $name {
                 player: $crate::servo_player::ServoPlayer<$max_steps>,
             }
 
+            #[allow(missing_docs)]
             impl $name {
                 /// Create the servo player and spawn its background task.
                 ///
@@ -1181,10 +1183,12 @@ macro_rules! __servo_player_impl {
             static [<$name:upper _SERVO_PLAYER_CELL>]: ::static_cell::StaticCell<$name> =
                 ::static_cell::StaticCell::new();
 
+            #[allow(missing_docs)]
             $vis struct $name {
                 player: $crate::servo_player::ServoPlayer<$max_steps>,
             }
 
+            #[allow(missing_docs)]
             impl $name {
                 /// Create the servo player and spawn its background task.
                 ///
