@@ -97,13 +97,10 @@ async fn demo_blink_text(led4x12: &Led4x12) -> Result<()> {
         &mut on_frame,
     )?;
     led4x12
-        .animate(
-            [
-                (on_frame, Duration::from_millis(500)),
-                (Frame2d::new(), Duration::from_millis(500)),
-            ]
-            .into_iter(),
-        )
+        .animate([
+            (on_frame, Duration::from_millis(500)),
+            (Frame2d::new(), Duration::from_millis(500)),
+        ])
 }
 
 /// Display colored corners to demonstrate coordinate mapping.
@@ -132,13 +129,10 @@ async fn demo_blink_pattern(led4x12: &Led4x12) -> Result<()> {
     }
 
     led4x12
-        .animate(
-            [
-                (on_frame, Duration::from_millis(500)),
-                (Frame2d::new(), Duration::from_millis(500)),
-            ]
-            .into_iter(),
-        )
+        .animate([
+            (on_frame, Duration::from_millis(500)),
+            (Frame2d::new(), Duration::from_millis(500)),
+        ])
 }
 
 /// Create a red rectangle border with blue diagonals using embedded-graphics.

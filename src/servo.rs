@@ -726,7 +726,7 @@ impl<'d> Servo<'d> {
         max_us: u16,
         max_degrees: u16,
     ) -> Self {
-        // cmk000 revisit
+        // TODO: consider if these could/should be checked at compile time.
         assert!(min_us < max_us, "min_us must be less than max_us");
         assert!(max_degrees > 0, "max_degrees must be positive");
         let clk = clk_sys_freq() as u64; // Hz

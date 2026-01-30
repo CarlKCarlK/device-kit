@@ -252,6 +252,8 @@ impl ToRgb888 for Rgb888 {
     }
 }
 
+#[cfg(not(feature = "host"))]
+use core::borrow::Borrow;
 use core::ops::{Deref, DerefMut};
 use embedded_graphics::prelude::RgbColor;
 
@@ -646,12 +648,17 @@ impl<const N: usize, const MAX_FRAMES: usize> LedStrip<N, MAX_FRAMES> {
     /// by a new `animate` call or `write_frame`.
     ///
     /// See the [led_strip module documentation](mod@crate::led_strip) for example usage.
-    pub fn animate(&self, frames: impl IntoIterator<Item = (Frame1d<N>, Duration)>) -> Result<()> {
+    pub fn animate<I>(&self, frames: I) -> Result<()>
+    where
+        I: IntoIterator,
+        I::Item: Borrow<(Frame1d<N>, Duration)>,
+    {
         if MAX_FRAMES == 0 {
             return Err(crate::Error::AnimationDisabled(MAX_FRAMES));
         }
         let mut sequence: Vec<(Frame1d<N>, Duration), MAX_FRAMES> = Vec::new();
-        for (frame, duration) in frames {
+        for frame in frames {
+            let (frame, duration) = *frame.borrow();
             assert!(
                 duration.as_micros() > 0,
                 "animation frame duration must be positive"

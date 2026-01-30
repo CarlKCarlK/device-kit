@@ -17,7 +17,7 @@ pub async fn main(_spawner: Spawner) -> ! {
     let p = embassy_rp::init(Default::default());
 
     info!("Starting dual servo example");
-    // cmk00 in future, create macro servos! that can share PWM resources.
+    // TODO in future, create macro servos! (plural) that can share PWM resources.
 
     // Create servos on GPIO 11 and GPIO 12
     // GPIO 11 → PWM_SLICE5 (channel B)

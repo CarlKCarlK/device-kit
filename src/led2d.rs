@@ -158,6 +158,7 @@ pub mod led2d_generated;
 pub use layout::LedLayout;
 
 use core::{
+    borrow::Borrow,
     convert::Infallible,
     ops::{Deref, DerefMut, Index, IndexMut},
 };
@@ -720,14 +721,15 @@ impl<const N: usize, const MAX_FRAMES: usize> Led2d<N, MAX_FRAMES> {
     ///
     /// Returns immediately; the animation runs in the background until interrupted
     /// by a new `animate` call or `write_frame`.
-    pub fn animate<const W: usize, const H: usize>(
-        &self,
-        frames: impl IntoIterator<Item = (Frame2d<W, H>, Duration)>,
-    ) -> Result<()> {
-        self.led_strip
-            .animate(frames.into_iter().map(|(frame, duration)| {
-                (self.convert_frame(frame), duration)
-            }))
+    pub fn animate<const W: usize, const H: usize, I>(&self, frames: I) -> Result<()>
+    where
+        I: IntoIterator,
+        I::Item: Borrow<(Frame2d<W, H>, Duration)>,
+    {
+        self.led_strip.animate(frames.into_iter().map(|frame| {
+            let (frame, duration) = *frame.borrow();
+            (self.convert_frame(frame), duration)
+        }))
     }
 }
 
