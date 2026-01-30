@@ -2,9 +2,10 @@
 //!
 //! This version uses an existing network stack (e.g., from `WifiAuto`).
 //!
-//! See [`TimeSync`] for usage examples.
+//! See the [`ClockSync` struct example](crate::clock_sync::ClockSync) for usage.
 
 #![allow(clippy::future_not_send, reason = "single-threaded")]
+#![allow(dead_code, unused_imports)]
 
 use time::{OffsetDateTime, UtcOffset};
 
@@ -91,36 +92,7 @@ mod wifi_impl {
     /// - **Initial sync**: Fires immediately on start (retries at 10s, 30s, 60s, then 5min intervals if failed)
     /// - **Periodic sync**: After first success, syncs every hour (retries every 5min on failure)
     ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// # #![no_std]
-    /// # #![no_main]
-    /// # use panic_probe as _;
-    /// use device_kit::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
-    ///
-    /// # #[allow(dead_code)]
-    /// async fn run_time_sync(
-    ///     stack: &'static embassy_net::Stack<'static>,
-    ///     spawner: embassy_executor::Spawner,
-    /// ) {
-    ///     // Create TimeSync with an existing network stack (often from WifiAuto)
-    ///     static TIME_SYNC_STATIC: TimeSyncStatic = TimeSync::new_static();
-    ///     let time_sync = TimeSync::new(&TIME_SYNC_STATIC, stack, spawner);
-    ///
-    ///     // Wait for sync events
-    ///     loop {
-    ///         match time_sync.wait_for_sync().await {
-    ///             TimeSyncEvent::Success { unix_seconds } => {
-    ///                 defmt::info!("Time synced: {} seconds", unix_seconds.as_i64());
-    ///             }
-    ///             TimeSyncEvent::Failed(message) => {
-    ///                 defmt::info!("time sync failed: {}. Will continue trying", message);
-    ///             }
-    ///         }
-    ///     }
-    /// }
-    /// ```
+    /// See the [`ClockSync` struct example](crate::clock_sync::ClockSync) for usage.
     pub struct TimeSync {
         events: &'static TimeSyncEvents,
     }

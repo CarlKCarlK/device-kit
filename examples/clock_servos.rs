@@ -16,8 +16,7 @@ use core::{
 use defmt::info;
 use defmt_rtt as _;
 use device_kit::button::{Button, PressDuration, PressedTo};
-use device_kit::clock::{ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s};
-use device_kit::clock_sync::{ClockSync, ClockSyncStatic};
+use device_kit::clock_sync::{ClockSync, ClockSyncStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s};
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
 use device_kit::servo_player::{AtEnd, combine, linear, servo_player};
 use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};

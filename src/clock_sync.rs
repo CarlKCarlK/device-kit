@@ -13,7 +13,28 @@ use portable_atomic::{AtomicBool, AtomicU64, Ordering};
 use time::OffsetDateTime;
 
 use crate::clock::{Clock, ClockStatic};
-use crate::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic, UnixSeconds};
+use crate::time_sync::{TimeSync, TimeSyncEvent, TimeSyncStatic};
+pub use crate::time_sync::UnixSeconds;
+
+/// Duration representing one second.
+pub const ONE_SECOND: Duration = Duration::from_secs(1);
+/// Duration representing one minute (60 seconds).
+pub const ONE_MINUTE: Duration = Duration::from_secs(60);
+/// Duration representing one day (24 hours).
+pub const ONE_DAY: Duration = Duration::from_secs(86_400);
+
+/// Extract hour (12-hour format), minute, second from `OffsetDateTime`.
+pub fn h12_m_s(dt: &OffsetDateTime) -> (u8, u8, u8) {
+    let hour_24 = dt.hour() as u8;
+    let hour_12 = match hour_24 {
+        0 => 12,
+        1..=12 => hour_24,
+        _ => hour_24 - 12,
+    };
+    let minute = dt.minute() as u8;
+    let second = dt.second() as u8;
+    (hour_12, minute, second)
+}
 
 /// Tick event emitted by [`ClockSync`].
 ///
@@ -51,8 +72,7 @@ pub struct ClockSyncStatic {
 /// use device_kit::{
 ///     Result,
 ///     button::PressedTo,
-///     clock::{ONE_SECOND, h12_m_s},
-///     clock_sync::{ClockSync, ClockSyncStatic},
+///     clock_sync::{ClockSync, ClockSyncStatic, ONE_SECOND, h12_m_s},
 ///     flash_array::{FlashArray, FlashArrayStatic},
 ///     wifi_auto::fields::{TimezoneField, TimezoneFieldStatic},
 ///     wifi_auto::{WifiAuto, WifiAutoEvent},

@@ -1,4 +1,8 @@
 //! Minimal clock example: set an initial UTC time, apply a PDT offset, and log ticks.
+//!
+//!
+//! **NOTE:** This example is currently disabled because the public API is intended
+//! to go through `clock_sync` only.
 #![no_std]
 #![no_main]
 #![allow(clippy::future_not_send, reason = "single-threaded")]

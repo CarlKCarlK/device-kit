@@ -16,8 +16,7 @@ use defmt_rtt as _;
 use device_kit::{
     Error, Result,
     button::{Button, PressDuration, PressedTo},
-    clock::{ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s},
-    clock_sync::{ClockSync, ClockSyncStatic},
+    clock_sync::{ClockSync, ClockSyncStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s},
     flash_array::{FlashArray, FlashArrayStatic},
     led_strip::{Current, Gamma, colors},
     led2d,

@@ -10,8 +10,7 @@ use defmt::info;
 use device_kit::{
     Result,
     button::PressedTo,
-    clock::{ONE_SECOND, h12_m_s},
-    clock_sync::{ClockSync, ClockSyncStatic},
+    clock_sync::{ClockSync, ClockSyncStatic, ONE_SECOND, h12_m_s},
     flash_array::{FlashArray, FlashArrayStatic},
     wifi_auto::fields::{TimezoneField, TimezoneFieldStatic},
     wifi_auto::{WifiAuto, WifiAutoEvent},

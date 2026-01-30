@@ -6,6 +6,7 @@
 //! See [`Clock`] for usage and examples.
 
 #![allow(clippy::future_not_send, reason = "single-threaded")]
+#![allow(dead_code)]
 
 use core::convert::Infallible;
 use core::sync::atomic::{AtomicI32, Ordering};
@@ -30,35 +31,15 @@ use crate::time_sync::UnixSeconds;
 // Constants
 // ============================================================================
 
-/// Duration representing one second.
-pub const ONE_SECOND: Duration = Duration::from_secs(1);
-/// Duration representing one minute (60 seconds).
-pub const ONE_MINUTE: Duration = Duration::from_secs(60);
-/// Duration representing one hour (60 minutes).
-pub const ONE_HOUR: Duration = Duration::from_secs(3_600);
-/// Duration representing one day (24 hours).
-pub const ONE_DAY: Duration = Duration::from_secs(86_400);
+const ONE_DAY_SECONDS: i32 = 86_400;
 /// Maximum absolute offset minutes supported by [`UtcOffset`] (< 24h).
-const MAX_OFFSET_MINUTES: i32 = (ONE_DAY.as_secs() as i32 / 60) - 1;
+const MAX_OFFSET_MINUTES: i32 = (ONE_DAY_SECONDS / 60) - 1;
 /// Fixed-point scale factor for speed multiplier (parts per million).
 const SPEED_SCALE_PPM: u64 = 1_000_000;
 
 // ============================================================================
 // Types
 // ============================================================================
-
-/// Extract hour (12-hour format), minute, second from OffsetDateTime
-pub fn h12_m_s(dt: &OffsetDateTime) -> (u8, u8, u8) {
-    let hour_24 = dt.hour() as u8;
-    let hour_12 = match hour_24 {
-        0 => 12,
-        1..=12 => hour_24,
-        _ => hour_24 - 12,
-    };
-    let minute = dt.minute() as u8;
-    let second = dt.second() as u8;
-    (hour_12, minute, second)
-}
 
 /// Commands sent to the clock device.
 enum ClockCommand {
@@ -106,41 +87,7 @@ impl ClockStatic {
 /// ticks only when time/offset changes. The clock is headless (no hardware ownership) and
 /// supports time scaling for demos/tests via [`Clock::set_speed`].
 ///
-/// # Examples
-///
-/// ```rust,no_run
-/// # #![no_std]
-/// # #![no_main]
-/// use device_kit::clock::{Clock, ClockStatic, ONE_SECOND, h12_m_s};
-/// use device_kit::time_sync::UnixSeconds;
-/// # #[panic_handler]
-/// # fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
-///
-/// async fn run_clock(spawner: embassy_executor::Spawner) {
-///     static CLOCK_STATIC: ClockStatic = Clock::new_static();
-///     let clock = Clock::new(&CLOCK_STATIC, -420, Some(ONE_SECOND), spawner); // PDT offset (UTC-7)
-///
-///     let current_utc_time = UnixSeconds(1_763_647_200); // 2025-11-20 14:00:00 UTC
-///     clock.set_utc_time(current_utc_time).await;
-///
-///     let now_local = clock.now_local();
-///     let (hour12, minute, second) = h12_m_s(&now_local);
-///     defmt::info!("Local time: {:02}:{:02}:{:02} PDT", hour12, minute, second);
-///     // Logs: Local time: 07:00:00 PDT
-///
-///     clock.set_offset_minutes(-480).await; // Switch to PST (UTC-8)
-///     let (hour12, minute, second) = h12_m_s(&clock.now_local());
-///     defmt::info!("Local time: {:02}:{:02}:{:02} PST", hour12, minute, second);
-///     // Logs: Local time: 06:00:00 PST
-///
-///     loop {
-///         let tick = clock.wait_for_tick().await;
-///         let (hour12, minute, second) = h12_m_s(&tick);
-///         defmt::info!("Tick: {:02}:{:02}:{:02}", hour12, minute, second);
-///         // Logs: Tick: 06:00:01, Tick: 06:00:02, ...
-///     }
-/// }
-/// ```
+/// This type is used internally by [`ClockSync`](crate::clock_sync::ClockSync).
 pub struct Clock {
     commands: &'static ClockCommands,
     ticks: &'static ClockTicks,
@@ -270,7 +217,7 @@ impl Clock {
         self.offset_minutes.load(Ordering::Relaxed)
     }
 
-    /// Set the tick interval (e.g., `Some(ONE_SECOND)`, `Some(ONE_MINUTE)`, `Some(ONE_HOUR)`).
+    /// Set the tick interval (e.g., `Some(clock_sync::ONE_SECOND)`).
     /// Use `None` to disable periodic ticks (only emit on time/offset changes). See [`Clock`].
     pub async fn set_tick_interval(&self, interval: Option<Duration>) {
         // Update the atomic immediately

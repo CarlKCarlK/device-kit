@@ -62,6 +62,16 @@ name = "led_strip_all_pios"
 path = "tests-compile-only/led_strip_all_pios.rs"
 required-features = ["pico1"]
 
+[[example]]
+name = "clock_simple"
+path = "examples/clock_simple.rs"
+required-features = ["clock_simple_disabled"]
+
+[[example]]
+name = "full"
+path = "examples/full.rs"
+required-features = ["full_disabled"]
+
 [[bin]]
 name = "led_strip_two_one"
 path = "tests-compile-only/led_strip_two_one.rs"
@@ -148,6 +158,8 @@ required-features = ["arm", "wifi"]
 [features]
 default = ["defmt", "pico1", "arm"]
 defmt = []
+clock_simple_disabled = []
+full_disabled = []
 pico1 = ["dep:embassy-rp", "embassy-rp/rp2040"]
 pico2 = ["dep:embassy-rp", "embassy-rp/rp235xb", "dep:rp235x-hal"]
 arm = [

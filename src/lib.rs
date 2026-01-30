@@ -2,8 +2,10 @@
 //!
 //! # Glossary
 //!
-//! - **PIO (Programmable I/O):** Pico 1 has 2. Pico 2 has 3.
-//! - **DMA (Direct Memory Access):** Both Pico1 and 2 have 12 channels.
+//! Resources available on the Pico 1 and Pico 2:
+//!
+//! - **PIO ([Programmable I/O](https://medium.com/data-science/nine-pico-pio-wats-with-rust-part-1-9d062067dc25)):** Pico 1 has 2. Pico 2 has 3.
+//! - **DMA ([Direct Memory Access](https://en.wikipedia.org/wiki/Direct_memory_access)):** Both Pico1 and 2 have 12 channels.
 //! - **PWM ([Pulse Width Modulation](https://en.wikipedia.org/wiki/Pulse-width_modulation)) Slices:** Both Pico1 and 2 have 8 slices (& 16 channels). These "slices"
 //!   are unrelated Rust slices.
 #![cfg_attr(not(feature = "host"), no_std)]
@@ -33,13 +35,12 @@ compile_error!("Pico 1 (RP2040) only supports ARM architecture, not RISC-V");
 // PIO interrupt bindings - shared by led_strip::strip and led_strip
 #[cfg(not(feature = "host"))]
 #[doc(hidden)]
-pub mod pio_irqs;
-#[cfg(not(feature = "host"))]
-#[doc(hidden)]
-
 // Only include modules that work without embassy when host feature is enabled
 #[cfg(feature = "host")]
 pub(crate) mod bit_matrix_led4;
+#[cfg(not(feature = "host"))]
+#[doc(hidden)]
+pub mod pio_irqs;
 #[cfg(feature = "host")]
 pub mod to_png;
 // These modules require embassy_rp and are excluded when testing on host
@@ -50,7 +51,7 @@ pub mod button;
 #[cfg(not(feature = "host"))]
 pub mod char_lcd;
 #[cfg(not(feature = "host"))]
-pub mod clock;
+pub(crate) mod clock;
 #[cfg(all(feature = "wifi", not(feature = "host")))]
 pub mod clock_sync;
 mod error;
@@ -69,7 +70,7 @@ pub mod servo;
 #[cfg(not(feature = "host"))]
 pub mod servo_player;
 #[cfg(not(feature = "host"))]
-pub mod time_sync;
+pub(crate) mod time_sync;
 #[cfg(all(feature = "wifi", not(feature = "host")))]
 pub mod wifi_auto;
 
