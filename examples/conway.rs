@@ -42,6 +42,7 @@ enum ConwayMessage {
     NextPattern,
     SetSpeed(SpeedMode),
     SetPatternIndex(usize),
+    TogglePause,
 }
 
 /// Speed modes for the simulation.
@@ -118,8 +119,8 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     loop {
         match ir_kepler.wait_for_press().await {
             KeplerButton::Num(number) => {
-                if number > 0 && number <= PATTERNS.len() as u8 {
-                    let pattern_index = (number - 1) as usize;
+                if number < PATTERNS.len() as u8 {
+                    let pattern_index = number as usize;
                     conway.set_pattern_index(pattern_index);
                 }
             }
@@ -136,6 +137,9 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             KeplerButton::Next => {
                 conway.next_pattern();
             }
+            KeplerButton::PlayPause => {
+                conway.toggle_pause();
+            }
             _ => {}
         }
     }
@@ -149,6 +153,7 @@ async fn conway_task(
     let mut board = Board::new();
     let mut pattern_index = 0;
     let mut speed_mode = SpeedMode::Slower;
+    let mut paused = false;
     board.add_pattern(PATTERNS[pattern_index]);
 
     // Track stasis for random mode: (generations without change, last live count)
@@ -168,7 +173,10 @@ async fn conway_task(
         // Race between timer and incoming message during steady frame display
         match select(Timer::after(frame_duration), signal.wait()).await {
             Either::First(_) => {
-                // Timer fired, advance to next generation
+                // Timer fired, advance to next generation unless paused
+                if paused {
+                    continue;
+                }
                 board.step();
 
                 // Check for stasis in random mode
@@ -220,6 +228,10 @@ async fn conway_task(
                     ConwayMessage::SetSpeed(new_speed) => {
                         // Speed change requested
                         speed_mode = new_speed;
+                    }
+                    ConwayMessage::TogglePause => {
+                        paused = !paused;
+                        info!("=== {} ===", if paused { "Paused" } else { "Running" });
                     }
                     ConwayMessage::SetPatternIndex(new_pattern_index) => {
                         assert!(new_pattern_index < PATTERNS.len());
@@ -472,5 +484,10 @@ impl Conway<'_> {
     /// Send a message to select a specific pattern by index.
     pub fn set_pattern_index(&self, pattern_index: usize) {
         self.0.signal(ConwayMessage::SetPatternIndex(pattern_index));
+    }
+
+    /// Send a message to toggle pause/resume.
+    pub fn toggle_pause(&self) {
+        self.0.signal(ConwayMessage::TogglePause);
     }
 }
