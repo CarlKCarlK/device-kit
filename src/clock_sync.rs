@@ -72,6 +72,7 @@ pub struct ClockSyncStatic {
 /// # use defmt_rtt as _;
 /// # use panic_probe as _;
 /// use device_kit::{
+///     Error,
 ///     Result,
 ///     button::PressedTo,
 ///     clock_sync::{ClockSync, ClockSyncStatic, ONE_SECOND, h12_m_s},
@@ -124,7 +125,9 @@ pub struct ClockSyncStatic {
 ///         })
 ///         .await?;
 ///
-///     let offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
+///     let offset_minutes = timezone_field
+///         .offset_minutes()?
+///         .ok_or(Error::MissingCustomWifiAutoField)?;
 ///     static CLOCK_SYNC_STATIC: ClockSyncStatic = ClockSync::new_static();
 ///     let clock_sync = ClockSync::new(
 ///         &CLOCK_SYNC_STATIC,

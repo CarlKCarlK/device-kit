@@ -111,7 +111,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Read the timezone offset, an extra field that WiFi portal saved to flash.
     let offset_minutes = timezone_field
         .offset_minutes()?
-        .ok_or(Error::StorageCorrupted)?;
+        .ok_or(Error::MissingCustomWifiAutoField)?;
 
     // Create a ClockSync device that knows its timezone offset.
     static CLOCK_SYNC_STATIC: ClockSyncStatic = ClockSync::new_static();

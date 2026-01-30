@@ -82,7 +82,9 @@ async fn inner_main(spawner: embassy_executor::Spawner) -> Result<core::convert:
         .await?;
 
     let website = website_field.text()?.unwrap_or_default();
-    let offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
+    let offset_minutes = timezone_field
+        .offset_minutes()?
+        .ok_or(Error::MissingCustomWifiAutoField)?;
     defmt::info!("Timezone offset minutes: {}", offset_minutes);
 
     loop {

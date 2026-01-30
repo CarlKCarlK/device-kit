@@ -10,7 +10,7 @@
 use core::convert::Infallible;
 use defmt::{info, warn};
 use defmt_rtt as _;
-use device_kit::Result;
+use device_kit::{Error, Result};
 use device_kit::button::PressedTo;
 use device_kit::clock_sync::UnixSeconds;
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
@@ -124,7 +124,9 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     led4.write_text(['D', 'O', 'N', 'E'], BlinkState::Solid);
 
-    let timezone_offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
+    let timezone_offset_minutes = timezone_field
+        .offset_minutes()?
+        .ok_or(Error::MissingCustomWifiAutoField)?;
     let device_name = device_name_field.text()?.unwrap_or_else(|| {
         let mut name = String::new();
         name.push_str("").expect("default name exceeds capacity");

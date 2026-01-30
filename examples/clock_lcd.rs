@@ -20,7 +20,6 @@ use embassy_executor::Spawner;
 use heapless::String;
 use panic_probe as _;
 
-
 // ============================================================================
 // Main Orchestrator
 // ============================================================================
@@ -68,13 +67,12 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     )?;
 
     // Connect to WiFi
-    let (stack, _button) = wifi_auto
-        .connect(|_event| async move { Ok(()) })
-        .await?;
+    let (stack, _button) = wifi_auto.connect(|_event| async move { Ok(()) }).await?;
 
     // Create ClockSync device with timezone from WiFi portal
-    // cmk offset must be set or return error
-    let timezone_offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
+    let timezone_offset_minutes = timezone_field
+        .offset_minutes()?
+        .ok_or(Error::MissingCustomWifiAutoField)?;
     static CLOCK_SYNC_STATIC: ClockSyncStatic = ClockSync::new_static();
     let clock_sync = ClockSync::new(
         &CLOCK_SYNC_STATIC,

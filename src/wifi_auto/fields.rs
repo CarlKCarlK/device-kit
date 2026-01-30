@@ -15,6 +15,7 @@
 //! # use panic_probe as _;
 //! use device_kit::button::PressedTo;
 //! use device_kit::flash_array::{FlashArray, FlashArrayStatic};
+//! use device_kit::Error;
 //! use device_kit::wifi_auto::{WifiAuto, WifiAutoEvent};
 //! use device_kit::wifi_auto::fields::{
 //!     TextField,
@@ -83,7 +84,9 @@
 //!         .await?;
 //!
 //!     let website = website_field.text()?.unwrap_or_default();
-//!     let offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
+//!     let offset_minutes = timezone_field
+//!         .offset_minutes()?
+//!         .ok_or(Error::MissingCustomWifiAutoField)?;
 //!     defmt::info!("Timezone offset minutes: {}", offset_minutes);
 //!
 //!     loop {

@@ -70,7 +70,9 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         .await?;
 
     // Extract the timezone offset (in minutes) from the timezone field.
-    let offset_minutes = timezone_field.offset_minutes()?.unwrap_or(0);
+    let offset_minutes = timezone_field
+        .offset_minutes()?
+        .ok_or(Error::MissingCustomWifiAutoField)?;
 
     // Create the ClockSync instance.
     static CLOCK_SYNC_STATIC: ClockSyncStatic = ClockSync::new_static();

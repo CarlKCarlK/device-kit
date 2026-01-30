@@ -40,6 +40,9 @@ pub enum Error {
     #[display("Format error")]
     FormatError,
 
+    #[display("Custom WiFi Auto field missing")]
+    MissingCustomWifiAutoField,
+
     #[cfg(not(feature = "host"))]
     #[display("Flash operation failed: {_0:?}")]
     Flash(#[error(not(source))] embassy_rp::flash::Error),
