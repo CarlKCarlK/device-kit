@@ -24,6 +24,7 @@
     "cSpell.words": [
         "atqa",
         "BLKS",
+        "CMSIS",
         "creds",
         "DCIM",
         "iface",
@@ -39,6 +40,7 @@
         "picc",
         "pngs",
         "prio",
+        "probeusb",
         "refdiv",
         "reqa",
         "syncer",

@@ -614,7 +614,7 @@ async fn wifi_device_loop_client_impl<PIO: WifiPio>(
         ssid_str,
         password_str.len()
     );
-    // cmk0 Pico2 WiFi driver has bugs - retrying after join failure causes IOCTL crashes
+    // TODO Pico2 WiFi driver has bugs - retrying after join failure causes IOCTL crashes
     // Just try once and let the higher-level timeout in wait_for_client_ready_with_timeout
     // handle retries by restarting the entire WiFi task
     match control
