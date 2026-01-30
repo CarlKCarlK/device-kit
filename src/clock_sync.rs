@@ -21,14 +21,6 @@ pub struct ClockSyncTick {
     pub since_last_sync: Duration,
 }
 
-/// Events emitted by [`ClockSync`] when time sync succeeds or fails.
-#[derive(Clone)]
-pub enum ClockSyncEvent {
-    Synced { unix_seconds: UnixSeconds },
-    SyncFailed(&'static str),
-}
-
-type ClockSyncEvents = Signal<CriticalSectionRawMutex, ClockSyncEvent>;
 type SyncReadySignal = Signal<CriticalSectionRawMutex, ()>;
 
 /// Resources needed to construct [`ClockSync`].
@@ -36,7 +28,6 @@ pub struct ClockSyncStatic {
     clock_static: ClockStatic,
     clock_cell: static_cell::StaticCell<Clock>,
     time_sync_static: TimeSyncStatic,
-    events: ClockSyncEvents,
     sync_ready: SyncReadySignal,
     last_sync_ticks: AtomicU64,
     synced: AtomicBool,
@@ -50,7 +41,6 @@ pub struct ClockSyncStatic {
 pub struct ClockSync {
     clock: &'static Clock,
     time_sync: &'static TimeSync,
-    events: &'static ClockSyncEvents,
     sync_ready: &'static SyncReadySignal,
     last_sync_ticks: &'static AtomicU64,
     synced: &'static AtomicBool,
@@ -63,7 +53,6 @@ impl ClockSyncStatic {
             clock_static: Clock::new_static(),
             clock_cell: static_cell::StaticCell::new(),
             time_sync_static: TimeSync::new_static(),
-            events: Signal::new(),
             sync_ready: Signal::new(),
             last_sync_ticks: AtomicU64::new(0),
             synced: AtomicBool::new(false),
@@ -98,7 +87,6 @@ impl ClockSync {
         let clock_sync = Self {
             clock,
             time_sync,
-            events: &clock_sync_static.events,
             sync_ready: &clock_sync_static.sync_ready,
             last_sync_ticks: &clock_sync_static.last_sync_ticks,
             synced: &clock_sync_static.synced,
@@ -107,7 +95,6 @@ impl ClockSync {
         defmt::unwrap!(spawner.spawn(clock_sync_loop(
             clock_sync.clock,
             clock_sync.time_sync,
-            clock_sync.events,
             clock_sync.sync_ready,
             clock_sync.last_sync_ticks,
             clock_sync.synced,
@@ -124,11 +111,6 @@ impl ClockSync {
             local_time,
             since_last_sync: self.since_last_sync(),
         }
-    }
-
-    /// Wait for and return the next sync event.
-    pub async fn wait_for_sync(&self) -> ClockSyncEvent {
-        self.events.wait().await
     }
 
     /// Get the current local time without waiting for a tick.
@@ -159,7 +141,7 @@ impl ClockSync {
     /// Manually set the current UTC time and mark the clock as synced.
     pub async fn set_utc_time(&self, unix_seconds: UnixSeconds) {
         self.clock.set_utc_time(unix_seconds).await;
-        self.mark_synced(unix_seconds);
+        self.mark_synced();
     }
 
     fn since_last_sync(&self) -> Duration {
@@ -180,12 +162,11 @@ impl ClockSync {
         self.sync_ready.wait().await;
     }
 
-    fn mark_synced(&self, unix_seconds: UnixSeconds) {
+    fn mark_synced(&self) {
         let now_ticks = Instant::now().as_ticks();
         self.last_sync_ticks.store(now_ticks, Ordering::Release);
         self.synced.store(true, Ordering::Release);
         self.sync_ready.signal(());
-        self.events.signal(ClockSyncEvent::Synced { unix_seconds });
     }
 }
 
@@ -193,7 +174,6 @@ impl ClockSync {
 async fn clock_sync_loop(
     clock: &'static Clock,
     time_sync: &'static TimeSync,
-    events: &'static ClockSyncEvents,
     sync_ready: &'static SyncReadySignal,
     last_sync_ticks: &'static AtomicU64,
     synced: &'static AtomicBool,
@@ -206,10 +186,9 @@ async fn clock_sync_loop(
                 last_sync_ticks.store(now_ticks, Ordering::Release);
                 synced.store(true, Ordering::Release);
                 sync_ready.signal(());
-                events.signal(ClockSyncEvent::Synced { unix_seconds });
             }
             TimeSyncEvent::Failed(message) => {
-                events.signal(ClockSyncEvent::SyncFailed(message));
+                defmt::info!("ClockSync time sync failed: {}", message);
             }
         }
     }

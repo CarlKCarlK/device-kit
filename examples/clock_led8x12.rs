@@ -17,7 +17,7 @@ use device_kit::{
     Error, Result,
     button::{Button, PressDuration, PressedTo},
     clock::{ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s},
-    clock_sync::{ClockSync, ClockSyncEvent, ClockSyncStatic},
+    clock_sync::{ClockSync, ClockSyncStatic},
     flash_array::{FlashArray, FlashArrayStatic},
     led_strip::{Current, Gamma, colors},
     led2d,
@@ -203,12 +203,7 @@ impl State {
         clock_sync.set_tick_interval(Some(ONE_MINUTE)).await;
         let mut button_press = pin!(button.wait_for_press_duration());
         loop {
-            match select(
-                &mut button_press,
-                select(clock_sync.wait_for_tick(), clock_sync.wait_for_sync()),
-            )
-            .await
-            {
+            match select(&mut button_press, clock_sync.wait_for_tick()).await {
                 // Button pushes
                 Either::First(press_duration) => {
                     info!(
@@ -232,16 +227,9 @@ impl State {
                     }
                 }
                 // Clock tick
-                Either::Second(Either::First(tick_event)) => {
+                Either::Second(tick_event) => {
                     let (hours, minutes, _) = h12_m_s(&tick_event.local_time);
                     show_hours_minutes(led8x12, hours, minutes).await?;
-                }
-                // Time sync events
-                Either::Second(Either::Second(ClockSyncEvent::Synced { unix_seconds })) => {
-                    info!("Time sync success: {}", unix_seconds.as_i64());
-                }
-                Either::Second(Either::Second(ClockSyncEvent::SyncFailed(msg))) => {
-                    info!("Time sync failed: {}", msg);
                 }
             }
         }
@@ -259,13 +247,13 @@ impl State {
         clock_sync.set_tick_interval(Some(ONE_SECOND)).await;
         loop {
             match select(
-                select(button.wait_for_press_duration(), clock_sync.wait_for_tick()),
-                clock_sync.wait_for_sync(),
+                button.wait_for_press_duration(),
+                clock_sync.wait_for_tick(),
             )
             .await
             {
                 // Button pushes
-                Either::First(Either::First(press_duration)) => {
+                Either::First(press_duration) => {
                     info!(
                         "MinutesSeconds: Button press detected: {:?}",
                         press_duration
@@ -284,16 +272,9 @@ impl State {
                     }
                 }
                 // Clock tick
-                Either::First(Either::Second(tick_event)) => {
+                Either::Second(tick_event) => {
                     let (_, minutes, seconds) = h12_m_s(&tick_event.local_time);
                     show_minutes_seconds(led8x12, minutes, seconds).await?;
-                }
-                // Time sync events
-                Either::Second(ClockSyncEvent::Synced { unix_seconds }) => {
-                    info!("Time sync success: {}", unix_seconds.as_i64());
-                }
-                Either::Second(ClockSyncEvent::SyncFailed(msg)) => {
-                    info!("Time sync failed: {}", msg);
                 }
             }
         }
