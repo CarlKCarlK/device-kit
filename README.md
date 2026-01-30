@@ -157,7 +157,7 @@ See `ARCHITECTURE.md` for detailed information about board and architecture feat
 ## Limitations
 
 - These patterns will work on any microcontroller, but this specfiic library
-works only on the Pico1 and Pico2.
+works only on the Pico 1 and Pico 2.
 
 ## Windows/WSL Debug Probe Helper
 

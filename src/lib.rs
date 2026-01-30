@@ -5,8 +5,8 @@
 //! Resources available on the Pico 1 and Pico 2:
 //!
 //! - **PIO ([Programmable I/O](https://medium.com/data-science/nine-pico-pio-wats-with-rust-part-1-9d062067dc25)):** Pico 1 has 2. Pico 2 has 3.
-//! - **DMA ([Direct Memory Access](https://en.wikipedia.org/wiki/Direct_memory_access)):** Both Pico1 and 2 have 12 channels.
-//! - **PWM ([Pulse Width Modulation](https://en.wikipedia.org/wiki/Pulse-width_modulation)) Slices:** Both Pico1 and 2 have 8 slices (& 16 channels). These "slices"
+//! - **DMA ([Direct Memory Access](https://en.wikipedia.org/wiki/Direct_memory_access)):** Both Pico 1 and 2 have 12 channels.
+//! - **PWM ([Pulse Width Modulation](https://en.wikipedia.org/wiki/Pulse-width_modulation)) Slices:** Both  Pico 1 and 2 have 8 slices (& 16 channels). These "slices"
 //!   are unrelated Rust slices.
 #![cfg_attr(not(feature = "host"), no_std)]
 #![cfg_attr(not(feature = "host"), no_main)]
