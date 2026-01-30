@@ -17,7 +17,9 @@ use core::{
 use defmt::info;
 use defmt_rtt as _;
 use device_kit::button::{Button, PressDuration, PressedTo};
-use device_kit::clock_sync::{ClockSync, ClockSyncStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s};
+use device_kit::clock_sync::{
+    ClockSync, ClockSyncStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s,
+};
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
 use device_kit::servo_player::{AtEnd, combine, linear, servo_player};
 use device_kit::wifi_auto::fields::{TimezoneField, TimezoneFieldStatic};
@@ -27,7 +29,6 @@ use embassy_executor::Spawner;
 use embassy_futures::select::{Either, select};
 use embassy_time::Duration;
 use panic_probe as _;
-
 
 const FAST_MODE_SPEED: f32 = 720.0;
 
@@ -89,7 +90,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     // Connect Wi-Fi, using the servos for status indications.
     let servo_display_ref = &servo_display;
     let (stack, mut button) = wifi_auto
-        .connect( |event| {
+        .connect(|event| {
             let servo_display_ref = servo_display_ref;
             async move {
                 match event {
@@ -170,12 +171,7 @@ impl State {
         clock_sync.set_tick_interval(Some(ONE_MINUTE)).await;
         let mut button_press = pin!(button.wait_for_press_duration());
         loop {
-            match select(
-                &mut button_press,
-                clock_sync.wait_for_tick(),
-            )
-            .await
-            {
+            match select(&mut button_press, clock_sync.wait_for_tick()).await {
                 // Button pushes
                 Either::First(press_duration) => match (press_duration, speed.to_bits()) {
                     (PressDuration::Short, bits) if bits == 1.0f32.to_bits() => {
@@ -307,18 +303,12 @@ impl ServoClockDisplay {
     }
 
     async fn show_connecting(&self) {
-        // Keep bottom servo fixed; animate top servo through a two-phase sweep.
-        self.bottom.set_degrees(0);
-        // cmk understand if we really want this to have 11 steps and a sleep after each.
+        // Animate both servos in complementary two-phase sweeps.
         const FIVE_SECONDS: Duration = Duration::from_secs(5);
-        const TOP_PHASE1: [(u16, Duration); 10] = linear(180 - 18, 0, FIVE_SECONDS);
-        const TOP_PHASE2: [(u16, Duration); 2] = linear(0, 180, FIVE_SECONDS);
-        const TOP_STEPS: [(u16, Duration); 12] = combine!(TOP_PHASE1, TOP_PHASE2);
-        const BOTTOM_PHASE1: [(u16, Duration); 2] = linear(0, 180, FIVE_SECONDS);
-        const BOTTOM_PHASE2: [(u16, Duration); 10] = linear(180 - 18, 0, FIVE_SECONDS);
-        const BOTTOM_STEPS: [(u16, Duration); 12] = combine!(BOTTOM_PHASE1, BOTTOM_PHASE2);
-        self.top.animate(TOP_STEPS, AtEnd::Loop);
-        self.bottom.animate(BOTTOM_STEPS, AtEnd::Loop);
+        const PHASE1: [(u16, Duration); 10] = linear(180 - 18, 0, FIVE_SECONDS);
+        const PHASE2: [(u16, Duration); 2] = linear(0, 180, FIVE_SECONDS);
+        self.top.animate(combine!(PHASE1, PHASE2), AtEnd::Loop);
+        self.bottom.animate(combine!(PHASE2, PHASE1), AtEnd::Loop);
     }
 
     async fn show_hours_minutes(&self, hours: u8, minutes: u8) {

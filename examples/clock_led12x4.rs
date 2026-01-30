@@ -3,7 +3,6 @@
 //!
 //! This example mirrors the WiFi/clock state machine from `clock_servos.rs` but drives a
 //! 12x4 LED panel on GPIO3 instead of servos. The reset button is on GPIO13.
-// cmk does the wifi device abstraction know about both kinds of buttons
 
 #![no_std]
 #![no_main]
@@ -15,7 +14,9 @@ use core::pin::pin;
 use defmt::info;
 use defmt_rtt as _;
 use device_kit::button::{Button, PressDuration, PressedTo};
-use device_kit::clock_sync::{ClockSync, ClockSyncStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s};
+use device_kit::clock_sync::{
+    ClockSync, ClockSyncStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s,
+};
 use device_kit::flash_array::{FlashArray, FlashArrayStatic};
 use device_kit::led_strip::Current;
 use device_kit::led_strip::Gamma;
@@ -49,10 +50,6 @@ led2d! {
         font: Led2dFont::Font3x4Trim,
     }
 }
-
-// cmk use the colors enum
-// cmk use an array of colors
-// cmk should edit to blinking or colors
 
 const FAST_MODE_SPEED: f32 = 720.0;
 const CONNECTING_COLOR: RGB8 = colors::SADDLE_BROWN;
@@ -98,7 +95,6 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         [timezone_field],    // Custom fields to ask for
         spawner,
     )?;
-    // cmk pico1 or pico2 button?
 
     // Set up the 12x4 LED display on GPIO3.
     let led12x4 = Led12x4::new(p.PIN_3, p.PIO0, p.DMA_CH1, spawner)?;
@@ -196,12 +192,7 @@ impl State {
         clock_sync.set_tick_interval(Some(ONE_MINUTE)).await;
         let mut button_press = pin!(button.wait_for_press_duration());
         loop {
-            match select(
-                &mut button_press,
-                clock_sync.wait_for_tick(),
-            )
-            .await
-            {
+            match select(&mut button_press, clock_sync.wait_for_tick()).await {
                 // Button pushes
                 Either::First(press_duration) => {
                     info!(
