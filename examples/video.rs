@@ -119,16 +119,56 @@ led2d! {
 // Video frames and frame duration embedded at compile time
 // Auto-generated during build from PNG files in ~/programs/ffmpeg-test/frames12x8_landscape/
 // See build.rs for generation logic
-include!("data/frame-data/video_frames_data.rs");
+#[cfg(not(rust_analyzer))]
+include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/examples/data/frame-data/video_frames_data.rs"
+));
+
+#[cfg(rust_analyzer)]
+#[allow(dead_code)]
+const SANTA_FRAME_DURATION: Duration = Duration::from_millis(100);
+
+#[cfg(rust_analyzer)]
+#[allow(dead_code)]
+const SANTA_FRAME_COUNT: usize = 1;
+
+#[cfg(rust_analyzer)]
+#[allow(dead_code)]
+const SANTA_FRAMES: [([[RGB8; 12]; 8], Duration); SANTA_FRAME_COUNT] =
+    [([[colors::BLACK; 12]; 8], SANTA_FRAME_DURATION)];
 
 // Cat video frames - generated from OneDrive camera roll
-// include!("data/frame-data/cat_frames_data.rs");
+// include!(concat!(
+//     env!("CARGO_MANIFEST_DIR"),
+//     "/examples/data/frame-data/cat_frames_data.rs"
+// ));
 
 // Hand video frames - generated from OneDrive camera roll
-// include!("data/frame-data/hand_frames_data.rs");
+// include!(concat!(
+//     env!("CARGO_MANIFEST_DIR"),
+//     "/examples/data/frame-data/hand_frames_data.rs"
+// ));
 
 // Clock video frames
-include!("data/frame-data/clock_frames_data.rs");
+#[cfg(not(rust_analyzer))]
+include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/examples/data/frame-data/clock_frames_data.rs"
+));
+
+#[cfg(rust_analyzer)]
+#[allow(dead_code)]
+const CLOCK_FRAME_DURATION: Duration = Duration::from_millis(100);
+
+#[cfg(rust_analyzer)]
+#[allow(dead_code)]
+const CLOCK_FRAME_COUNT: usize = 1;
+
+#[cfg(rust_analyzer)]
+#[allow(dead_code)]
+const CLOCK_FRAMES: [([[RGB8; 12]; 8], Duration); CLOCK_FRAME_COUNT] =
+    [([[colors::BLACK; 12]; 8], CLOCK_FRAME_DURATION)];
 
 /// Video display modes.
 #[derive(defmt::Format, Clone, Copy)]

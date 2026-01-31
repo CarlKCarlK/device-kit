@@ -3,6 +3,8 @@
 use std::{env, fs, path::PathBuf, process::Command};
 
 fn main() {
+    println!("cargo:rustc-check-cfg=cfg(rust_analyzer)");
+
     // 1) Generate video frames data if building the video example
     // Check if we're building the video example by looking at CARGO_BIN_NAME or features
     let cargo_target_tmpdir = env::var("CARGO_TARGET_TMPDIR").ok();

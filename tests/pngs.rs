@@ -19,7 +19,10 @@ use std::io::BufWriter;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-include!("../examples/data/frame-data/video_frames_data.rs");
+include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/examples/data/frame-data/video_frames_data.rs"
+));
 
 type Frame = Frame2d<12, 8>;
 type Led12x4Frame = Frame2d<12, 4>;
