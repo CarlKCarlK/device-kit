@@ -92,7 +92,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         .connect(|event| async move {
             match event {
                 WifiAutoEvent::CaptivePortalReady => {
-                    led4_ref.write_text(['C', 'O', 'N', 'N'], BlinkState::BlinkingAndOn);
+                    led4_ref.write_text(['j', 'o', 'i', 'n'], BlinkState::BlinkingAndOn);
                 }
                 WifiAutoEvent::Connecting { .. } => {
                     led4_ref.animate_text(circular_outline_animation(true));

@@ -27,7 +27,7 @@ use device_kit::wifi_auto::{WifiAuto, WifiAutoEvent};
 use device_kit::{Error, Result};
 use embassy_executor::Spawner;
 use embassy_futures::select::{Either, select};
-use embassy_time::Duration;
+use embassy_time::{Duration, Timer};
 use panic_probe as _;
 
 const FAST_MODE_SPEED: f32 = 720.0;
@@ -315,12 +315,18 @@ impl ServoClockDisplay {
         let left_angle = hours_to_degrees(hours);
         let right_angle = sixty_to_degrees(minutes);
         self.set_angles(left_angle, right_angle).await;
+        Timer::after(Duration::from_millis(500)).await;
+        self.bottom.relax();
+        self.top.relax();
     }
 
     async fn show_hours_minutes_indicator(&self, hours: u8, minutes: u8) {
         let left_angle = hours_to_degrees(hours);
         let right_angle = sixty_to_degrees(minutes);
         self.set_angles(left_angle, right_angle).await;
+        Timer::after(Duration::from_millis(500)).await;
+        self.bottom.relax();
+        self.top.relax();
     }
 
     async fn show_minutes_seconds(&self, minutes: u8, seconds: u8) {

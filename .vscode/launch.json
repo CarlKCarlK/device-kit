@@ -106,8 +106,8 @@
         {
             "type": "probe-rs-debug",
             "request": "launch",
-            "name": "Debug Pico 1 - clock_led4_wifi",
-            "preLaunchTask": "Build clock_led4_wifi (Pico 1)",
+            "name": "Debug Pico 1 - clock_led4",
+            "preLaunchTask": "Build clock_led4 (Pico 1)",
             "chip": "RP2040",
             "wireProtocol": "Swd",
             "connectUnderReset": false,
@@ -123,7 +123,7 @@
             "coreConfigs": [
                 {
                     "coreIndex": 0,
-                    "programBinary": "target/thumbv6m-none-eabi/debug/examples/clock_led4_wifi",
+                    "programBinary": "target/thumbv6m-none-eabi/debug/examples/clock_led4",
                     "rttEnabled": true,
                     "rttChannelFormats": [
                         {

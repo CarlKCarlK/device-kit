@@ -62,7 +62,7 @@
 			"command": "build",
 			"args": [
 				"--example",
-				"clock_led4_wifi",
+				"clock_led4",
 				"--target",
 				"thumbv6m-none-eabi",
 				"--features",
@@ -72,7 +72,7 @@
 				"$rustc"
 			],
 			"group": "build",
-			"label": "Build clock_led4_wifi (Pico 1)"
+			"label": "Build clock_led4 (Pico 1)"
 		}
 	]
 }
