@@ -1,6 +1,8 @@
 //! A device abstraction for buttons with debouncing and press duration detection.
 //!
-//! See [`Button`] for usage example.
+//! See [`Button`] for usage example and [`button_watch!`](crate::button_watch!) for background monitoring.
+
+pub mod button_watch;
 
 use embassy_futures::select::{Either, select};
 use embassy_rp::Peri;
@@ -12,10 +14,10 @@ use embassy_time::{Duration, Timer};
 // ============================================================================
 
 /// Debounce delay for the button.
-const BUTTON_DEBOUNCE_DELAY: Duration = Duration::from_millis(10);
+pub(crate) const BUTTON_DEBOUNCE_DELAY: Duration = Duration::from_millis(10);
 
 /// Duration representing a long button press.
-const LONG_PRESS_DURATION: Duration = Duration::from_millis(500);
+pub(crate) const LONG_PRESS_DURATION: Duration = Duration::from_millis(500);
 
 // ============================================================================
 // PressedTo - How the button is wired
@@ -212,5 +214,22 @@ impl<'a> Button<'a> {
     /// Waits until the button is released (debounced).
     pub async fn wait_for_release(&mut self) {
         self.wait_for_stable_up().await;
+    }
+
+    /// Returns how the button is wired.
+    #[must_use]
+    pub const fn pressed_to(&self) -> PressedTo {
+        self.pressed_to
+    }
+
+    /// Consumes the button and returns its internal components.
+    ///
+    /// This is useful for converting a `Button` (returned from `WifiAuto::connect`)
+    /// into a `ButtonWatch` for background monitoring.
+    ///
+    /// See the [`button_watch!`](crate::button_watch!) macro documentation for usage with `from_button()`.
+    #[must_use]
+    pub fn into_parts(self) -> (Input<'a>, PressedTo) {
+        (self.input, self.pressed_to)
     }
 }

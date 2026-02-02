@@ -10,10 +10,7 @@
 #![cfg(feature = "wifi")]
 #![allow(clippy::future_not_send, reason = "single-threaded")]
 
-use core::{
-    convert::{Infallible, TryFrom},
-    pin::pin,
-};
+use core::convert::{Infallible, TryFrom};
 use defmt::info;
 use defmt_rtt as _;
 use device_kit::button::{Button, PressDuration, PressedTo};
@@ -169,9 +166,8 @@ impl State {
         let (hours, minutes, _) = h12_m_s(&clock_sync.now_local());
         servo_display.show_hours_minutes(hours, minutes).await;
         clock_sync.set_tick_interval(Some(ONE_MINUTE)).await;
-        let mut button_press = pin!(button.wait_for_press_duration());
         loop {
-            match select(&mut button_press, clock_sync.wait_for_tick()).await {
+            match select(button.wait_for_press_duration(), clock_sync.wait_for_tick()).await {
                 // Button pushes
                 Either::First(press_duration) => match (press_duration, speed.to_bits()) {
                     (PressDuration::Short, bits) if bits == 1.0f32.to_bits() => {

@@ -3,7 +3,11 @@
 //!
 //! This example uses two stacked 12x4 LED panels rotated 90° clockwise to create an 8-wide
 //! by 12-tall display. Uses Font4x6Trim for dense 2-line digit display ("12\n34").
-//! The panel is on GPIO4, reset button on GPIO13.
+//! The panel is on GPIO4.
+//!
+//! Button on GPIO13:
+//! - During WiFi setup: Hold to force captive portal mode
+//! - After WiFi connects: Background monitoring for clock mode changes (short/long press)
 
 #![no_std]
 #![no_main]
@@ -11,12 +15,13 @@
 #![allow(clippy::future_not_send, reason = "single-threaded")]
 
 use core::convert::Infallible;
-use core::pin::pin;
+
 use defmt::info;
 use defmt_rtt as _;
 use device_kit::{
     Error, Result,
-    button::{Button, PressDuration, PressedTo},
+    button::{PressDuration, PressedTo},
+    button_watch,
     clock_sync::{ClockSync, ClockSyncStatic, ONE_DAY, ONE_MINUTE, ONE_SECOND, h12_m_s},
     flash_array::{FlashArray, FlashArrayStatic},
     led_strip::{Current, Gamma, colors},
@@ -64,6 +69,12 @@ const EDIT_COLORS: [RGB8; 4] = [
     colors::MAROON,
 ];
 
+button_watch! {
+    ResetButton {
+        pin: PIN_13,
+    }
+}
+
 #[embassy_executor::main]
 pub async fn main(spawner: Spawner) -> ! {
     let err = inner_main(spawner).await.unwrap_err();
@@ -83,7 +94,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     static TIMEZONE_FIELD_STATIC: TimezoneFieldStatic = TimezoneField::new_static();
     let timezone_field = TimezoneField::new(&TIMEZONE_FIELD_STATIC, timezone_flash_block);
 
-    // Set up Wifi via a captive portal. The button pin is used to reset stored credentials.
+    // Set up Wifi via a captive portal.
     let wifi_auto = WifiAuto::new(
         p.PIN_23,  // CYW43 power
         p.PIN_24,  // CYW43 clock
@@ -92,7 +103,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         p.PIO0,    // CYW43 PIO interface
         p.DMA_CH0, // CYW43 DMA channel
         wifi_credentials_flash_block,
-        p.PIN_13, // Reset button pin
+        p.PIN_13, // Reset button pin (used only during WiFi setup)
         PressedTo::Ground,
         "www.picoclock.net", // Captive-portal SSID
         [timezone_field],    // Custom fields to ask for
@@ -104,7 +115,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
 
     // Connect Wi-Fi, using the LED panel for status.
     let led8x12_ref = &led8x12;
-    let (stack, mut button) = wifi_auto
+    let (stack, button) = wifi_auto
         .connect(|event| {
             let led8x12_ref = led8x12_ref;
             async move {
@@ -133,6 +144,9 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     info!("WiFi: connected successfully, displaying DONE");
     show_connected(&led8x12).await?;
 
+    // Convert the Button from WifiAuto into a ButtonWatch for background monitoring
+    let reset_button = ResetButton::from_button(button, spawner)?;
+
     // Read the timezone offset, an extra field that WiFi portal saved to flash.
     let offset_minutes = timezone_field
         .offset_minutes()?
@@ -154,17 +168,17 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
         state = match state {
             State::HoursMinutes { speed } => {
                 state
-                    .execute_hours_minutes(speed, &clock_sync, &mut button, &led8x12)
+                    .execute_hours_minutes(speed, &clock_sync, &reset_button, &led8x12)
                     .await?
             }
             State::MinutesSeconds => {
                 state
-                    .execute_minutes_seconds(&clock_sync, &mut button, &led8x12)
+                    .execute_minutes_seconds(&clock_sync, &reset_button, &led8x12)
                     .await?
             }
             State::EditOffset => {
                 state
-                    .execute_edit_offset(&clock_sync, &mut button, &timezone_field, &led8x12)
+                    .execute_edit_offset(&clock_sync, &reset_button, &timezone_field, &led8x12)
                     .await?
             }
         };
@@ -186,16 +200,15 @@ impl State {
         self,
         speed: f32,
         clock_sync: &ClockSync,
-        button: &mut Button<'_>,
+        button: &ResetButton,
         led8x12: &Led8x12,
     ) -> Result<Self> {
         clock_sync.set_speed(speed).await;
         let (hours, minutes, _) = h12_m_s(&clock_sync.now_local());
         show_hours_minutes(led8x12, hours, minutes).await?;
         clock_sync.set_tick_interval(Some(ONE_MINUTE)).await;
-        let mut button_press = pin!(button.wait_for_press_duration());
         loop {
-            match select(&mut button_press, clock_sync.wait_for_tick()).await {
+            match select(button.wait_for_press_duration(), clock_sync.wait_for_tick()).await {
                 // Button pushes
                 Either::First(press_duration) => {
                     info!(
@@ -230,7 +243,7 @@ impl State {
     async fn execute_minutes_seconds(
         self,
         clock_sync: &ClockSync,
-        button: &mut Button<'_>,
+        button: &ResetButton,
         led8x12: &Led8x12,
     ) -> Result<Self> {
         clock_sync.set_speed(1.0).await;
@@ -270,7 +283,7 @@ impl State {
     async fn execute_edit_offset(
         self,
         clock_sync: &ClockSync,
-        button: &mut Button<'_>,
+        button: &ResetButton,
         timezone_field: &TimezoneField,
         led8x12: &Led8x12,
     ) -> Result<Self> {
