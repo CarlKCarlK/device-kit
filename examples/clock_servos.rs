@@ -147,7 +147,12 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
             }
             State::EditOffset => {
                 state
-                    .execute_edit_offset(&clock_sync, button_watch13, &timezone_field, &servo_display)
+                    .execute_edit_offset(
+                        &clock_sync,
+                        button_watch13,
+                        &timezone_field,
+                        &servo_display,
+                    )
                     .await?
             }
         };
