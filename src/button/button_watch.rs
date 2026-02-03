@@ -219,19 +219,19 @@ pub async fn button_watch_task_from_input(
 /// # fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 ///
 /// button_watch! {
-///     ResetButton {
+///     ButtonWatch13 {
 ///         pin: PIN_13,
 ///     }
 /// }
 ///
 /// async fn example(p: embassy_rp::Peripherals, spawner: Spawner) {
 ///     // Create the button monitor (spawns background task automatically)
-///     let reset_button = ResetButton::new(p.PIN_13, PressedTo::Ground, spawner)
+///     let button_watch13 = ButtonWatch13::new(p.PIN_13, PressedTo::Ground, spawner)
 ///         .expect("Failed to create button monitor");
 ///
 ///     loop {
 ///         // Wait for button press - never misses events even if this loop is slow
-///         match reset_button.wait_for_press_duration().await {
+///         match button_watch13.wait_for_press_duration().await {
 ///             PressDuration::Short => {
 ///                 // Handle short press
 /// #               break;
@@ -369,7 +369,7 @@ macro_rules! __button_watch_impl {
                 /// # #[panic_handler]
                 /// # fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
                 /// button_watch! {
-                ///     ResetButton {
+                ///     ButtonWatch13 {
                 ///         pin: PIN_13,
                 ///     }
                 /// }
@@ -379,11 +379,11 @@ macro_rules! __button_watch_impl {
                 ///     spawner: Spawner,
                 /// ) -> device_kit::Result<()> {
                 ///     // Convert Button from WifiAuto into ButtonWatch
-                ///     let reset_button = ResetButton::from_button(button, spawner)?;
+                ///     let button_watch13 = ButtonWatch13::from_button(button, spawner)?;
                 ///
                 ///     // Now button monitoring happens in background
                 ///     loop {
-                ///         let press = reset_button.wait_for_press_duration().await;
+                ///         let press = button_watch13.wait_for_press_duration().await;
                 ///         // Handle press...
                 /// #       break;
                 ///     }
