@@ -155,7 +155,7 @@ required-features = ["arm", "wifi"]
 default = ["defmt", "pico1", "arm"]
 defmt = []
 pico1 = ["dep:embassy-rp", "embassy-rp/rp2040"]
-pico2 = ["dep:embassy-rp", "embassy-rp/rp235xb", "dep:rp235x-hal"]
+pico2 = ["dep:embassy-rp", "embassy-rp/rp235xb"]
 arm = [
     "dep:cortex-m",
     "dep:cortex-m-rt",
@@ -222,9 +222,6 @@ heapless = { version = "0.8.0", features = ["serde"] }
 time = { version = "0.3", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 postcard = { version = "1.0", default-features = false }
-rp235x-hal = { git = "https://github.com/rp-rs/rp-hal", branch = "main", package = "rp235x-hal", features = [
-    "rt",
-], optional = true }
 smart-leds = "0.4.0"
 itertools = { version = "0.13.0", default-features = false }
 crc32fast = { version = "1.4.0", default-features = false }

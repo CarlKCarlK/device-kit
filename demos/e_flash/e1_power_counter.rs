@@ -43,7 +43,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let led12x8 = Led12x8::new(p.PIN_4, p.PIO0, p.DMA_CH0, spawner)?;
 
     // Create a one-block flash array. Each block holds up to 3900 bytes
-    // of serialized data (one 4 KB flash sector minus metadata).
+    // of serialized data (one 4 KB flash block minus metadata).
     let flash_array = FlashArray::<1>::new(p.FLASH)?;
     // Can destructure the array.
     let [mut boot_counter_block] = flash_array;
@@ -54,7 +54,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     boot_counter.0 = (boot_counter.0 + 1) % 10; // Increment and wrap at 10.
 
     // Write counter back to flash. (Avoid tight loop.
-    // Flash is typically good for ~100K erase cycles per sector.)
+    // Flash is typically good for ~100K erase cycles per block.)
     boot_counter_block.save(&boot_counter)?;
 
     // Display the counter on the LED panel (single digit 0-9)

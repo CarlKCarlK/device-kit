@@ -215,7 +215,7 @@ impl FlashArrayStatic {
 ///
 ///     // Write incremented counter back to flash.
 ///     // This example writes once per power-up (fine for a demo; don't write in a tight loop).
-///     // Flash is typically good for ~100K erase cycles per sector.
+///     // Flash is typically good for ~100K erase cycles per block.
 ///     boot_counter_flash_block.save(&boot_counter)?;
 ///
 ///     info!("Boot counter: {}", boot_counter.0);
