@@ -43,7 +43,7 @@ async fn inner_main(spawner: Spawner) -> Result<Infallible> {
     let led12x8 = Led12x8::new(p.PIN_4, p.PIO0, p.DMA_CH0, spawner)?;
 
     // Create a one-block flash array. Each block holds up to 3900 bytes
-    // of serialized data (one 4 KB flash erase sector minus metadata).
+    // of serialized data (one 4 KB flash sector minus metadata).
     static FLASH_STATIC: FlashArrayStatic = FlashArray::<1>::new_static();
     // Can destructure the array.
     let [mut boot_counter_block] = FlashArray::<1>::new(&FLASH_STATIC, p.FLASH)?;

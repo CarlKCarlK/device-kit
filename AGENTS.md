@@ -1,16 +1,16 @@
 # Coding Notes for Agents
 
-- While the crate version remains `0.0.1-alpha`, I do not care about breaking changes. Optimize for the best API design.
+- While the crate version remains `0.0.1-alpha`, we do not care about breaking changes. Optimize for the best API design.
 
-- When loading data from flash (or any other storage) into a local variable, name the variable after the concrete type. Example: `DeviceConfig` data should live in variables like `device_config` and partitions like `device_config_flash`, not generic `config` or `flash0`.
+- When loading data from flash (or any other storage) into a local variable, name the variable after the concrete type. Example: `DeviceConfig` data should live in variables like `device_config`, not generic `config` or `flash0`.
 - Avoid introducing `unsafe` blocks. If a change truly requires `unsafe`, call it out explicitly and explain the justification so the user can review it carefully.
 - Avoid silent clamping; prefer asserts or typed ranges so out-of-range inputs fail fast.
-- Prefer `no_run` doctests; use `ignore` only when absolutely necessary (and call out why).
+- Prefer `no_run` doctests; use `ignore` only when absolutely necessary (and call out why). Running doctests is best when possible, but rarely feasible for embedded code.
 - Always use `rust,no_run` in doctest fences, not just `no_run`.
 - For Pico programs that should run forever, use `core::future::pending().await` instead of a timer loop.
 - **Hide boilerplate in doctests** using the `#` prefix (e.g., `# #![no_std]`). Hide lines that are noise to the reader but required for compilation: `#![no_std]`, `#![no_main]`, `use panic_probe as _`, `use defmt_rtt as _`, and standard imports like `use embassy_executor::Spawner;`. Keep only the essential code showing how to use the API. **Important:** Do NOT hide imports from `device_kit`, `embassy_time::Duration`, `smart_leds`, or `embedded_graphics` because they are unusual and users need to see them to understand what to import.
 - When adding docs for modules or public items, link readers to the primary struct and keep the single compilable example on that struct; other items should point back to it rather than duplicating examples.
-- I often like `const` values defined in the local context (inside the function/example) rather than at module scope when they’re only used there.
+- Prefer `const` values defined in the local context (inside the function/example) rather than at module scope when they're only used there.
 - Always run `cargo check-all` before handing work back; xtask keeps doctests and examples in sync.
 
 ## Const-Only APIs
@@ -86,11 +86,6 @@ Avoid single-character variables; use descriptive names:
 
 **Project-specific patterns:**
 
-- `x_goal`/`y_goal`: Target image dimensions
-- `x_stride`/`y_stride`: Sampling rates (must be `PowerOfTwo`)
-- `step_index`: Current machine step number
-- `tape_index`: Current head position (can be negative)
-- `select`: Which symbol to visualize (`NonZeroU8`)
 - For the board peripherals handle from `embassy_rp::init`, always use the shorthand `let p = embassy_rp::init(...)` so examples stay consistent.
 
 **Reference variables:**
@@ -106,19 +101,19 @@ When capturing variables in closures or creating references, append `_ref`:
 
 ## Comment Conventions
 
-Use `cmk00`/`cmk0` prefix for TODO items (author's initials + priority):
+Use `TODO0`/`TODO00` prefix for TODO items (`TODO` + priority):
 
 ```rust
-// cmk00 high priority task
-// cmk0 lower priority consideration
-// TODO standard todo for general items
+// TODO00 high priority task
+// TODO0 lower priority consideration
+// TODO lowest standard todo for general items
 ```
 
-Preserving comments: When changing code, generally don't remove TODO's and cmk's in comments. Just move the comments if needed. If you think they no longer apply, add `(may no longer apply)` to the comment rather than deleting it.
+Preserving comments: When changing code, generally don't remove TODO's in comments. Just move the comments if needed. If you think they no longer apply, add `(may no longer apply)` to the comment rather than deleting it.
 
 - **Debug code policy**: Do not remove debug/test code, commented debugging blocks, or "THIS WORKS" / "THIS DOESN'T" comparison code until the bug is proven fixed. Leave diagnostic code in place even after identifying issues so the user can verify fixes work correctly before cleanup. This includes removing such comparisons when making edits—preserve them until explicit confirmation the fix is working.
 - **Commit messages**: Always suggest a concise 1-2 line commit message when completing work (no bullet points, just 1-2 lines maximum).
-- Preserve comments: keep `cmk00`/`cmk0`/`TODO` comments. If they seem obsolete, append `(may no longer apply)` rather than deleting.
+- Preserve comments: keep `TODO00`/`TODO0`/`TODO`, etc. comments. If they seem obsolete, append `(may no longer apply)` rather than deleting.
 
 ## Documentation Conventions
 
@@ -164,9 +159,9 @@ Use `cargo run --bin <name> --target <target> --features <features>` as the stan
 
 - In Rust, move deconstruction into the arguments were possible.
 
-- In Rust, I like using the same name when unwrapping, if let Some(max_steps) = max_steps {
+- In Rust, prefer using the same name when unwrapping, if let Some(max_steps) = max_steps {
 
-- I like asserts and using asserts. So, if the difference between two values must always be nonnegative, I would NOT use saturating_sub, I would use assert!(a >= b); let diff = a - b; because I want to catch any violations. Likewise, if a match requires a catch all, I wold use unreachable or panic. I would not use_ => {}.
+- Prefer asserts. If the difference between two values must always be nonnegative, do NOT use saturating_sub; instead use assert!(a >= b); let diff = a - b; to catch any violations. Likewise, if a match requires a catch all, use unreachable or panic, not_ => {}.
 
 ### Shadow Names (Rust)
 
@@ -204,7 +199,7 @@ Spelling:
 
 Use American over British spelling
 
-When making up variable notes for examples and elsewhere, never use the prefix "My". I hate that.
+When making up variable notes for examples and elsewhere, never use the prefix "My". Avoid this prefix.
 
 - If an item comes from `crate`, `core`, `std`, or `alloc`, import it with `use` instead of using a fully-qualified `crate::`, `core::`, `std::`, or `alloc::` path in code. (Fully-qualified paths are fine in docs or comments.)
 - In all demos, examples, and doctests, prefer condensed `use` statements (group related imports on a single `use` line where it stays readable).
