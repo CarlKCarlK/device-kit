@@ -263,7 +263,7 @@ fn check_all() -> ExitCode {
     rayon::scope(|s| {
         // 1. Doc tests
         s.spawn(|_| {
-            println!("{}", "  [1/9] Doc tests...".bright_black());
+            println!("{}", "  [1/10] Doc tests...".bright_black());
             if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
                 "test",
                 "--doc",
@@ -281,7 +281,7 @@ fn check_all() -> ExitCode {
         s.spawn(|_| {
             println!(
                 "{}",
-                "  [2/9] Host tests (unit + integration)...".bright_black()
+                "  [2/10] Host tests (unit + integration)...".bright_black()
             );
             let host_target = host_target();
             let mut host_test_cmd = Command::new("cargo");
@@ -306,7 +306,7 @@ fn check_all() -> ExitCode {
 
         // 3. Library build
         s.spawn(|_| {
-            println!("{}", "  [3/9] Library build...".bright_black());
+            println!("{}", "  [3/10] Library build...".bright_black());
             if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
                 "build",
                 "--lib",
@@ -322,7 +322,7 @@ fn check_all() -> ExitCode {
 
         // 4. Examples (pico2, no wifi)
         s.spawn(|_| {
-            println!("{}", "  [4/9] Examples (pico2, no wifi)...".bright_black());
+            println!("{}", "  [4/10] Examples (pico2, no wifi)...".bright_black());
             no_wifi_examples.par_iter().for_each(|example| {
                 if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
                     "build",
@@ -343,7 +343,7 @@ fn check_all() -> ExitCode {
         s.spawn(|_| {
             println!(
                 "{}",
-                "  [5/9] Demos (pico2 + pico1, no wifi)...".bright_black()
+                "  [5/10] Demos (pico2 + pico1, no wifi)...".bright_black()
             );
             no_wifi_demos.par_iter().for_each(|demo| {
                 if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
@@ -377,7 +377,7 @@ fn check_all() -> ExitCode {
         s.spawn(|_| {
             println!(
                 "{}",
-                "  [6/9] Examples (pico2, with wifi)...".bright_black()
+                "  [6/10] Examples (pico2, with wifi)...".bright_black()
             );
             examples.par_iter().for_each(|example| {
                 if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
@@ -399,7 +399,7 @@ fn check_all() -> ExitCode {
         s.spawn(|_| {
             println!(
                 "{}",
-                "  [7/9] Examples (pico1, with wifi)...".bright_black()
+                "  [7/10] Examples (pico1, with wifi)...".bright_black()
             );
             examples.par_iter().for_each(|example| {
                 if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
@@ -419,7 +419,7 @@ fn check_all() -> ExitCode {
 
         // 8. Compile-only tests
         s.spawn(|_| {
-            println!("{}", "  [8/9] Compile-only tests...".bright_black());
+            println!("{}", "  [8/10] Compile-only tests...".bright_black());
             let compile_tests_dir = workspace_root.join("tests-compile-only");
             if compile_tests_dir.exists() {
                 let mut compile_tests = Vec::new();
@@ -453,7 +453,7 @@ fn check_all() -> ExitCode {
 
         // 9. Documentation
         s.spawn(|_| {
-            println!("{}", "  [9/9] Documentation...".bright_black());
+            println!("{}", "  [9/10] Documentation...".bright_black());
             if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
                 "doc",
                 "--target",
@@ -464,6 +464,28 @@ fn check_all() -> ExitCode {
                 "--no-default-features",
             ])) {
                 failures.lock().unwrap().push("documentation");
+            }
+        });
+
+        // 10. docs.rs documentation (embedded target)
+        s.spawn(|_| {
+            println!(
+                "{}",
+                "  [10/10] docs.rs documentation (embedded target)...".bright_black()
+            );
+            if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
+                "doc",
+                "--target",
+                target_pico1,
+                "--no-deps",
+                "--features",
+                "embedded,wifi,doc-images",
+                "--no-default-features",
+            ])) {
+                failures
+                    .lock()
+                    .unwrap()
+                    .push("docs.rs documentation (embedded target)");
             }
         });
     });
@@ -503,7 +525,7 @@ fn check_docs() -> ExitCode {
     rayon::scope(|s| {
         // 1. Doc tests
         s.spawn(|_| {
-            println!("{}", "  [1/2] Doc tests...".bright_black());
+            println!("{}", "  [1/3] Doc tests...".bright_black());
             if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
                 "test",
                 "--doc",
@@ -519,7 +541,7 @@ fn check_docs() -> ExitCode {
 
         // 2. Documentation generation
         s.spawn(|_| {
-            println!("{}", "  [2/2] Documentation generation...".bright_black());
+            println!("{}", "  [2/3] Documentation generation...".bright_black());
             if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
                 "doc",
                 "--target",
@@ -530,6 +552,28 @@ fn check_docs() -> ExitCode {
                 "--no-default-features",
             ])) {
                 failures.lock().unwrap().push("documentation");
+            }
+        });
+
+        // 3. docs.rs documentation (embedded target)
+        s.spawn(|_| {
+            println!(
+                "{}",
+                "  [3/3] docs.rs documentation (embedded target)...".bright_black()
+            );
+            if !run_command(Command::new("cargo").current_dir(&workspace_root).args([
+                "doc",
+                "--target",
+                arch.target(Board::Pico1),
+                "--no-deps",
+                "--features",
+                "embedded,wifi,doc-images",
+                "--no-default-features",
+            ])) {
+                failures
+                    .lock()
+                    .unwrap()
+                    .push("docs.rs documentation (embedded target)");
             }
         });
     });

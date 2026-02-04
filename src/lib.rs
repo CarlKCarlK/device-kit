@@ -10,6 +10,7 @@
 //!   are unrelated Rust slices.
 #![cfg_attr(not(feature = "host"), no_std)]
 #![cfg_attr(not(feature = "host"), no_main)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![allow(async_fn_in_trait, reason = "single-threaded embedded")]
 
 // Compile-time checks: exactly one board must be selected (unless testing with host feature)
