@@ -12,6 +12,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/CarlKCarlK/device-envoy"
 documentation = "https://docs.rs/device-envoy"
 homepage = "https://github.com/CarlKCarlK/device-envoy"
+exclude = ["demos/**", "tests-compile-only/**"]
 
 # Pure library crate - all applications are in examples/
 [lib]
