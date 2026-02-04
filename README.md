@@ -2,7 +2,9 @@
 
 **Build Pico applications with LED panels, easy WiFi, and composable device abstractions.**
 
-`device-envoy` explores application-level device abstractions in embedded Rust using the Embassy async framework. It focuses on building reusable, typed async APIs that hide timing, interrupts, channels, and shared state inside the device.
+`device-envoy` explores application-level device abstractions in embedded Rust using the Embassy async framework. It focuses on building reusable, typed async APIs that hide timing, interrupts, channels, and shared state inside each device.
+
+`device-envoy` sits above HALs and drivers, modeling devices as long-lived async tasks with typed APIs rather than pin-level control.
 
 Currently targeting Raspberry Pi Pico 1 and Pico 2 (ARM cores). RISC-V core support exists but is not actively tested.
 
@@ -17,7 +19,7 @@ The API is actively evolving. Not recommended for production use, but excellent 
 ## Features
 
 - **LED Panels & Strips** - NeoPixel-style (WS2812) LED arrays with 2D text rendering, animation, and embedded-graphics support
-- **WiFi (Pico W)** - Connect to the Internet with automatic credentials management. On boot, opens a web form if WiFi credentials aren't saved, then connects seamlessly to stored networks.
+- **WiFi (Pico W)** - Connect to the Internet with automatic credentials management. On boot, opens a web form if WiFi credentials aren't saved, then connects seamlessly to stored networks. Requires Pico W; WiFi is not supported on non-W boards.
 - **Button Input** - Button handling with debouncing
 - **Servo Control** - Servo positioning and animation
 - **Flash Storage** - Type-safe, on-board persist storage
@@ -29,6 +31,7 @@ The API is actively evolving. Not recommended for production use, but excellent 
 
 The project includes **examples** (single-device tests) in `examples/` and **demo applications** in `demos/` showing real-world integration patterns:
 
+- **Basic LED Examples**: Simple on/off control with blinky pattern
 - **LED Strip Examples**: Simple animations, color control, text rendering
 - **LED Panel Examples**: 12×4, 12×8, and multi-panel configurations with graphics
 - **Button Examples**: Debouncing and state handling
@@ -43,60 +46,38 @@ See the `examples/` and `demos/` directories for complete runnable code.
 ### Prerequisites
 
 ```bash
-# Add Rust targets for Pico boards (ARM cores are fully tested)
+# Add Rust targets for Pico boards
 rustup target add thumbv6m-none-eabi           # Pico 1 (ARM)
 rustup target add thumbv8m.main-none-eabihf    # Pico 2 (ARM)
-
-# Optional: Pico 2 RISC-V core (not actively tested, experimental)
-rustup target add riscv32imac-unknown-none-elf
 ```
 
-### Build the library
+### Quick Start
 
 ```bash
-# Build just the library for Pico 1 (ARM core, no WiFi)
-cargo build --lib --target thumbv6m-none-eabi
+# Run examples using convenient aliases
+cargo blinky                # Simple LED blinky (Pico 1)
+cargo blinky-2              # Simple LED blinky (Pico 2)
 
-# Pico 2 with WiFi (requires --no-default-features to override pico1 default)
-cargo build --lib --target thumbv8m.main-none-eabihf --features pico2,wifi,arm --no-default-features
+cargo clock-lcd-w           # LCD clock with WiFi (Pico 1 WiFi)
+cargo clock-lcd-2w          # LCD clock with WiFi (Pico 2 WiFi)
+
+cargo clock-led12x4-w       # LED panel clock (Pico 1 WiFi)
+cargo clock-led12x4-2w      # LED panel clock (Pico 2 WiFi)
+
+# Check without running (faster builds)
+cargo blinky-check          # Compile only
+cargo clock-lcd-w-check     # Check Pico 1 WiFi version
+
+# Build and check everything
+cargo check-all
 ```
 
-**Feature flags explained:**
+**Tools:**
 
-- `pico1` / `pico2` — Which board to target
-- `arm` — Use ARM core (default on both boards)
-- `wifi` — Enable WiFi module (Pico W only)
+- `just` - Optional command runner (install with `cargo install just` or your package manager). See `justfile` for commands.
+- `xtask` - Project's custom automation tool (built-in, use via `cargo xtask --help`)
 
-### Run examples
-
-Examples are easiest to run using cargo aliases defined in `.cargo/config.toml`:
-
-```bash
-# Pico 1 examples (simplest)
-cargo blinky
-
-# Pico 2 examples (with WiFi)
-cargo clock-lcd-w
-cargo clock-led12x4-w
-
-# Just check without running
-cargo blinky-check
-```
-
-Or use `cargo xtask` for more control:
-
-```bash
-cargo xtask example blinky --board pico1 --arch arm
-cargo xtask example clock_lcd --board pico2 --arch arm --wifi
-```
-
-For a complete list of cargo aliases, see `.cargo/config.toml`. For `just` commands, see `justfile`.
-
-### Check all (builds, tests, docs)
-
-```bash
-cargo check-all  # Runs all checks in parallel
-```
+See `.cargo/config.toml` for all cargo aliases.
 
 ## Hardware Notes
 
@@ -105,15 +86,13 @@ cargo check-all  # Runs all checks in parallel
 Examples use conventional pin assignments for consistency:
 
 - **PIN_0**: LED strip (8-pixel simple example)
+- **PIN_1**: Single LED (blinky patterns) - Built-in LEDs are modeled as active-high (OnLevel::High) on all supported boards
 - **PIN_3**: LED panel (12×4, 48 pixels)
 - **PIN_4**: Extended LED panel (12×8, 96 pixels)
+- **PIN_5**: Long LED strip (160 pixels, broadway/marquee effects)
+- **PIN_6**: Large LED panel (16×16, 256 pixels)
 - **PIN_13**: Button (active-low)
 - **PIN_11, PIN_12**: Servo signals
-
-### WiFi (Pico W)
-
-- **PIN_23**: CYW43 power enable
-- **PIN_24–29**: CYW43 SPI + control pins (via PIO)
 
 ## Testing
 
