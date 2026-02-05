@@ -14,9 +14,10 @@ fn main() {
         .unwrap_or(false);
 
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let source_frames_dir = manifest_dir.join("examples/data/frame-data");
-    let frames_dir = manifest_dir.join("target/frame-data");
-    fs::create_dir_all(&frames_dir).expect("Failed to create target/frame-data directory");
+    let frames_dir = out_dir.join("frame-data");
+    fs::create_dir_all(&frames_dir).expect("Failed to create OUT_DIR/frame-data directory");
     let frames_path = frames_dir.join("video_frames_data.rs");
 
     let placeholder = r#"// Video frames generated from PNG files (santa video)
@@ -103,7 +104,6 @@ const SANTA_FRAMES: [([[RGB8; 12]; 8], Duration); SANTA_FRAME_COUNT] = [
 
     // 2) Handle memory.x based on target
     let target = env::var("TARGET").unwrap();
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     if target.starts_with("thumbv8m") {
         // Pico 2 ARM: copy our custom memory-pico2.x to OUT_DIR as memory.x
