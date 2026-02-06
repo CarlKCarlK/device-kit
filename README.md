@@ -1,39 +1,98 @@
 # device-envoy
 
+[![GitHub](https://img.shields.io/badge/github-device--envoy-8da0cb?style=flat&labelColor=555555&logo=github)](https://github.com/CarlKCarlK/device-envoy)
+[![crates.io](https://img.shields.io/crates/v/device-envoy?style=flat&color=fc8d62&logo=rust)](https://crates.io/crates/device-envoy)
+[![docs.rs](https://img.shields.io/docsrs/device-envoy?style=flat&color=66c2a5&labelColor=555555)](https://docs.rs/device-envoy)
+
 **Build Pico applications with LED panels, easy WiFi, and composable device abstractions.**
 
-`device-envoy` explores application-level device abstractions in embedded Rust using the Embassy async framework. It focuses on building reusable, typed async APIs that hide timing, interrupts, channels, and shared state inside each device.
+`device-envoy` provides device-level abstractions for embedded Rust, built on the Embassy async framework. It focuses on reusable, typed async APIs that hide timing, interrupts, channels, and shared state inside each device.
 
-`device-envoy` sits above HALs and drivers, modeling devices as long-lived async tasks with typed APIs rather than pin-level control.
+Rather than replacing HALs or drivers, `device-envoy` builds on them, modeling devices as long-lived async tasks with clear, high-level APIs.
 
 Currently targeting Raspberry Pi Pico 1 and Pico 2 (ARM cores). RISC-V core support exists but is not actively tested.
 
 ## Status
 
-⚠️ **Alpha / Experimental** (version 0.0.2-alpha)
+⚠️ **Alpha / Experimental**
 
-The API is actively evolving. Not recommended for production use, but excellent for experimentation and embedded Rust learning.
-
-**Background:** See [How Rust & Embassy Shine on Embedded Devices](https://medium.com/@carlmkadie/how-rust-embassy-shine-on-embedded-devices-part-1-9f4911c92007) by Carl M. Kadie and Brad Gibson.
+The API is actively evolving. Not recommended for production use, but excellent for experimentation, learning, and exploratory projects.
 
 ## Features
 
-- **LED Panels & Strips** - NeoPixel-style (WS2812) LED arrays with 2D text rendering, animation, and embedded-graphics support
-- **WiFi (Pico W)** - Connect to the Internet with automatic credentials management. On boot, opens a web form if WiFi credentials aren't saved, then connects seamlessly to stored networks. Requires Pico W; WiFi is not supported on non-W boards.
-- **Button Input** - Button handling with debouncing
-- **Servo Control** - Servo positioning and animation
-- **Flash Storage** - Type-safe, on-board persist storage
-- **LCD Display** - Text display (HD44780)
-- **IR Remote** - Remote control decoder (NEC protocol)
-- **RFID Reader** - Card detection and reading (MFRC522)
+- **[LED Strips](https://docs.rs/device-envoy/latest/device_envoy/led_strip/) & [Panels](https://docs.rs/device-envoy/latest/device_envoy/led2d/)**  - NeoPixel-style (WS2812) LED arrays with 2D text rendering, animation, embedded-graphics support. Provides efficient options for power limiting and color correction.
+- **[WiFi (Pico W)](https://docs.rs/device-envoy/latest/device_envoy/wifi_auto/)** - Connect to the Internet with automatic credentials management. On boot, opens a web form if WiFi credentials aren't saved, then connects seamlessly to stored networks. Requires Pico W; WiFi is not supported on non-W boards.
+- **[Button Input](https://docs.rs/device-envoy/latest/device_envoy/button/)** - Button handling with debouncing
+- **[Servo Control](https://docs.rs/device-envoy/latest/device_envoy/servo/)** - Servo positioning and animation
+- **[Flash Storage](https://docs.rs/device-envoy/latest/device_envoy/flash_array/)** - Type-safe, on-board persist storage
+- **[LCD Display](https://docs.rs/device-envoy/latest/device_envoy/char_lcd/)** - Text display (HD44780)
+- **[IR Remote](https://docs.rs/device-envoy/latest/device_envoy/ir/)** - Remote control decoder (NEC protocol)
+- **[RFID Reader](https://docs.rs/device-envoy/latest/device_envoy/rfid/)** - Card detection and reading (MFRC522)
+- **[Clock Sync](https://docs.rs/device-envoy/latest/device_envoy/clock_sync/)** - Network time synchronization utilities
+- **[LED4 Display](https://docs.rs/device-envoy/latest/device_envoy/led4/)** - 4-digit, 7-segment LED display control with optional animation and blinking
+- **[Single LED](https://docs.rs/device-envoy/latest/device_envoy/led/)** - Single digital LED control with animation support
+
+## Article
+
+- [How Rust & Embassy Shine on Embedded Devices](https://medium.com/@carlmkadie/how-rust-embassy-shine-on-embedded-devices-part-1-9f4911c92007) by Carl M. Kadie and Brad Gibson.
+
+## Forum
+
+- **[Using Embassy to build applications](https://github.com/CarlKCarlK/device-envoy/discussions)**  
+  A place to talk about writing embedded applications with Embassy—sharing code, asking practical questions, and learning what works in practice.  
+  Not limited to Pico boards or to `device-envoy`.
 
 ## Examples & Demos
 
-The project includes **examples** (single-device tests) in `examples/` and **demo applications** in `demos/` showing real-world integration patterns:
+The project includes **examples** (single-device tests) in `examples/` and **demo applications** in `demos/` showing integration patterns:
+
+### Example: animated LED strip
+
+This example cycles a 96-LED strip through red, green, and blue frames.
+![Animated 96-LED strip example (APNG)](docs/assets/led_strip_animated.png)
+
+It shows how device-envoy generates a device struct for an LED strip and animates a sequence of frames.
+
+```rust,no_run
+# #![no_std]
+# #![no_main]
+# use panic_probe as _;
+# use core::convert::Infallible;
+use device_envoy::{Result, led_strip::{Frame1d, colors}};
+use device_envoy::led_strip;
+
+led_strip! {
+    LedStripAnimated {
+        pin: PIN_4,
+        len: 96,
+    }
+}
+
+async fn example(spawner: embassy_executor::Spawner) -> Result<Infallible> {
+    let p = embassy_rp::init(Default::default());
+    let led_strip_animated = LedStripAnimated::new(p.PIN_4, p.PIO0, p.DMA_CH0, spawner)?;
+
+    // Create a sequence of frames and durations and then animate them (looping, until replaced).
+    let frame_duration = embassy_time::Duration::from_millis(300);
+    led_strip_animated.animate([
+        (Frame1d::filled(colors::RED), frame_duration),
+        (Frame1d::filled(colors::GREEN), frame_duration),
+        (Frame1d::filled(colors::BLUE), frame_duration),
+    ])?;
+
+    core::future::pending().await // run forever
+}
+```
+
+> For complete, runnable examples (including wiring and setup), see the `examples/` and `demos/` directories.
 
 - **Basic LED Examples**: Simple on/off control with blinky pattern
 - **LED Strip Examples**: Simple animations, color control, text rendering
+
 - **LED Panel Examples**: 12×4, 12×8, and multi-panel configurations with graphics
+
+![Animated LED panel Go Go example](docs/assets/led2d2.png)
+
 - **Button Examples**: Debouncing and state handling
 - **Servo Examples**: Position sweeps and animation playback
 - **WiFi Examples**: WiFi setup, time sync, DNS
@@ -99,12 +158,10 @@ Examples use conventional pin assignments for consistency:
 Host-side tests run on your development machine without hardware:
 
 ```bash
-# Run host tests (unit + integration)
-cargo test --no-default-features --features defmt,host
-
-# Or run via xtask
-cargo xtask check-docs  # Includes doc tests
+just check-all
 ```
+
+`just` is the optional command runner (install with `cargo install just` or your package manager). See **Tools** above.
 
 Tests include:
 
