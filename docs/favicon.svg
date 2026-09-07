@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img">
+  <title>Device Envoy</title>
+  <!-- charcoal black -->
+  <rect width="512" height="512" rx="104" fill="#14141b" />
+  <!-- electric cyan -->
+  <path
+    fill="#00ffff"
+    fill-rule="evenodd"
+    d="M104 96h172c86 0 140 64 140 160s-54 160-140 160H104Zm56 56v208h112c55 0 88-41 88-104s-33-104-88-104Z"
+  />
+  <path
+    fill="#00ffff"
+    d="M104 192h188a20 20 0 0 1 0 40H104Zm0 88h188a20 20 0 0 1 0 40H104Z"
+  />
+</svg>
