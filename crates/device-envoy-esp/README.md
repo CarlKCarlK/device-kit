@@ -46,6 +46,7 @@ Want a minimal starting project?
 
 - [device-envoy: Making Embedded ESP32 Fun with Rust, Embassy, and Composable Device Abstractions](https://medium.com/@carlmkadie/device-envoy-esp-making-embedded-esp32-fun-872e251b88f3) -- versions: [article](https://medium.com/@carlmkadie/device-envoy-esp-making-embedded-esp32-fun-872e251b88f3) or [video (Pico)](https://www.youtube.com/watch?v=iUu6hvJLVOU)
 - [How Rust & Embassy Shine on Embedded Devices](https://medium.com/@carlmkadie/how-rust-embassy-shine-on-embedded-devices-part-1-9f4911c92007) by Carl M. Kadie and Brad Gibson.
+- [Nine Rules for Compile-Time Work with Rust `const fn`](https://medium.com/gitconnected/nine-rules-for-compile-time-work-with-rust-const-fn-part-1-a29f7dd62b2f), published in *Level Up Coding*, includes examples from Linkage Blaze and Device Envoy.
 - [More Rust articles](https://medium.com/@carlmkadie)
 
 ## Thanks
