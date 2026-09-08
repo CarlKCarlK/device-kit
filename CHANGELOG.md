@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6
+
+- Fixed CYD runtime orientation changes by upgrading `mipidsi`, so display
+  drawing uses the current logical bounds after calibration.
+- Increased the DNS tester frame buffer to fit the landscape calibration
+  banner.
+- Updated `embedded-graphics` to 0.8.2.
+
 ## 0.1.5
 
 - Added portable CYD framebuffer pixel lookup and aligned pixel access across
