@@ -340,11 +340,11 @@ const PORTRAIT_LAYOUT: Layout = Layout {
     ],
 };
 
-/// Largest buffered frame used by the DNS tester UI.
+/// Largest buffered frame used by DNS tester startup and UI.
 ///
-/// Full-screen artwork is streamed directly; buffered fills are split into
+/// Full-screen artwork is streamed directly; calibration and buffered fills use
 /// twenty-pixel rows, with the landscape panel being the widest such frame.
-pub const FRAME_PIXEL_COUNT: usize = 240 * 20;
+pub const FRAME_PIXEL_COUNT: usize = Orientation::Landscape.width() as usize * 20;
 
 struct Ui<'a, Display, const TEXT_CAPACITY: usize> {
     display: &'a mut Display,
@@ -859,6 +859,11 @@ mod tests {
     fn manual_layouts_fit_their_screens_and_have_disjoint_controls() {
         assert_layout_invariants(LANDSCAPE_LAYOUT);
         assert_layout_invariants(PORTRAIT_LAYOUT);
+    }
+
+    #[test]
+    fn frame_buffer_fits_landscape_calibration_banner() {
+        assert_eq!(FRAME_PIXEL_COUNT, 320 * 20);
     }
 
     #[test]
